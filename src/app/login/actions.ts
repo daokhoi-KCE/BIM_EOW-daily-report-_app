@@ -9,7 +9,7 @@ export async function signIn(
   _prevState: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const email = String(formData.get("email") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
   const next = String(formData.get("next") || "/");
 
@@ -21,6 +21,7 @@ export async function signIn(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    console.error("signIn failed:", error.status, error.message);
     return { error: "Sai email hoặc mật khẩu / Invalid email or password" };
   }
 

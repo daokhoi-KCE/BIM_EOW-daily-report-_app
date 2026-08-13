@@ -25,6 +25,10 @@ export default function LoginForm({ next }: { next: string }) {
           name="email"
           required
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          inputMode="email"
           className={inputCls}
           placeholder="ban@bimwind.vn"
         />
