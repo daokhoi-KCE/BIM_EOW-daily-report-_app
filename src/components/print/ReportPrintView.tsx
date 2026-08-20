@@ -3,7 +3,7 @@ import type { ReportDraft, SafetyItem } from "@/lib/types";
 import { delayMinutes } from "@/lib/utils";
 import { NAVY, AMBER } from "@/lib/theme";
 
-const td = "text-[11px] align-top border-b border-slate-300 py-1.5 pr-2";
+const td = "text-[12.5px] align-top border-b border-slate-300 py-2 pr-2";
 
 type Tier = "low" | "med" | "high" | "none";
 
@@ -15,11 +15,11 @@ function severityTier(sev: string): Tier {
   return "low";
 }
 
-const TIER: Record<Tier, { text: string; border: string; bg: string; label: string }> = {
-  high: { text: "text-red-700", border: "border-red-500", bg: "bg-red-50", label: "NGHIÊM TRỌNG / CRITICAL" },
-  med: { text: "text-amber-700", border: "border-amber-500", bg: "bg-amber-50", label: "TRUNG BÌNH / MEDIUM" },
-  low: { text: "text-emerald-700", border: "border-emerald-500", bg: "bg-emerald-50", label: "THẤP / LOW" },
-  none: { text: "text-slate-500", border: "border-slate-300", bg: "bg-slate-50", label: "CHƯA RÕ / N/A" },
+const TIER: Record<Tier, { text: string; border: string; bg: string; en: string; vi: string }> = {
+  high: { text: "text-red-700", border: "border-red-500", bg: "bg-red-50", en: "CRITICAL", vi: "Nghiêm trọng" },
+  med: { text: "text-amber-700", border: "border-amber-500", bg: "bg-amber-50", en: "MEDIUM", vi: "Trung bình" },
+  low: { text: "text-emerald-700", border: "border-emerald-500", bg: "bg-emerald-50", en: "LOW", vi: "Thấp" },
+  none: { text: "text-slate-500", border: "border-slate-300", bg: "bg-slate-50", en: "N/A", vi: "Chưa rõ" },
 };
 
 function delayColor(d: number | null) {
@@ -29,47 +29,59 @@ function delayColor(d: number | null) {
   return "text-emerald-700";
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function SectionTitle({ en, vi }: { en: string; vi: string }) {
   return (
-    <h2
-      className="text-[12.5px] font-bold uppercase pb-1 mb-2 mt-5 border-b-2"
-      style={{ color: NAVY, borderColor: NAVY }}
-    >
-      {children}
-    </h2>
-  );
-}
-
-function InfoRow({ label, en, value }: { label: string; en: string; value: string }) {
-  return (
-    <div className="avoid-break">
-      <div className="text-[9.5px] uppercase tracking-wide text-slate-500">
-        {label} <span className="italic normal-case">/ {en}</span>
-      </div>
-      <div className="text-[12px] font-semibold text-slate-900 min-h-[16px]">{value || "—"}</div>
+    <div className="avoid-break mt-6 mb-2.5">
+      <h2 className="text-[16px] font-extrabold uppercase tracking-wide leading-tight" style={{ color: NAVY }}>
+        {en}
+      </h2>
+      <div className="text-[11px] italic text-slate-500 leading-tight">{vi}</div>
+      <div className="border-b-2 mt-1" style={{ borderColor: NAVY }} />
     </div>
   );
 }
 
-function SafetyBox({ label, en, item }: { label: string; en: string; item: SafetyItem }) {
+function InfoRow({ en, vi, value }: { en: string; vi: string; value: string }) {
+  return (
+    <div className="avoid-break">
+      <div className="text-[11px] font-bold uppercase tracking-wide text-slate-700 leading-tight">{en}</div>
+      <div className="text-[9.5px] italic text-slate-400 leading-tight">{vi}</div>
+      <div className="text-[14px] font-semibold text-slate-900 min-h-[18px] mt-0.5">{value || "—"}</div>
+    </div>
+  );
+}
+
+function ThCell({ en, vi }: { en: string; vi: string }) {
+  return (
+    <th className="text-left py-2 px-2 border-b-2 align-bottom" style={{ borderColor: NAVY }}>
+      <div className="text-[11.5px] font-bold uppercase tracking-wide leading-tight" style={{ color: NAVY }}>
+        {en}
+      </div>
+      <div className="text-[9px] italic text-slate-400 normal-case leading-tight">{vi}</div>
+    </th>
+  );
+}
+
+function SafetyBox({ en, vi, item }: { en: string; vi: string; item: SafetyItem }) {
   const flagged = item.yn === "Có";
   return (
     <div
-      className={`avoid-break rounded-md border p-2.5 ${flagged ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+      className={`avoid-break rounded-md border p-3 ${flagged ? "border-red-400 bg-red-50" : "border-slate-200"}`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10.5px] font-semibold text-slate-700">
-          {label} <span className="italic text-slate-400 font-normal">/ {en}</span>
+        <span>
+          <span className="block text-[12px] font-bold text-slate-800 leading-tight">{en}</span>
+          <span className="block text-[9.5px] italic text-slate-400 leading-tight">{vi}</span>
         </span>
         <span
-          className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded ${
+          className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded ${
             flagged ? "bg-red-600 text-white" : "text-emerald-700 border border-emerald-400"
           }`}
         >
           {item.yn || "—"}
         </span>
       </div>
-      {item.detail && <p className="text-[10.5px] mt-1.5 text-red-800">{item.detail}</p>}
+      {item.detail && <p className="text-[11.5px] mt-1.5 text-red-800">{item.detail}</p>}
     </div>
   );
 }
@@ -95,10 +107,13 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
             className="h-12 w-auto object-contain"
           />
           <div className="flex-1">
-            <h1 className="text-[16px] font-bold leading-tight" style={{ color: NAVY }}>
-              BÁO CÁO CÔNG VIỆC HẰNG NGÀY / DAILY WORK REPORT
+            <h1 className="text-[21px] font-extrabold uppercase leading-tight" style={{ color: NAVY }}>
+              Daily Work Report
             </h1>
-            <div className="text-[11px] text-slate-600">
+            <div className="text-[12px] italic text-slate-500 leading-tight">
+              Báo cáo công việc hằng ngày
+            </div>
+            <div className="text-[12.5px] text-slate-600 mt-0.5">
               BIM Wind Farm — EOW Inspection — 22 x GE Cypress 5.5-158
             </div>
           </div>
@@ -107,47 +122,47 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
       <div className="h-[3px] mb-4" style={{ background: AMBER }} />
 
       {(safetyFlagged || highFindings > 0) && (
-        <div className="avoid-break rounded-md border-2 border-red-600 bg-red-50 px-3 py-2 mb-4 flex flex-wrap gap-x-4 gap-y-1">
+        <div className="avoid-break rounded-md border-2 border-red-600 bg-red-50 px-3 py-2.5 mb-4 flex flex-wrap gap-x-5 gap-y-1.5">
           {safetyFlagged && (
-            <span className="text-[11px] font-bold text-red-700">
-              ⚠ CÓ VẤN ĐỀ AN TOÀN / SAFETY ISSUE(S) FLAGGED
+            <span className="text-[12.5px] font-bold text-red-700">
+              ⚠ SAFETY ISSUE(S) FLAGGED <span className="font-normal italic">/ Có vấn đề an toàn</span>
             </span>
           )}
           {highFindings > 0 && (
-            <span className="text-[11px] font-bold text-red-700">
-              ⚠ {highFindings} PHÁT HIỆN NGHIÊM TRỌNG / {highFindings} CRITICAL FINDING(S)
+            <span className="text-[12.5px] font-bold text-red-700">
+              ⚠ {highFindings} CRITICAL FINDING(S){" "}
+              <span className="font-normal italic">/ {highFindings} phát hiện nghiêm trọng</span>
             </span>
           )}
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-3 avoid-break">
-        <InfoRow label="Ngày" en="Date" value={rep.date} />
-        <InfoRow label="Ngày thứ" en="Day" value={rep.dayNum ? `${rep.dayNum} /15` : ""} />
-        <InfoRow label="Trụ kế hoạch" en="Planned" value={rep.plannedTurbines} />
-        <InfoRow label="Trụ thực tế" en="Actual" value={rep.actualTurbines} />
-        <InfoRow label="Người lập" en="Prepared by" value={rep.preparedBy} />
-        <InfoRow label="Đại diện OEM" en="OEM rep." value={rep.oemRep} />
-        <InfoRow label="Thời tiết" en="Weather" value={rep.weather} />
-        <InfoRow label="Gửi tới" en="Sent to" value={rep.sentTo} />
+      <div className="grid grid-cols-4 gap-3.5 avoid-break">
+        <InfoRow en="Date" vi="Ngày" value={rep.date} />
+        <InfoRow en="Day" vi="Ngày thứ" value={rep.dayNum ? `${rep.dayNum} /15` : ""} />
+        <InfoRow en="Planned" vi="Trụ kế hoạch" value={rep.plannedTurbines} />
+        <InfoRow en="Actual" vi="Trụ thực tế" value={rep.actualTurbines} />
+        <InfoRow en="Prepared by" vi="Người lập" value={rep.preparedBy} />
+        <InfoRow en="OEM rep." vi="Đại diện OEM" value={rep.oemRep} />
+        <InfoRow en="Weather" vi="Thời tiết" value={rep.weather} />
+        <InfoRow en="Sent to" vi="Gửi tới" value={rep.sentTo} />
       </div>
 
-      <SectionTitle>1. Công việc từng trụ / Turbine work</SectionTitle>
+      <SectionTitle en="1. Turbine work" vi="Công việc từng trụ" />
       {turbines.length === 0 ? (
-        <p className="text-[11px] text-slate-400 italic">Không có dữ liệu / No data</p>
+        <p className="text-[12px] text-slate-400 italic">No data / Không có dữ liệu</p>
       ) : (
         <table className="w-full border-collapse avoid-break">
           <thead>
             <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-              {["Trụ", "Cánh / Blade", "Hub", "Nacelle", "Tower", "Drone", "%", "Ghi chú"].map((h) => (
-                <th
-                  key={h}
-                  className="text-left text-[10px] font-bold uppercase tracking-wide py-1.5 px-2 border-b-2"
-                  style={{ color: NAVY, borderColor: NAVY }}
-                >
-                  {h}
-                </th>
-              ))}
+              <ThCell en="Turbine" vi="Trụ" />
+              <ThCell en="Blade" vi="Cánh" />
+              <ThCell en="Hub" vi="Hub" />
+              <ThCell en="Nacelle" vi="Nacelle" />
+              <ThCell en="Tower" vi="Tháp" />
+              <ThCell en="Drone" vi="Drone" />
+              <ThCell en="%" vi="%" />
+              <ThCell en="Notes" vi="Ghi chú" />
             </tr>
           </thead>
           <tbody>
@@ -169,22 +184,19 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
         </table>
       )}
 
-      <SectionTitle>2. Lịch khóa / mở rotor / Lock schedule</SectionTitle>
+      <SectionTitle en="2. Lock schedule" vi="Lịch khóa / mở rotor" />
       {locks.length === 0 ? (
-        <p className="text-[11px] text-slate-400 italic">Không có dữ liệu / No data</p>
+        <p className="text-[12px] text-slate-400 italic">No data / Không có dữ liệu</p>
       ) : (
         <table className="w-full border-collapse avoid-break">
           <thead>
             <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-              {["Trụ", "Vị trí", "Giờ KH", "Giờ TT", "Trễ (phút)", "Ghi chú"].map((h) => (
-                <th
-                  key={h}
-                  className="text-left text-[10px] font-bold uppercase tracking-wide py-1.5 px-2 border-b-2"
-                  style={{ color: NAVY, borderColor: NAVY }}
-                >
-                  {h}
-                </th>
-              ))}
+              <ThCell en="Turbine" vi="Trụ" />
+              <ThCell en="Position" vi="Vị trí" />
+              <ThCell en="Planned" vi="Giờ KH" />
+              <ThCell en="Actual" vi="Giờ TT" />
+              <ThCell en="Delay (min)" vi="Trễ (phút)" />
+              <ThCell en="Notes" vi="Ghi chú" />
             </tr>
           </thead>
           <tbody>
@@ -207,16 +219,19 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
 
       {rep.findings.length > 0 && (
         <>
-          <SectionTitle>3. Phát hiện / Findings</SectionTitle>
-          <div className="flex items-center gap-3 -mt-1 mb-2.5 text-[9.5px] text-slate-500">
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full inline-block bg-emerald-500" /> Thấp / Low
+          <SectionTitle en="3. Findings" vi="Phát hiện" />
+          <div className="flex items-center gap-4 -mt-1 mb-3 text-[11px] text-slate-500">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full inline-block bg-emerald-500" />
+              <span className="font-semibold">Low</span> <span className="italic">/ Thấp</span>
             </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full inline-block bg-amber-500" /> Trung bình / Medium
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full inline-block bg-amber-500" />
+              <span className="font-semibold">Medium</span> <span className="italic">/ Trung bình</span>
             </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full inline-block bg-red-500" /> Nghiêm trọng / Critical
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full inline-block bg-red-500" />
+              <span className="font-semibold">Critical</span> <span className="italic">/ Nghiêm trọng</span>
             </span>
           </div>
           <div className="space-y-3">
@@ -226,29 +241,30 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
               return (
                 <div
                   key={f.id}
-                  className={`avoid-break rounded-md border ${t.border} ${t.bg} p-2.5 border-l-4`}
+                  className={`avoid-break rounded-md border ${t.border} ${t.bg} p-3 border-l-4`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-[11.5px] font-bold">
+                    <div className="text-[13.5px] font-bold">
                       #{i + 1} — {f.turbine || "?"} {f.area ? `· ${f.area}` : ""}
                     </div>
                     <div
-                      className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border bg-white ${t.border} ${t.text}`}
+                      className={`shrink-0 text-[11px] font-bold px-2 py-0.5 rounded border bg-white ${t.border} ${t.text}`}
                     >
-                      M{f.severity || "?"} · {t.label}
+                      M{f.severity || "?"} · {t.en} <span className="font-normal italic">/ {t.vi}</span>
                     </div>
                   </div>
-                  <p className="text-[11px] mt-1">{f.desc || "—"}</p>
-                  <div className="text-[10px] text-slate-500 mt-1">
-                    {f.photo && <>Ảnh ref: {f.photo} · </>}
-                    Giờ báo: {f.time || "—"} · Đã báo OEM:{" "}
+                  <p className="text-[12.5px] mt-1.5">{f.desc || "—"}</p>
+                  <div className="text-[11px] text-slate-500 mt-1.5">
+                    {f.photo && <>Photo ref: {f.photo} · </>}
+                    Time notified: {f.time || "—"} · OEM notified:{" "}
                     <span className={f.oemNotified === "Không" ? "font-bold text-red-700" : "font-semibold"}>
                       {f.oemNotified || "—"}
                     </span>
                   </div>
                   {tier === "high" && (
-                    <div className="mt-1.5 text-[10px] font-bold text-red-700">
-                      ⚠ CẦN CHÚ Ý — BÁO OEM NGAY / REQUIRES IMMEDIATE ATTENTION
+                    <div className="mt-1.5 text-[11px] font-bold text-red-700">
+                      ⚠ REQUIRES IMMEDIATE ATTENTION{" "}
+                      <span className="font-normal italic">/ Cần chú ý — báo OEM ngay</span>
                     </div>
                   )}
                   {f.photos && f.photos.length > 0 && (
@@ -271,25 +287,25 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
         </>
       )}
 
-      <SectionTitle>4. An toàn & sự cố / Safety &amp; incidents</SectionTitle>
+      <SectionTitle en="4. Safety & incidents" vi="An toàn & sự cố" />
       <div className="grid grid-cols-1 gap-2">
-        <SafetyBox label="Nguy hiểm an toàn" en="Safety hazard" item={rep.safety.hazard} />
-        <SafetyBox label="Yêu cầu dừng máy" en="Shutdown requirement" item={rep.safety.shutdown} />
-        <SafetyBox label="Lỗi mức 4–5" en="Severity 4–5 defect" item={rep.safety.major} />
+        <SafetyBox en="Safety hazard" vi="Nguy hiểm an toàn" item={rep.safety.hazard} />
+        <SafetyBox en="Shutdown requirement" vi="Yêu cầu dừng máy" item={rep.safety.shutdown} />
+        <SafetyBox en="Severity 4–5 defect" vi="Lỗi mức 4–5" item={rep.safety.major} />
       </div>
 
-      <SectionTitle>5. So với kế hoạch / Progress vs plan</SectionTitle>
-      <div className="grid grid-cols-3 gap-3 avoid-break">
-        <InfoRow label="Trụ KH hôm nay" en="Planned today" value={rep.progress.plannedToday} />
-        <InfoRow label="Trụ xong hôm nay" en="Actual done" value={rep.progress.actualToday} />
+      <SectionTitle en="5. Progress vs plan" vi="So với kế hoạch" />
+      <div className="grid grid-cols-3 gap-3.5 avoid-break">
+        <InfoRow en="Planned today" vi="Trụ KH hôm nay" value={rep.progress.plannedToday} />
+        <InfoRow en="Actual done" vi="Trụ xong hôm nay" value={rep.progress.actualToday} />
         <InfoRow
-          label="Lũy kế"
           en="Cumulative"
+          vi="Lũy kế"
           value={rep.progress.cumulative ? `${rep.progress.cumulative} /22` : ""}
         />
       </div>
-      <div className="mt-2 text-[11px]">
-        <span className="font-semibold">Đúng tiến độ / On schedule: </span>
+      <div className="mt-2.5 text-[12.5px]">
+        <span className="font-bold">On schedule</span> <span className="italic text-slate-500">/ Đúng tiến độ:</span>{" "}
         <span
           className={`font-bold ${
             rep.progress.onSchedule === "Chậm"
@@ -305,21 +321,21 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
 
       {rep.issues && (
         <>
-          <SectionTitle>6. Vướng mắc / Issues</SectionTitle>
-          <p className="text-[11px] whitespace-pre-wrap avoid-break">{rep.issues}</p>
+          <SectionTitle en="6. Issues" vi="Vướng mắc" />
+          <p className="text-[12.5px] whitespace-pre-wrap avoid-break">{rep.issues}</p>
         </>
       )}
 
       {rep.tomorrow && (
         <>
-          <SectionTitle>7. Kế hoạch ngày mai / Tomorrow&apos;s plan</SectionTitle>
-          <p className="text-[11px] whitespace-pre-wrap avoid-break">{rep.tomorrow}</p>
+          <SectionTitle en="7. Tomorrow's plan" vi="Kế hoạch ngày mai" />
+          <p className="text-[12.5px] whitespace-pre-wrap avoid-break">{rep.tomorrow}</p>
         </>
       )}
 
       {rep.photos && rep.photos.length > 0 && (
         <>
-          <SectionTitle>Hình ảnh hiện trường / Site photos</SectionTitle>
+          <SectionTitle en="Site photos" vi="Hình ảnh hiện trường" />
           <div className="flex flex-wrap gap-2">
             {rep.photos.map((p) => (
               // eslint-disable-next-line @next/next/no-img-element
@@ -334,28 +350,27 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
         </>
       )}
 
-      <SectionTitle>Ký xác nhận / Sign-off</SectionTitle>
+      <SectionTitle en="Sign-off" vi="Ký xác nhận" />
       <div className="grid grid-cols-3 gap-6 mt-6 avoid-break">
         {(
           [
-            ["Người lập báo cáo (MB Wind)", "Prepared by", rep.signPrepared],
-            ["Đại diện OEM (GE)", "OEM rep.", rep.signOEM],
-            ["Đại diện Site / BIM", "Site / BIM rep.", rep.signSite],
+            ["Prepared by", "Người lập báo cáo (MB Wind)", rep.signPrepared],
+            ["OEM rep.", "Đại diện OEM (GE)", rep.signOEM],
+            ["Site / BIM rep.", "Đại diện Site / BIM", rep.signSite],
           ] as const
-        ).map(([label, en, value]) => (
-          <div key={label} className="text-center">
+        ).map(([en, vi, value]) => (
+          <div key={en} className="text-center">
             <div className="h-16 border-b border-slate-400" />
-            <div className="text-[11px] font-semibold mt-1">{value || "—"}</div>
-            <div className="text-[9.5px] text-slate-500">
-              {label} <span className="italic">/ {en}</span>
-            </div>
+            <div className="text-[12px] font-semibold mt-1">{value || "—"}</div>
+            <div className="text-[10.5px] font-bold text-slate-700">{en}</div>
+            <div className="text-[9.5px] italic text-slate-400">{vi}</div>
           </div>
         ))}
       </div>
 
       {totalPhotos > 0 && (
-        <p className="text-[9.5px] text-slate-400 mt-6">
-          Báo cáo có {totalPhotos} ảnh đính kèm / {totalPhotos} photos attached.
+        <p className="text-[10.5px] text-slate-400 mt-6">
+          {totalPhotos} photos attached <span className="italic">/ {totalPhotos} ảnh đính kèm</span>.
         </p>
       )}
     </div>
