@@ -31,12 +31,11 @@ function delayColor(d: number | null) {
 
 function SectionTitle({ en, vi }: { en: string; vi: string }) {
   return (
-    <div className="avoid-break mt-6 mb-2.5">
-      <h2 className="text-[16px] font-extrabold uppercase tracking-wide leading-tight" style={{ color: NAVY }}>
+    <div className="avoid-break mt-6 mb-3 rounded-md px-3.5 py-2.5" style={{ background: NAVY }}>
+      <h2 className="text-[19px] font-extrabold uppercase tracking-wide leading-tight text-white">
         {en}
       </h2>
-      <div className="text-[11px] italic text-slate-500 leading-tight">{vi}</div>
-      <div className="border-b-2 mt-1" style={{ borderColor: NAVY }} />
+      <div className="text-[11.5px] italic text-white/70 leading-tight">{vi}</div>
     </div>
   );
 }
