@@ -42,21 +42,26 @@ function SectionTitle({ en, vi }: { en: string; vi: string }) {
 
 function InfoRow({ en, vi, value }: { en: string; vi: string; value: string }) {
   return (
-    <div className="avoid-break">
-      <div className="text-[11px] font-bold uppercase tracking-wide text-slate-700 leading-tight">{en}</div>
-      <div className="text-[9.5px] italic text-slate-400 leading-tight">{vi}</div>
-      <div className="text-[14px] font-semibold text-slate-900 min-h-[18px] mt-0.5">{value || "—"}</div>
+    <div
+      className="avoid-break rounded-md p-2.5"
+      style={{ background: "rgba(31,53,82,0.05)", border: "1px solid rgba(31,53,82,0.15)" }}
+    >
+      <div className="text-[12px] font-bold uppercase tracking-wide leading-tight" style={{ color: NAVY }}>
+        {en}
+      </div>
+      <div className="text-[10px] italic text-slate-400 leading-tight">{vi}</div>
+      <div className="text-[15px] font-semibold text-slate-900 min-h-[19px] mt-1">{value || "—"}</div>
     </div>
   );
 }
 
 function ThCell({ en, vi }: { en: string; vi: string }) {
   return (
-    <th className="text-left py-2 px-2 border-b-2 align-bottom" style={{ borderColor: NAVY }}>
-      <div className="text-[11.5px] font-bold uppercase tracking-wide leading-tight" style={{ color: NAVY }}>
+    <th className="text-left py-2.5 px-2.5 border-b-2 align-bottom" style={{ borderColor: NAVY }}>
+      <div className="text-[12.5px] font-bold uppercase tracking-wide leading-tight" style={{ color: NAVY }}>
         {en}
       </div>
-      <div className="text-[9px] italic text-slate-400 normal-case leading-tight">{vi}</div>
+      <div className="text-[9.5px] italic text-slate-400 normal-case leading-tight">{vi}</div>
     </th>
   );
 }
@@ -65,22 +70,24 @@ function SafetyBox({ en, vi, item }: { en: string; vi: string; item: SafetyItem 
   const flagged = item.yn === "Có";
   return (
     <div
-      className={`avoid-break rounded-md border p-3 ${flagged ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+      className={`avoid-break rounded-md border p-3.5 ${
+        flagged ? "border-red-400 bg-red-50" : "border-emerald-200 bg-emerald-50"
+      }`}
     >
       <div className="flex items-center justify-between gap-2">
         <span>
-          <span className="block text-[12px] font-bold text-slate-800 leading-tight">{en}</span>
-          <span className="block text-[9.5px] italic text-slate-400 leading-tight">{vi}</span>
+          <span className="block text-[13px] font-bold text-slate-800 leading-tight">{en}</span>
+          <span className="block text-[10px] italic text-slate-400 leading-tight">{vi}</span>
         </span>
         <span
-          className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded ${
-            flagged ? "bg-red-600 text-white" : "text-emerald-700 border border-emerald-400"
+          className={`shrink-0 text-[12px] font-bold px-3 py-1 rounded ${
+            flagged ? "bg-red-600 text-white" : "bg-emerald-600 text-white"
           }`}
         >
           {item.yn || "—"}
         </span>
       </div>
-      {item.detail && <p className="text-[11.5px] mt-1.5 text-red-800">{item.detail}</p>}
+      {item.detail && <p className="text-[12px] mt-2 text-red-800">{item.detail}</p>}
     </div>
   );
 }
@@ -219,18 +226,21 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
       {rep.findings.length > 0 && (
         <>
           <SectionTitle en="3. Findings" vi="Phát hiện" />
-          <div className="flex items-center gap-4 -mt-1 mb-3 text-[11px] text-slate-500">
-            <span className="inline-flex items-center gap-1.5">
+          <div className="flex items-center gap-2 -mt-1 mb-3 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full border border-emerald-300 bg-emerald-50">
               <span className="w-2.5 h-2.5 rounded-full inline-block bg-emerald-500" />
-              <span className="font-semibold">Low</span> <span className="italic">/ Thấp</span>
+              <span className="font-bold text-emerald-700">Low</span>{" "}
+              <span className="italic text-slate-500">/ Thấp</span>
             </span>
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full border border-amber-300 bg-amber-50">
               <span className="w-2.5 h-2.5 rounded-full inline-block bg-amber-500" />
-              <span className="font-semibold">Medium</span> <span className="italic">/ Trung bình</span>
+              <span className="font-bold text-amber-700">Medium</span>{" "}
+              <span className="italic text-slate-500">/ Trung bình</span>
             </span>
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full border border-red-300 bg-red-50">
               <span className="w-2.5 h-2.5 rounded-full inline-block bg-red-500" />
-              <span className="font-semibold">Critical</span> <span className="italic">/ Nghiêm trọng</span>
+              <span className="font-bold text-red-700">Critical</span>{" "}
+              <span className="italic text-slate-500">/ Nghiêm trọng</span>
             </span>
           </div>
           <div className="space-y-3">
@@ -247,13 +257,13 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                       #{i + 1} — {f.turbine || "?"} {f.area ? `· ${f.area}` : ""}
                     </div>
                     <div
-                      className={`shrink-0 text-[11px] font-bold px-2 py-0.5 rounded border bg-white ${t.border} ${t.text}`}
+                      className={`shrink-0 text-[12px] font-bold px-2.5 py-1 rounded border bg-white ${t.border} ${t.text}`}
                     >
                       M{f.severity || "?"} · {t.en} <span className="font-normal italic">/ {t.vi}</span>
                     </div>
                   </div>
                   <p className="text-[12.5px] mt-1.5">{f.desc || "—"}</p>
-                  <div className="text-[11px] text-slate-500 mt-1.5">
+                  <div className="text-[11.5px] text-slate-500 mt-1.5">
                     {f.photo && <>Photo ref: {f.photo} · </>}
                     Time notified: {f.time || "—"} · OEM notified:{" "}
                     <span className={f.oemNotified === "Không" ? "font-bold text-red-700" : "font-semibold"}>
@@ -358,11 +368,15 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
             ["Site / BIM rep.", "Đại diện Site / BIM", rep.signSite],
           ] as const
         ).map(([en, vi, value]) => (
-          <div key={en} className="text-center">
+          <div
+            key={en}
+            className="text-center rounded-md p-3"
+            style={{ background: "rgba(31,53,82,0.05)", border: "1px solid rgba(31,53,82,0.15)" }}
+          >
             <div className="h-16 border-b border-slate-400" />
-            <div className="text-[12px] font-semibold mt-1">{value || "—"}</div>
-            <div className="text-[10.5px] font-bold text-slate-700">{en}</div>
-            <div className="text-[9.5px] italic text-slate-400">{vi}</div>
+            <div className="text-[13px] font-semibold mt-1.5">{value || "—"}</div>
+            <div className="text-[11.5px] font-bold text-slate-700">{en}</div>
+            <div className="text-[10px] italic text-slate-400">{vi}</div>
           </div>
         ))}
       </div>
