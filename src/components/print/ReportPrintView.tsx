@@ -275,7 +275,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                           key={p.id}
                           src={p.url}
                           alt="evidence"
-                          className="w-[250px] h-[250px] shrink-0 object-contain bg-white rounded border border-slate-300 avoid-break"
+                          className="w-[240px] aspect-[9/16] shrink-0 object-contain bg-white rounded border border-slate-300 avoid-break"
                         />
                       ))}
                     </div>
@@ -343,7 +343,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                 key={p.id}
                 src={p.url}
                 alt="site evidence"
-                className="w-[250px] h-[250px] shrink-0 object-contain bg-white rounded border border-slate-300 avoid-break"
+                className="w-[240px] aspect-[9/16] shrink-0 object-contain bg-white rounded border border-slate-300 avoid-break"
               />
             ))}
           </div>
