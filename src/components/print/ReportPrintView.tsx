@@ -3,7 +3,7 @@ import type { ReportDraft, SafetyItem } from "@/lib/types";
 import { delayMinutes } from "@/lib/utils";
 import { NAVY, AMBER } from "@/lib/theme";
 
-const td = "text-[12.5px] align-top border-b border-slate-300 py-2 pr-2";
+const td = "text-[14px] align-top border-b border-slate-300 py-2 pr-2";
 
 type Tier = "low" | "med" | "high" | "none";
 
@@ -87,7 +87,7 @@ function SafetyBox({ en, vi, item }: { en: string; vi: string; item: SafetyItem 
           {item.yn || "—"}
         </span>
       </div>
-      {item.detail && <p className="text-[12px] mt-2 text-red-800">{item.detail}</p>}
+      {item.detail && <p className="text-[13.5px] mt-2 text-red-800">{item.detail}</p>}
     </div>
   );
 }
@@ -262,7 +262,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                       M{f.severity || "?"} · {t.en} <span className="font-normal italic">/ {t.vi}</span>
                     </div>
                   </div>
-                  <p className="text-[12.5px] mt-1.5">{f.desc || "—"}</p>
+                  <p className="text-[14px] mt-1.5">{f.desc || "—"}</p>
                   <div className="text-[11.5px] text-slate-500 mt-1.5">
                     {f.photo && <>Photo ref: {f.photo} · </>}
                     Time notified: {f.time || "—"} · OEM notified:{" "}
@@ -331,14 +331,14 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
       {rep.issues && (
         <>
           <SectionTitle en="6. Issues" vi="Vướng mắc" />
-          <p className="text-[12.5px] whitespace-pre-wrap avoid-break">{rep.issues}</p>
+          <p className="text-[14px] whitespace-pre-wrap avoid-break">{rep.issues}</p>
         </>
       )}
 
       {rep.tomorrow && (
         <>
           <SectionTitle en="7. Tomorrow's plan" vi="Kế hoạch ngày mai" />
-          <p className="text-[12.5px] whitespace-pre-wrap avoid-break">{rep.tomorrow}</p>
+          <p className="text-[14px] whitespace-pre-wrap avoid-break">{rep.tomorrow}</p>
         </>
       )}
 
