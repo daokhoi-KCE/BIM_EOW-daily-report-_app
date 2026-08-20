@@ -197,6 +197,12 @@ export async function ensureFindingRow(reportId: string, findingId: string): Pro
   if (error) throw new Error(error.message);
 }
 
+export async function getReportDraftsByIds(ids: string[]): Promise<ReportDraft[]> {
+  const uniqueValid = [...new Set(ids)].filter((id) => UUID_RE.test(id));
+  const drafts = await Promise.all(uniqueValid.map((id) => getReportDraft(id)));
+  return drafts.filter((d): d is ReportDraft => d !== null);
+}
+
 export async function getCumulativeHint(): Promise<number> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase

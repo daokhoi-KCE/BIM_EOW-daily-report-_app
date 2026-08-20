@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AlertTriangle, Image as ImageIcon } from "lucide-react";
+import { AlertTriangle, FileStack, Image as ImageIcon } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import DeleteReportButton from "@/components/DeleteReportButton";
 import { listReports, createReportAction } from "@/lib/actions/reports";
@@ -32,6 +32,17 @@ export default async function ReportsListPage() {
             + Tạo báo cáo hôm nay / New report
           </button>
         </form>
+
+        {reports.length > 0 && (
+          <Link
+            href="/final-report"
+            className="flex items-center justify-center gap-2 w-full rounded-xl py-3 font-bold text-[13.5px] border"
+            style={{ borderColor: NAVY_DARK, color: NAVY_DARK }}
+          >
+            <FileStack size={16} />
+            Báo cáo tổng hợp / Final report
+          </Link>
+        )}
 
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 pt-1">
           Đã lưu / Saved ({reports.length})
