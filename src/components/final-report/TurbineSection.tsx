@@ -164,15 +164,12 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
                     </div>
                   )}
                   {f.photos && f.photos.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="photo-list flex flex-wrap gap-2 mt-2">
                       {f.photos.map((p) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={p.id}
-                          src={p.url}
-                          alt="evidence"
-                          className="max-w-[380px] h-auto shrink-0 rounded avoid-break"
-                        />
+                        <div key={p.id} className="photo-item avoid-break max-w-[380px] shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={p.url} alt="evidence" className="w-full h-auto rounded" />
+                        </div>
                       ))}
                     </div>
                   )}
