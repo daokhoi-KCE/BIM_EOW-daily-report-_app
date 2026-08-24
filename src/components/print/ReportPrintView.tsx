@@ -39,17 +39,31 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
       </div>
       <div className="h-[3px] mb-4" style={{ background: AMBER }} />
 
-      {(safetyFlagged || highFindings > 0) && (
-        <div className="avoid-break rounded-md border-2 border-red-600 bg-red-50 px-3 py-2.5 mb-4 flex flex-wrap gap-x-5 gap-y-1.5">
+      {(safetyFlagged || rep.findings.length > 0) && (
+        <div
+          className={`avoid-break rounded-md border-2 px-3 py-2.5 mb-4 flex flex-wrap gap-x-5 gap-y-1.5 ${
+            safetyFlagged || highFindings > 0
+              ? "border-red-600 bg-red-50"
+              : "border-amber-500 bg-amber-50"
+          }`}
+        >
           {safetyFlagged && (
             <span className="text-[12.5px] font-bold text-red-700">
               ⚠ SAFETY ISSUE(S) FLAGGED <span className="font-normal italic">/ Có vấn đề an toàn</span>
             </span>
           )}
-          {highFindings > 0 && (
-            <span className="text-[12.5px] font-bold text-red-700">
-              ⚠ {highFindings} CRITICAL FINDING(S){" "}
-              <span className="font-normal italic">/ {highFindings} phát hiện nghiêm trọng</span>
+          {rep.findings.length > 0 && (
+            <span
+              className={`text-[12.5px] font-bold ${
+                highFindings > 0 ? "text-red-700" : "text-amber-700"
+              }`}
+            >
+              ⚠ {rep.findings.length} FINDING(S)
+              {highFindings > 0 && <> — {highFindings} CRITICAL</>}{" "}
+              <span className="font-normal italic">
+                / {rep.findings.length} phát hiện
+                {highFindings > 0 && <> — {highFindings} nghiêm trọng</>}
+              </span>
             </span>
           )}
         </div>
@@ -137,7 +151,10 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
 
       {rep.findings.length > 0 && (
         <>
-          <SectionTitle en="3. Findings" vi="Phát hiện" />
+          <SectionTitle
+            en={`3. Findings (${rep.findings.length} total${highFindings > 0 ? ` — ${highFindings} critical` : ""})`}
+            vi={`Phát hiện (tổng ${rep.findings.length}${highFindings > 0 ? ` — ${highFindings} nghiêm trọng` : ""})`}
+          />
           <div className="flex items-center gap-2 -mt-1 mb-3 flex-wrap">
             <span className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full border border-emerald-300 bg-emerald-50">
               <span className="w-2.5 h-2.5 rounded-full inline-block bg-emerald-500" />
@@ -174,7 +191,9 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                       M{f.severity || "?"} · {t.en} <span className="font-normal italic">/ {t.vi}</span>
                     </div>
                   </div>
-                  <p className="text-[14px] mt-1.5">{f.desc || "—"}</p>
+                  <p className="text-[17px] font-bold leading-snug text-slate-900 mt-2 rounded px-2 py-1.5 bg-white/80 border-l-4 border-slate-400">
+                    {f.desc || "—"}
+                  </p>
                   <div className="text-[11.5px] text-slate-500 mt-1.5">
                     {f.photo && <>Photo ref: {f.photo} · </>}
                     Time notified: {f.time || "—"} · OEM notified:{" "}
