@@ -20,9 +20,9 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
           <Image
             src="/images/logo-mbwind-horizontal.png"
             alt="MB WIND"
-            width={300}
-            height={100}
-            className="h-20 w-auto object-contain"
+            width={420}
+            height={140}
+            className="h-32 w-auto object-contain"
           />
           <div className="flex-1">
             <h1 className="text-[21px] font-extrabold uppercase leading-tight" style={{ color: NAVY }}>
