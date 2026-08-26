@@ -33,6 +33,17 @@ body {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+  /* Grid layout cho findings: 2 cột với ratio 1:2 */
+  .grid.grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: 1fr 2fr !important;
+  }
+  .grid.grid-cols-3 > .col-span-1 {
+    grid-column: 1 !important;
+  }
+  .grid.grid-cols-3 > .col-span-2 {
+    grid-column: 2 !important;
+  }
   /* WebKit (Safari/iOS) bỏ qua break-inside:avoid trên phần tử con của
      flex container — khi in, chuyển danh sách ảnh sang block và bọc mỗi
      ảnh trong .photo-item để cả khung ảnh tự xuống trang khi không đủ chỗ. */
@@ -44,16 +55,26 @@ body {
     break-inside: avoid;
     page-break-inside: avoid;
     margin: 0 0 8px 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    page-break-after: auto;
   }
   .photo-item img {
-    display: block;
+    display: block !important;
     break-inside: avoid;
     page-break-inside: avoid;
     max-width: 100% !important;
-    max-height: 210mm; /* không bao giờ cao hơn 1 trang A4 (trừ lề) */
-    width: auto;
-    height: auto;
+    max-height: 150mm; /* Giữ ảnh vừa trong 1 trang A4 (đã trừ margins + text) */
+    width: auto !important;
+    height: auto !important;
     object-fit: contain;
+    /* Đảm bảo ảnh không bị cuốn sang trang khác */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Thêm page break sau photo nếu finding quá lớn */
+  .photo-item:last-child {
+    page-break-after: auto;
   }
   body {
     background: white;
