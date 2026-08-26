@@ -57,16 +57,24 @@ body {
     margin: 0 0 8px 0;
     width: 100% !important;
     max-width: 100% !important;
+    page-break-after: auto;
   }
   .photo-item img {
-    display: block;
+    display: block !important;
     break-inside: avoid;
     page-break-inside: avoid;
     max-width: 100% !important;
-    max-height: 180mm; /* không bao giờ cao hơn 1 trang A4 (trừ lề) */
-    width: auto;
-    height: auto;
+    max-height: 150mm; /* Giữ ảnh vừa trong 1 trang A4 (đã trừ margins + text) */
+    width: auto !important;
+    height: auto !important;
     object-fit: contain;
+    /* Đảm bảo ảnh không bị cuốn sang trang khác */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Thêm page break sau photo nếu finding quá lớn */
+  .photo-item:last-child {
+    page-break-after: auto;
   }
   body {
     background: white;

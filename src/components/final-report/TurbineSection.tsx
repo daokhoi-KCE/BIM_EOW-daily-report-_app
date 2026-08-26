@@ -179,7 +179,12 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
                           {f.photos.map((p) => (
                             <div key={p.id} className="photo-item avoid-break flex-1 min-w-[200px]">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={p.url} alt="evidence" className="w-full h-auto rounded" />
+                              <img
+                                src={p.url}
+                                alt="evidence"
+                                className="w-full h-auto rounded block"
+                                style={{ maxHeight: '150mm', objectFit: 'contain' }}
+                              />
                             </div>
                           ))}
                         </div>
