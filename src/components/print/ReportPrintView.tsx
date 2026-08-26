@@ -172,51 +172,66 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
               <span className="italic text-slate-500">/ Nghiêm trọng</span>
             </span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {rep.findings.map((f, i) => {
               const tier = severityTier(f.severity);
               const t = TIER[tier];
               return (
                 <div
                   key={f.id}
-                  className={`avoid-break rounded-md border ${t.border} ${t.bg} p-3 border-l-4`}
+                  className={`avoid-break rounded-md border ${t.border} ${t.bg} border-l-4 overflow-hidden`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-[13.5px] font-bold">
-                      #{i + 1} — {f.turbine || "?"} {f.area ? `· ${f.area}` : ""}
-                    </div>
-                    <div
-                      className={`shrink-0 text-[12px] font-bold px-2.5 py-1 rounded border bg-white ${t.border} ${t.text}`}
-                    >
-                      M{f.severity || "?"} · {t.en} <span className="font-normal italic">/ {t.vi}</span>
-                    </div>
-                  </div>
-                  <p className="text-[15px] leading-snug text-slate-900 mt-2 rounded px-2 py-1.5 bg-white/80 border-l-4 border-slate-400">
-                    {f.desc || "—"}
-                  </p>
-                  <div className="text-[11.5px] text-slate-500 mt-1.5">
-                    {f.photo && <>Photo ref: {f.photo} · </>}
-                    Time notified: {f.time || "—"} · OEM notified:{" "}
-                    <span className={f.oemNotified === "Không" ? "font-bold text-red-700" : "font-semibold"}>
-                      {f.oemNotified || "—"}
-                    </span>
-                  </div>
-                  {tier === "high" && (
-                    <div className="mt-1.5 text-[11px] font-bold text-red-700">
-                      ⚠ REQUIRES IMMEDIATE ATTENTION{" "}
-                      <span className="font-normal italic">/ Cần chú ý — báo OEM ngay</span>
-                    </div>
-                  )}
-                  {f.photos && f.photos.length > 0 && (
-                    <div className="photo-list flex flex-wrap gap-2 mt-2">
-                      {f.photos.map((p) => (
-                        <div key={p.id} className="photo-item avoid-break max-w-[380px] shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.url} alt="evidence" className="w-full h-auto rounded" />
+                  <div className="grid grid-cols-3 gap-0 print:gap-0">
+                    {/* Cột trái: Diễn giải & thông tin */}
+                    <div className="col-span-1 p-3 border-r print:border-r" style={{ borderRightColor: `var(--tone-border, ${t.border})` }}>
+                      <div className="mb-2">
+                        <div className="text-[12.5px] font-bold text-slate-900 mb-1">
+                          #{i + 1} — {f.turbine || "?"} {f.area ? `· ${f.area}` : ""}
                         </div>
-                      ))}
+                        <div
+                          className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded border bg-white ${t.border} ${t.text}`}
+                        >
+                          M{f.severity || "?"} · {t.en}
+                        </div>
+                      </div>
+                      <p className="text-[13px] leading-snug text-slate-900 rounded px-2 py-1.5 bg-white/80 border-l-4 border-slate-400 mb-2">
+                        {f.desc || "—"}
+                      </p>
+                      <div className="text-[10.5px] text-slate-600 space-y-0.5">
+                        {f.photo && <div><span className="font-semibold">Photo ref:</span> {f.photo}</div>}
+                        <div><span className="font-semibold">Time notified:</span> {f.time || "—"}</div>
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold">OEM notified:</span>
+                          <span className={f.oemNotified === "Không" ? "font-bold text-red-700" : "font-semibold"}>
+                            {f.oemNotified || "—"}
+                          </span>
+                        </div>
+                      </div>
+                      {tier === "high" && (
+                        <div className="mt-2 text-[10px] font-bold text-red-700 leading-tight">
+                          ⚠ REQUIRES<br />IMMEDIATE<br />ATTENTION
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Cột phải: Ảnh chứng cứ */}
+                    <div className="col-span-2 p-3">
+                      {f.photos && f.photos.length > 0 ? (
+                        <div className="photo-list flex flex-wrap gap-2">
+                          {f.photos.map((p) => (
+                            <div key={p.id} className="photo-item avoid-break flex-1 min-w-[200px]">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={p.url} alt="evidence" className="w-full h-auto rounded" />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-slate-400 italic text-[11px] text-center py-8">
+                          No photos attached / Không có ảnh
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })}
