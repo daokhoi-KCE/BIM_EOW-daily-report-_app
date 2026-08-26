@@ -194,7 +194,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                           M{f.severity || "?"} · {t.en}
                         </div>
                       </div>
-                      <p className="text-[19px] leading-snug text-slate-900 rounded px-3 py-2 bg-yellow-100/70 border-l-4 border-yellow-500 mb-2 font-semibold">
+                      <p className="text-[22px] leading-snug text-slate-900 rounded px-3 py-2 bg-slate-200 border-l-4 border-slate-400 mb-2 font-semibold">
                         {f.desc || "—"}
                       </p>
                       <div className="text-[10.5px] text-slate-600 space-y-0.5">
