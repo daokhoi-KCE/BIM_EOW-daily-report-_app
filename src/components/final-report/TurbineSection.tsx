@@ -143,16 +143,16 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
                     {/* Cột trái: Diễn giải & thông tin */}
                     <div className="col-span-1 p-3 border-r print:border-r" style={{ borderRightColor: `var(--tone-border, ${tone.border})` }}>
                       <div className="mb-2">
-                        <div className="text-[13px] font-bold text-slate-900 mb-1">
+                        <div className="text-[15px] font-extrabold text-slate-900 mb-1">
                           {f.date} — {f.area || "?"}
                         </div>
                         <div
-                          className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded border bg-white ${tone.border} ${tone.text}`}
+                          className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded border bg-white ${tone.border} ${tone.text}`}
                         >
                           M{f.severity || "?"} · {tone.en}
                         </div>
                       </div>
-                      <p className="text-[13px] leading-snug text-slate-900 rounded px-2 py-1.5 bg-white/80 border-l-4 border-slate-400 mb-2">
+                      <p className="text-[14px] leading-snug text-slate-900 rounded px-3 py-2 bg-yellow-100/70 border-l-4 border-yellow-500 mb-2 font-semibold">
                         {f.desc || "—"}
                       </p>
                       <div className="text-[10.5px] text-slate-600 space-y-0.5">
