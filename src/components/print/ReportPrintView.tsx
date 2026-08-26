@@ -185,7 +185,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                     {/* Cột trái: Diễn giải & thông tin */}
                     <div className="col-span-1 p-3 border-r print:border-r" style={{ borderRightColor: `var(--tone-border, ${t.border})` }}>
                       <div className="mb-2">
-                        <div className="text-[17px] font-extrabold text-slate-900 mb-1">
+                        <div className="text-[18px] font-extrabold text-slate-900 mb-1">
                           #{i + 1} — {f.turbine || "?"} {f.area ? `· ${f.area}` : ""}
                         </div>
                         <div
@@ -194,7 +194,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                           M{f.severity || "?"} · {t.en}
                         </div>
                       </div>
-                      <p className="text-[16px] leading-snug text-slate-900 rounded px-3 py-2 bg-yellow-100/70 border-l-4 border-yellow-500 mb-2 font-semibold">
+                      <p className="text-[19px] leading-snug text-slate-900 rounded px-3 py-2 bg-yellow-100/70 border-l-4 border-yellow-500 mb-2 font-semibold">
                         {f.desc || "—"}
                       </p>
                       <div className="text-[10.5px] text-slate-600 space-y-0.5">
