@@ -71,7 +71,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
 
       <div className="grid grid-cols-4 gap-3.5 avoid-break">
         <InfoRow en="Date" vi="Ngày" value={rep.date} />
-        <InfoRow en="Day" vi="Ngày thứ" value={rep.dayNum ? `${rep.dayNum} /15` : ""} />
+        <InfoRow en="Day" vi="Ngày thứ" value={rep.dayNum ? `${rep.dayNum}` : ""} />
         <InfoRow en="Planned" vi="Trụ kế hoạch" value={rep.plannedTurbines} />
         <InfoRow en="Actual" vi="Trụ thực tế" value={rep.actualTurbines} />
         <InfoRow en="Prepared by" vi="Người lập" value={rep.preparedBy} />
