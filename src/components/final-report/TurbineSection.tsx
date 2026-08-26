@@ -152,7 +152,7 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
                           M{f.severity || "?"} · {tone.en}
                         </div>
                       </div>
-                      <p className="text-[28px] leading-relaxed text-slate-900 rounded px-4 py-3 bg-slate-200 border-l-4 border-slate-400 mb-2 font-semibold">
+                      <p className="text-[28px] leading-relaxed text-slate-900 rounded px-4 py-3 bg-slate-300 border-l-4 border-slate-400 mb-2 font-semibold">
                         {f.desc || "—"}
                       </p>
                       <div className="text-[10.5px] text-slate-600 space-y-0.5">
