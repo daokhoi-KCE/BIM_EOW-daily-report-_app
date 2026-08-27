@@ -144,7 +144,7 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
                     <div className="col-span-1 p-4 border-r print:border-r bg-white" style={{ borderRightColor: `var(--tone-border, ${tone.border})` }}>
                       <div className="mb-3">
                         <div className="text-[17px] font-bold text-slate-900 mb-2 tracking-tight">
-                          {f.date} — {f.area || "?"}
+                          {f.area || "?"}
                         </div>
                         <div
                           className={`inline-block text-[12px] font-semibold px-2 py-1 rounded-sm ${tone.border} ${tone.text} bg-opacity-10`}
