@@ -185,7 +185,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                     {/* Cột trái: Diễn giải & thông tin */}
                     <div className="col-span-1 p-4 border-r print:border-r bg-white" style={{ borderRightColor: `var(--tone-border, ${t.border})` }}>
                       <div className="mb-3">
-                        <div className="text-[14px] font-bold text-slate-900 mb-2 tracking-tight">
+                        <div className="text-[17px] font-bold text-slate-900 mb-2 tracking-tight">
                           #{i + 1} — {f.turbine || "?"} {f.area ? `· ${f.area}` : ""}
                         </div>
                         <div
@@ -195,7 +195,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                           M{f.severity || "?"} • {t.en}
                         </div>
                       </div>
-                      <p className="text-[15px] leading-relaxed text-slate-900 mb-3 font-normal">
+                      <p className="text-[16px] leading-relaxed text-slate-900 mb-3 font-normal">
                         {f.desc || "—"}
                       </p>
                       <div className="space-y-1.5">
@@ -218,11 +218,11 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                     </div>
 
                     {/* Cột phải: Ảnh chứng cứ */}
-                    <div className="col-span-2 p-3">
+                    <div className="col-span-2 p-5">
                       {f.photos && f.photos.length > 0 ? (
-                        <div className="photo-list flex flex-wrap gap-2">
+                        <div className="photo-list flex flex-wrap gap-3">
                           {f.photos.map((p) => (
-                            <div key={p.id} className="photo-item avoid-break flex-1 min-w-[200px]">
+                            <div key={p.id} className="photo-item avoid-break flex-1 min-w-[220px]">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={p.url}
@@ -234,7 +234,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-slate-400 italic text-[11px] text-center py-8">
+                        <div className="text-slate-400 italic text-[12px] text-center py-12">
                           No photos attached / Không có ảnh
                         </div>
                       )}
