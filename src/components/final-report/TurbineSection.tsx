@@ -143,7 +143,7 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
                     {/* Cột trái: Diễn giải & thông tin */}
                     <div className="col-span-1 p-4 border-r print:border-r bg-white" style={{ borderRightColor: `var(--tone-border, ${tone.border})` }}>
                       <div className="mb-3">
-                        <div className="text-[17px] font-bold text-slate-900 mb-2 tracking-tight">
+                        <div className="text-[20px] font-bold text-slate-900 mb-2 tracking-tight">
                           {f.area || "?"}
                         </div>
                         <div
@@ -153,7 +153,7 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
                           M{f.severity || "?"} • {tone.en}
                         </div>
                       </div>
-                      <p className="text-[16px] leading-relaxed text-slate-900 mb-3 font-normal">
+                      <p className="text-[18px] leading-relaxed text-slate-900 mb-3 font-normal">
                         {f.desc || "—"}
                       </p>
                       <div className="space-y-1.5">
