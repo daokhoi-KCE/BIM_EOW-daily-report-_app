@@ -388,24 +388,14 @@ export default function ReportEditor({
         >
           {rep.findings.map((f) => (
             <RowCard key={f.id} onDelete={() => delFinding(f.id)}>
-              <div className="grid grid-cols-2 gap-2 pr-6">
-                <Field label="Trụ" en="Turbine">
-                  <input
-                    className={inputSm}
-                    placeholder="T05"
-                    value={f.turbine}
-                    onChange={(e) => updateFinding(f.id, { turbine: e.target.value })}
-                  />
-                </Field>
-                <Field label="Khu vực" en="Area">
-                  <input
-                    className={inputSm}
-                    placeholder="Cánh A ngoài"
-                    value={f.area}
-                    onChange={(e) => updateFinding(f.id, { area: e.target.value })}
-                  />
-                </Field>
-              </div>
+              <Field label="Khu vực" en="Area">
+                <input
+                  className={inputSm}
+                  placeholder="Cánh A ngoài"
+                  value={f.area}
+                  onChange={(e) => updateFinding(f.id, { area: e.target.value })}
+                />
+              </Field>
               <Field label="Mô tả phát hiện" en="Finding description">
                 <textarea
                   rows={2}
