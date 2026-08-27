@@ -311,6 +311,16 @@ async function removeFindingPhotosStorage(supabase: ServerSupabase, findingIds: 
   }
 }
 
+// Ký URL cho 1 ảnh vừa được người khác thêm (đồng bộ realtime).
+export async function signPhotoPath(path: string): Promise<string> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.storage
+    .from(EVIDENCE_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  if (error || !data?.signedUrl) return "";
+  return data.signedUrl;
+}
+
 export async function deleteReport(id: string): Promise<void> {
   const { supabase } = await requireUser();
 

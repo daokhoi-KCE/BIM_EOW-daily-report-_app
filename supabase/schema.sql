@@ -194,6 +194,26 @@ create policy "authenticated delete evidence-photos" on storage.objects
   for delete using (bucket_id = 'evidence-photos' and auth.role() = 'authenticated');
 
 -- ─────────────────────────────────────────────
+-- Realtime — cho phép nhiều người cùng chỉnh sửa 1 báo cáo (đồng bộ tức thời).
+-- postgres_changes tôn trọng RLS, chỉ user đã đăng nhập nhận được event.
+-- ─────────────────────────────────────────────
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['reports','turbine_work','lock_schedule','findings','finding_photos','site_photos']
+  loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;
+
+-- ─────────────────────────────────────────────
 -- (Tuỳ chọn) Role chỉ đọc cho BIM/GE:
 -- 1. Tạo user Supabase Auth riêng cho họ.
 -- 2. Thêm cột `role` vào bảng profiles liên kết auth.users, hoặc dùng

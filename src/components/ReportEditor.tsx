@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, Copy, FileText } from "lucide-react";
+import { Check, Copy, FileText, Users, Pencil } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import type { SaveState } from "@/components/SaveStateBadge";
 import Field, { inputCls, inputSm } from "@/components/form/Field";
@@ -26,6 +26,7 @@ import {
   removeFindingPhoto,
 } from "@/lib/client-photos";
 import type { ReportDraft, Photo, YesNo } from "@/lib/types";
+import { useReportCollab } from "@/hooks/useReportCollab";
 
 type OpenSections = {
   info: boolean;
@@ -65,6 +66,17 @@ export default function ReportEditor({
   const [open, setOpen] = useState<OpenSections>(initialOpen);
   const [copied, setCopied] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+
+  // Cộng tác realtime: presence + đồng bộ thay đổi của người khác
+  const dirtyRef = useRef(false);
+  useEffect(() => {
+    dirtyRef.current = saveState !== "saved";
+  }, [saveState]);
+  const { peers, lockedBy, onFindingFocus, onFindingBlur } = useReportCollab({
+    reportId: initialDraft.id,
+    setRep,
+    dirtyRef,
+  });
 
   useEffect(() => {
     if (saveState !== "dirty") return;
@@ -123,6 +135,7 @@ export default function ReportEditor({
   };
 
   const updateFinding = (id: string, patch: Partial<ReportDraft["findings"][number]>) => {
+    onFindingFocus(id); // giữ lock kể cả khi thao tác không tạo focus (QuickPick trên Safari/mobile)
     setRep((r) => ({ ...r, findings: r.findings.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
     setSaveState("dirty");
   };
@@ -203,6 +216,22 @@ export default function ReportEditor({
             </div>
           </div>
         </div>
+
+        {peers.length > 0 && (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            </span>
+            <Users size={14} className="text-emerald-700 shrink-0" />
+            <div className="text-[11.5px] text-emerald-800 leading-tight min-w-0">
+              <span className="font-semibold">{peers.length} người khác đang mở báo cáo này</span>
+              <span className="block truncate text-emerald-700">
+                {[...new Set(peers.map((p) => p.email))].join(", ")}
+              </span>
+            </div>
+          </div>
+        )}
 
         <SectionCard title="Thông tin báo cáo" en="Report info" open={open.info} onToggle={() => toggle("info")}>
           <div className="grid grid-cols-2 gap-2.5">
@@ -386,67 +415,86 @@ export default function ReportEditor({
           tint={findingCount > 0 ? "#7A2E2E" : NAVY}
           badge={<span className="text-[11px] text-white/70 font-mono">{findingCount}</span>}
         >
-          {rep.findings.map((f) => (
-            <RowCard key={f.id} onDelete={() => delFinding(f.id)}>
-              <Field label="Khu vực" en="Area">
-                <input
-                  className={inputSm}
-                  placeholder="Cánh A ngoài"
-                  value={f.area}
-                  onChange={(e) => updateFinding(f.id, { area: e.target.value })}
-                />
-              </Field>
-              <Field label="Mô tả phát hiện" en="Finding description">
-                <textarea
-                  rows={2}
-                  className={inputSm}
-                  placeholder="mòn mép vào, lộ composite đoạn 12,4–18,7m"
-                  value={f.desc}
-                  onChange={(e) => updateFinding(f.id, { desc: e.target.value })}
-                />
-              </Field>
-              <Field label="Mức độ 1–5" en="Severity">
-                <QuickPick
-                  value={f.severity}
-                  onChange={(v) => updateFinding(f.id, { severity: v })}
-                  options={["1", "2", "3", "4", "5"]}
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-2 pr-6">
-                <Field label="Ảnh" en="Photo ref.">
-                  <input
-                    className={inputSm}
-                    placeholder="WTG05-BL-A-014"
-                    value={f.photo}
-                    onChange={(e) => updateFinding(f.id, { photo: e.target.value })}
-                  />
-                </Field>
-                <Field label="Giờ báo" en="Time notified">
-                  <input
-                    type="time"
-                    className={inputSm}
-                    value={f.time}
-                    onChange={(e) => updateFinding(f.id, { time: e.target.value })}
-                  />
-                </Field>
-              </div>
-              <Field label="Đã báo OEM" en="OEM notified">
-                <QuickPick
-                  value={f.oemNotified}
-                  onChange={(v) => updateFinding(f.id, { oemNotified: v as YesNo })}
-                  options={["Có", "Không"]}
-                />
-              </Field>
-              <Field label="Ảnh bằng chứng" en="Evidence photos">
-                <PhotoGrid
-                  photos={f.photos || []}
-                  onAdd={handleAddFindingPhoto(f.id)}
-                  onRemove={handleRemoveFindingPhoto(f.id)}
-                  onView={setLightbox}
-                />
-              </Field>
-            </RowCard>
-          ))}
+          {rep.findings.map((f) => {
+            const lockHolder = lockedBy(f.id);
+            return (
+              <RowCard key={f.id} onDelete={() => delFinding(f.id)} locked={!!lockHolder}>
+                {lockHolder && (
+                  <div className="flex items-center gap-1.5 rounded-md bg-amber-100 border border-amber-300 px-2 py-1.5 text-[11px] text-amber-800">
+                    <Pencil size={12} className="shrink-0" />
+                    <span className="truncate">
+                      <span className="font-semibold">{lockHolder}</span> đang chỉnh sửa…
+                      <span className="italic"> / currently editing</span>
+                    </span>
+                  </div>
+                )}
+                <fieldset
+                  disabled={!!lockHolder}
+                  className={`space-y-2 ${lockHolder ? "opacity-60" : ""}`}
+                  onFocusCapture={() => onFindingFocus(f.id)}
+                  onBlurCapture={onFindingBlur}
+                >
+                  <Field label="Khu vực" en="Area">
+                    <input
+                      className={inputSm}
+                      placeholder="Cánh A ngoài"
+                      value={f.area}
+                      onChange={(e) => updateFinding(f.id, { area: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Mô tả phát hiện" en="Finding description">
+                    <textarea
+                      rows={2}
+                      className={inputSm}
+                      placeholder="mòn mép vào, lộ composite đoạn 12,4–18,7m"
+                      value={f.desc}
+                      onChange={(e) => updateFinding(f.id, { desc: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Mức độ 1–5" en="Severity">
+                    <QuickPick
+                      value={f.severity}
+                      onChange={(v) => updateFinding(f.id, { severity: v })}
+                      options={["1", "2", "3", "4", "5"]}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-2 pr-6">
+                    <Field label="Ảnh" en="Photo ref.">
+                      <input
+                        className={inputSm}
+                        placeholder="WTG05-BL-A-014"
+                        value={f.photo}
+                        onChange={(e) => updateFinding(f.id, { photo: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Giờ báo" en="Time notified">
+                      <input
+                        type="time"
+                        className={inputSm}
+                        value={f.time}
+                        onChange={(e) => updateFinding(f.id, { time: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Đã báo OEM" en="OEM notified">
+                    <QuickPick
+                      value={f.oemNotified}
+                      onChange={(v) => updateFinding(f.id, { oemNotified: v as YesNo })}
+                      options={["Có", "Không"]}
+                    />
+                  </Field>
+                  <Field label="Ảnh bằng chứng" en="Evidence photos">
+                    <PhotoGrid
+                      photos={f.photos || []}
+                      onAdd={handleAddFindingPhoto(f.id)}
+                      onRemove={handleRemoveFindingPhoto(f.id)}
+                      onView={setLightbox}
+                    />
+                  </Field>
+                </fieldset>
+              </RowCard>
+            );
+          })}
           <AddButton label="Thêm phát hiện / Add finding" onClick={addFinding} />
         </SectionCard>
 
