@@ -186,7 +186,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                     <div className="col-span-1 p-4 border-r print:border-r bg-white" style={{ borderRightColor: `var(--tone-border, ${t.border})` }}>
                       <div className="mb-3">
                         <div className="text-[17px] font-bold text-slate-900 mb-2 tracking-tight">
-                          #{i + 1} — {f.turbine || "?"} {f.area ? `· ${f.area}` : ""}
+                          #{i + 1} — {f.area || "?"}
                         </div>
                         <div
                           className={`inline-block text-[12px] font-semibold px-2 py-1 rounded-sm ${t.border} ${t.text} bg-opacity-10`}
