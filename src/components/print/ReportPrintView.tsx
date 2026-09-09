@@ -3,6 +3,7 @@ import type { ReportDraft } from "@/lib/types";
 import { delayMinutes } from "@/lib/utils";
 import { NAVY, AMBER } from "@/lib/theme";
 import { td, severityTier, TIER, delayColor, SectionTitle, InfoRow, ThCell, SafetyBox } from "@/components/print/shared";
+import { sortFindingsByArea } from "@/lib/finding-order";
 
 export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
   const turbines = rep.turbines.filter((t) => t.turbine);
@@ -173,7 +174,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
             </span>
           </div>
           <div className="space-y-4">
-            {rep.findings.map((f, i) => {
+            {sortFindingsByArea(rep.findings).map((f, i) => {
               const tier = severityTier(f.severity);
               const t = TIER[tier];
               return (

@@ -2,6 +2,7 @@ import type { TurbineAggregate } from "@/lib/final-report";
 import { delayMinutes } from "@/lib/utils";
 import { NAVY, AMBER } from "@/lib/theme";
 import { td, severityTier, TIER, delayColor, ThCell } from "@/components/print/shared";
+import { sortFindingsByArea } from "@/lib/finding-order";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
@@ -131,7 +132,7 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
             Phát hiện <span className="italic font-normal text-slate-400">/ Findings</span>
           </h4>
           <div className="space-y-4">
-            {t.findings.map((f, i) => {
+            {sortFindingsByArea(t.findings).map((f, i) => {
               const tier = severityTier(f.severity);
               const tone = TIER[tier];
               return (
