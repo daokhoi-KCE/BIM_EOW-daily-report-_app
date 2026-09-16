@@ -3,6 +3,7 @@ import type { FinalReportData } from "@/lib/final-report";
 import { NAVY, AMBER } from "@/lib/theme";
 import { SectionTitle, InfoRow } from "@/components/print/shared";
 import FindingsMatrix from "@/components/final-report/FindingsMatrix";
+import DefectMatrix from "@/components/final-report/DefectMatrix";
 import TurbineSection, { turbineAnchorId } from "@/components/final-report/TurbineSection";
 
 function StatCard({ label, labelVi, value, tone }: { label: string; labelVi: string; value: string | number; tone?: "red" | "amber" | "emerald" }) {
@@ -89,11 +90,14 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         <a href="#overview" className="text-slate-700 hover:underline">
           1. Giới thiệu &amp; tổng quan <span className="italic text-slate-400">/ Introduction &amp; overview</span>
         </a>
+        <a href="#defect-matrix" className="text-slate-700 hover:underline">
+          2. Ma trận lỗi phổ biến <span className="italic text-slate-400">/ Defect matrix</span>
+        </a>
         <a href="#findings-matrix" className="text-slate-700 hover:underline">
-          2. Ma trận phát hiện <span className="italic text-slate-400">/ Findings matrix</span>
+          3. Chi tiết phát hiện <span className="italic text-slate-400">/ Findings detail</span>
         </a>
         <div className="col-span-2 mt-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-          3. Chi tiết từng tuabin <span className="italic font-normal normal-case text-slate-400">/ Turbine detail</span>
+          4. Chi tiết từng tuabin <span className="italic font-normal normal-case text-slate-400">/ Turbine detail</span>
         </div>
         {turbines.map((t) => (
           <a
@@ -142,14 +146,23 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         </div>
       )}
 
-      {/* ── Findings matrix ─────────────────────────────────────── */}
+      {/* ── Defect matrix (turbines × common defects) ────────────── */}
+      <div id="defect-matrix">
+        <SectionTitle
+          en="3. Defect matrix — turbines × common defects"
+          vi="Ma trận lỗi — tuabin × lỗi phổ biến"
+        />
+      </div>
+      <DefectMatrix turbines={turbines} />
+
+      {/* ── Findings detail list ────────────────────────────────── */}
       <div id="findings-matrix">
-        <SectionTitle en="3. Findings matrix — all turbines" vi="Ma trận phát hiện — tất cả tuabin" />
+        <SectionTitle en="4. Findings detail — all turbines" vi="Chi tiết phát hiện — tất cả tuabin" />
       </div>
       <FindingsMatrix turbines={turbines} />
 
       {/* ── Per-turbine detail ───────────────────────────────────── */}
-      <SectionTitle en="4. Turbine detail" vi="Chi tiết từng tuabin" />
+      <SectionTitle en="5. Turbine detail" vi="Chi tiết từng tuabin" />
       {turbines.length === 0 ? (
         <p className="text-[12px] text-slate-400 italic">No data / Không có dữ liệu</p>
       ) : (

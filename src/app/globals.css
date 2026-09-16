@@ -76,6 +76,34 @@ body {
   .photo-item:last-child {
     page-break-after: auto;
   }
+  /* Ma trận lỗi: nhiều cột trụ phải vừa khổ A4. Bỏ sticky (không có tác dụng
+     khi in và gây lệch cột), nén padding/nhãn để đủ chỗ cho tới ~22 trụ. */
+  .defect-matrix {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+  .defect-matrix th,
+  .defect-matrix td {
+    position: static !important;
+  }
+  .defect-matrix thead th:first-child,
+  .defect-matrix tbody td:first-child {
+    min-width: 0 !important;
+    width: 46mm !important;
+    padding-left: 0 !important;
+    padding-right: 3px !important;
+  }
+  .defect-matrix tbody td:first-child > div:first-child {
+    font-size: 10.5px !important;
+  }
+  .defect-matrix tbody td:first-child > div:last-child {
+    font-size: 8.5px !important;
+  }
+  .defect-matrix thead th {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
   body {
     background: white;
     -webkit-print-color-adjust: exact;
