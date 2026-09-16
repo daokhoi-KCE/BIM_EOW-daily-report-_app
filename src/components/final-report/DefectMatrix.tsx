@@ -1,6 +1,6 @@
 import type { TurbineAggregate, DatedFinding } from "@/lib/final-report";
 import { NAVY } from "@/lib/theme";
-import { severityTier, TIER, type Tier } from "@/components/print/shared";
+import { severityTier, type Tier } from "@/components/print/shared";
 import {
   DEFECT_CATEGORIES,
   OTHER_CATEGORY_ID,
@@ -15,16 +15,41 @@ function shortLabel(turbine: string): string {
 
 const TIER_RANK: Record<Tier, number> = { none: 0, low: 1, med: 2, high: 3 };
 
-const CELL_BG: Record<Exclude<Tier, "none">, string> = {
-  high: "#FEE2E2",
-  med: "#FEF3C7",
-  low: "#D1FAE5",
-};
-const CELL_FG: Record<Exclude<Tier, "none">, string> = {
-  high: "#B91C1C",
-  med: "#B45309",
-  low: "#047857",
-};
+const OK_COLOR = "#047857";
+const NG_COLOR = "#B91C1C";
+
+/** Dấu OK / NG vẽ bằng SVG: emoji dễ đổi font hoặc mất màu khi xuất PDF. */
+function Mark({ ok }: { ok: boolean }) {
+  const color = ok ? OK_COLOR : NG_COLOR;
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      role="img"
+      aria-label={ok ? "OK" : "NG"}
+      style={{ width: "4.6mm", height: "4.6mm", display: "block", margin: "0.6mm auto" }}
+    >
+      <rect x="0.5" y="0.5" width="19" height="19" rx="4.5" fill={color} />
+      {ok ? (
+        <path
+          d="M5.4 10.4l3.1 3.1 6.1-6.7"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <path
+          d="M6.4 6.4l7.2 7.2M13.6 6.4l-7.2 7.2"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+        />
+      )}
+    </svg>
+  );
+}
 
 interface Cell {
   findings: DatedFinding[];
@@ -74,10 +99,11 @@ export default function DefectMatrix({ turbines }: { turbines: TurbineAggregate[
       : []),
   ];
 
-  const perTurbineTotal = turbines.map((_, ti) =>
-    rows.reduce((s, r) => s + r.cells[ti].findings.length, 0),
+  // Tổng theo trụ = số hạng mục NG (không phải số phát hiện).
+  const perTurbineNg = turbines.map((_, ti) =>
+    rows.reduce((s, r) => s + (r.cells[ti].findings.length > 0 ? 1 : 0), 0),
   );
-  const grandTotal = perTurbineTotal.reduce((s, n) => s + n, 0);
+  const totalNgCells = perTurbineNg.reduce((s, n) => s + n, 0);
 
   return (
     <div className="avoid-break">
@@ -145,42 +171,23 @@ export default function DefectMatrix({ turbines }: { turbines: TurbineAggregate[
                   </td>
                   {r.cells.map((c, ci) => {
                     const t = turbines[ci];
-                    if (c.findings.length === 0) {
-                      return (
-                        <td
-                          key={t.turbine}
-                          className="border-b border-slate-300 text-center align-middle text-[11px] text-slate-300"
-                        >
-                          ·
-                        </td>
-                      );
-                    }
-                    const tier = c.tier === "none" ? "low" : c.tier;
+                    const ng = c.findings.length > 0;
+                    const detail = ng
+                      ? `${c.findings.length} phát hiện, mức cao nhất M${c.maxSeverity || "?"}`
+                      : "Không có phát hiện";
                     return (
                       <td
                         key={t.turbine}
                         className="border-b border-slate-300 text-center align-middle p-0"
-                        title={`${t.turbine} — ${r.en}: ${c.findings.length} finding(s)`}
+                        title={`${t.turbine} — ${r.en}: ${detail}`}
                       >
-                        <div
-                          className="mx-auto my-0.5 flex items-center justify-center rounded-sm font-bold leading-none"
-                          style={{
-                            background: CELL_BG[tier],
-                            color: CELL_FG[tier],
-                            fontSize: "10.5px",
-                            width: "5.2mm",
-                            height: "5.2mm",
-                            border: `1px solid ${CELL_FG[tier]}55`,
-                          }}
-                        >
-                          {c.findings.length > 1 ? `${c.maxSeverity || "?"}×${c.findings.length}` : c.maxSeverity || "?"}
-                        </div>
+                        <Mark ok={!ng} />
                       </td>
                     );
                   })}
                   <td
                     className="border-b border-slate-300 text-center align-middle text-[11px] font-bold"
-                    style={{ background: "rgba(31,53,82,0.06)", color: affected ? NAVY : "#CBD5E1" }}
+                    style={{ background: "rgba(31,53,82,0.06)", color: affected ? NG_COLOR : OK_COLOR }}
                   >
                     {affected || "·"}
                   </td>
@@ -196,51 +203,42 @@ export default function DefectMatrix({ turbines }: { turbines: TurbineAggregate[
                   className="text-[11px] font-bold uppercase tracking-wide leading-tight"
                   style={{ color: NAVY }}
                 >
-                  Total / Tổng
+                  NG total / Tổng NG
                 </div>
               </td>
-              {perTurbineTotal.map((n, i) => (
+              {perTurbineNg.map((n, i) => (
                 <td
                   key={turbines[i].turbine}
                   className="text-center text-[11px] font-extrabold"
-                  style={{ borderTop: `2px solid ${NAVY}`, color: n ? NAVY : "#CBD5E1" }}
+                  style={{ borderTop: `2px solid ${NAVY}`, color: n ? NG_COLOR : OK_COLOR }}
                 >
-                  {n || "·"}
+                  {n || 0}
                 </td>
               ))}
               <td
                 className="text-center text-[11px] font-extrabold"
                 style={{ borderTop: `2px solid ${NAVY}`, color: NAVY }}
               >
-                {grandTotal}
+                {totalNgCells}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[10px] text-slate-600">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2 text-[10.5px] text-slate-600">
         <span className="font-semibold text-slate-700">Chú giải / Legend:</span>
-        {(["high", "med", "low"] as const).map((k) => (
-          <span key={k} className="flex items-center gap-1.5">
-            <span
-              className="inline-block rounded-sm"
-              style={{
-                width: "4mm",
-                height: "4mm",
-                background: CELL_BG[k],
-                border: `1px solid ${CELL_FG[k]}55`,
-              }}
-            />
-            {TIER[k].en} / {TIER[k].vi}
-          </span>
-        ))}
-        <span>
-          Số trong ô = mức độ cao nhất (M1–M5); <b>n×k</b> = mức n, k phát hiện.
-          <span className="italic text-slate-400">
-            {" "}
-            Cell = highest severity; n×k = severity n, k findings.
-          </span>
+        <span className="flex items-center gap-1.5">
+          <Mark ok />
+          OK — không phát hiện lỗi <span className="italic text-slate-400">/ no finding</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Mark ok={false} />
+          NG — có lỗi <span className="italic text-slate-400">/ finding recorded</span>
+        </span>
+        <span className="text-slate-500">
+          Σ = số trụ NG của mỗi hạng mục.{" "}
+          <span className="italic text-slate-400">Σ = turbines affected per defect.</span>
         </span>
       </div>
     </div>
