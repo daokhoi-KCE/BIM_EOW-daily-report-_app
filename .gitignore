@@ -42,3 +42,5 @@ next-env.d.ts
 
 # local IDE/preview config (machine-specific)
 .claude/
+
+.sample/

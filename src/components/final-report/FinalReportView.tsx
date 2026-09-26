@@ -132,7 +132,10 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         <TocLine href="#s4-summary" no="4." en="Summary of the main findings" vi="Tóm tắt phát hiện chính" />
         <div className="pl-5">
           <TocLine href="#s4-summary" no="4.1" en="Summary" vi="Tóm tắt" />
-          <TocLine href="#findings-matrix" no="4.2" en="Findings matrix" vi="Ma trận phát hiện" />
+          {/* Ma trận chỉ có nghĩa khi so sánh nhiều trụ. */}
+          {multiTurbine && (
+            <TocLine href="#findings-matrix" no="4.2" en="Findings matrix" vi="Ma trận phát hiện" />
+          )}
         </div>
         <TocLine href="#s5-main-findings" no="5." en="Main findings" vi="Chi tiết phát hiện" />
         <div className="pl-5">

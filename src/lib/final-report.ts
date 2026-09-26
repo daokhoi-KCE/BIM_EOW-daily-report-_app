@@ -1,11 +1,8 @@
-import type { ReportDraft, TurbineWork, LockCycle, Finding } from "@/lib/types";
+import type { ReportDraft, TurbineWork, Finding } from "@/lib/types";
 import { severityTier } from "@/components/print/shared";
 import { SECTIONS, classifyFinding, type ReportSection } from "@/lib/report-sections";
 
 export interface DatedTurbineWork extends TurbineWork {
-  date: string;
-}
-export interface DatedLockCycle extends LockCycle {
   date: string;
 }
 export interface DatedFinding extends Finding {
@@ -27,7 +24,6 @@ export interface SectionGroup {
 export interface TurbineAggregate {
   turbine: string;
   work: DatedTurbineWork[];
-  locks: DatedLockCycle[];
   findings: DatedFinding[];
   latestPct: number | null;
   latestStatus: { blade: string; hub: string; nacelle: string; tower: string; drone: string };
@@ -92,7 +88,6 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
       agg = {
         turbine: label.trim() || key,
         work: [],
-        locks: [],
         findings: [],
         latestPct: null,
         latestStatus: { blade: "", hub: "", nacelle: "", tower: "", drone: "" },
@@ -129,11 +124,6 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
       const label = t.turbine.trim() || fallbackTurbine;
       if (!label) continue;
       getAgg(label).work.push({ ...t, date: r.date });
-    }
-    for (const l of r.locks) {
-      const label = l.turbine.trim() || fallbackTurbine;
-      if (!label) continue;
-      getAgg(label).locks.push({ ...l, date: r.date });
     }
     for (const f of r.findings) {
       const label = f.turbine.trim() || fallbackTurbine;

@@ -1,7 +1,6 @@
 import type { TurbineAggregate } from "@/lib/final-report";
-import { delayMinutes } from "@/lib/utils";
 import { NAVY, AMBER } from "@/lib/theme";
-import { td, delayColor, ThCell } from "@/components/print/shared";
+import { td, ThCell } from "@/components/print/shared";
 import FindingCard from "@/components/final-report/FindingCard";
 
 export function turbineAnchorId(turbine: string) {
@@ -90,41 +89,6 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
           ))}
         </tbody>
       </table>
-
-      {t.locks.length > 0 && (
-        <>
-          <h4 className="text-[13px] font-bold text-slate-700 mt-4 mb-1.5">
-            Lịch khóa / mở rotor <span className="italic font-normal text-slate-400">/ Lock schedule</span>
-          </h4>
-          <table className="w-full border-collapse avoid-break">
-            <thead>
-              <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-                <ThCell en="Date" vi="Ngày" />
-                <ThCell en="Position" vi="Vị trí" />
-                <ThCell en="Planned" vi="Giờ KH" />
-                <ThCell en="Actual" vi="Giờ TT" />
-                <ThCell en="Delay (min)" vi="Trễ (phút)" />
-                <ThCell en="Notes" vi="Ghi chú" />
-              </tr>
-            </thead>
-            <tbody>
-              {t.locks.map((l, i) => {
-                const d = delayMinutes(l.planned, l.actual);
-                return (
-                  <tr key={`${l.id}-${i}`} className="avoid-break">
-                    <td className={`${td} pl-2 font-semibold whitespace-nowrap`}>{l.date}</td>
-                    <td className={td}>{l.pos || "—"}</td>
-                    <td className={td}>{l.planned || "--:--"}</td>
-                    <td className={td}>{l.actual || "--:--"}</td>
-                    <td className={`${td} font-bold ${delayColor(d)}`}>{d !== null ? d : "—"}</td>
-                    <td className={td}>{l.notes || ""}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </>
-      )}
 
       {t.findings.length > 0 && (
         <>
