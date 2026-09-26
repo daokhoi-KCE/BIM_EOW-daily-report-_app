@@ -1,5 +1,6 @@
 import type { ReportDraft, TurbineWork, LockCycle, Finding } from "@/lib/types";
 import { severityTier } from "@/components/print/shared";
+import { SECTIONS, classifyFinding, type ReportSection } from "@/lib/report-sections";
 
 export interface DatedTurbineWork extends TurbineWork {
   date: string;
@@ -9,6 +10,18 @@ export interface DatedLockCycle extends LockCycle {
 }
 export interface DatedFinding extends Finding {
   date: string;
+}
+
+/** Một mục "5.x" cùng toàn bộ finding thuộc về nó. */
+export interface SectionGroup {
+  section: ReportSection;
+  findings: DatedFinding[];
+  critical: number;
+  medium: number;
+  low: number;
+  photos: number;
+  /** Các tuabin có phát hiện trong mục này. */
+  turbines: string[];
 }
 
 export interface TurbineAggregate {
@@ -29,6 +42,8 @@ export interface FinalReportData {
   dateFrom: string;
   dateTo: string;
   turbines: TurbineAggregate[];
+  /** Findings gom theo mục 5.x, giữ nguyên thứ tự trong SECTIONS. */
+  sections: SectionGroup[];
   totals: {
     reports: number;
     turbines: number;
@@ -44,7 +59,19 @@ export interface FinalReportData {
   safetyFlags: { date: string; hazard: boolean; shutdown: boolean; major: boolean }[];
 }
 
-const turbineKey = (t: string) => t.trim().toUpperCase();
+/**
+ * Khoá gộp tuabin.
+ *
+ * Đội hiện trường gõ tên trụ không thống nhất: "WTG 02", "WTG02", "WTG 2"
+ * đều là một trụ. Bỏ khoảng trắng và số 0 đứng đầu để ba cách viết cùng về
+ * một khoá, đồng thời "WTG 22" không bị nhầm với "WTG 2".
+ */
+const turbineKey = (t: string) =>
+  t
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .replace(/(\D)0+(\d)/g, "$1$2");
 
 function lastNonEmpty(entries: DatedTurbineWork[], field: keyof TurbineWork): string {
   for (let i = entries.length - 1; i >= 0; i--) {
@@ -94,17 +121,24 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     const major = r.safety.major.yn === "Có";
     if (hazard || shutdown || major) safetyFlags.push({ date: r.date, hazard, shutdown, major });
 
+    // Phần lớn finding không điền cột `turbine` riêng — trụ được ghi ở đầu
+    // báo cáo ngày. Không có bước lùi này thì 73% số finding bị bỏ rơi.
+    const fallbackTurbine = r.plannedTurbines.trim() || r.actualTurbines.trim();
+
     for (const t of r.turbines) {
-      if (!t.turbine.trim()) continue;
-      getAgg(t.turbine).work.push({ ...t, date: r.date });
+      const label = t.turbine.trim() || fallbackTurbine;
+      if (!label) continue;
+      getAgg(label).work.push({ ...t, date: r.date });
     }
     for (const l of r.locks) {
-      if (!l.turbine.trim()) continue;
-      getAgg(l.turbine).locks.push({ ...l, date: r.date });
+      const label = l.turbine.trim() || fallbackTurbine;
+      if (!label) continue;
+      getAgg(label).locks.push({ ...l, date: r.date });
     }
     for (const f of r.findings) {
-      if (!f.turbine.trim()) continue;
-      const agg = getAgg(f.turbine);
+      const label = f.turbine.trim() || fallbackTurbine;
+      if (!label) continue;
+      const agg = getAgg(label);
       agg.findings.push({ ...f, date: r.date });
       agg.photosCount += f.photos?.length ?? 0;
       const tier = severityTier(f.severity);
@@ -132,6 +166,46 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
 
   const findingsPhotos = turbines.reduce((s, t) => s + t.photosCount, 0);
 
+  // ── Gom findings theo mục 5.x ────────────────────────────────────────────
+  const groupMap = new Map<string, SectionGroup>(
+    SECTIONS.map((section) => [
+      section.id,
+      { section, findings: [], critical: 0, medium: 0, low: 0, photos: 0, turbines: [] },
+    ]),
+  );
+  const seenTurbinePerSection = new Map<string, Set<string>>(
+    SECTIONS.map((s) => [s.id, new Set<string>()]),
+  );
+
+  for (const agg of turbines) {
+    for (const f of agg.findings) {
+      const group = groupMap.get(classifyFinding(f.area, f.desc)) ?? groupMap.get("other")!;
+      // Gán nhãn trụ đã phân giải: cột `turbine` của finding thường rỗng,
+      // tên trụ nằm ở đầu báo cáo ngày và đã được getAgg gom lại.
+      group.findings.push({ ...f, turbine: agg.turbine });
+      group.photos += f.photos?.length ?? 0;
+      const tier = severityTier(f.severity);
+      if (tier === "high") group.critical++;
+      else if (tier === "med") group.medium++;
+      else if (tier === "low") group.low++;
+
+      const seen = seenTurbinePerSection.get(group.section.id)!;
+      if (!seen.has(agg.turbine)) {
+        seen.add(agg.turbine);
+        group.turbines.push(agg.turbine);
+      }
+    }
+  }
+
+  for (const group of groupMap.values()) {
+    // Trong mỗi mục, xếp phát hiện nặng lên trước rồi mới đến theo ngày.
+    group.findings.sort(
+      (a, b) => (Number(b.severity) || 0) - (Number(a.severity) || 0) || a.date.localeCompare(b.date),
+    );
+  }
+
+  const sections = SECTIONS.map((s) => groupMap.get(s.id)!);
+
   const totals = {
     reports: reports.length,
     turbines: turbines.length,
@@ -148,6 +222,7 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     dateFrom: reports[0]?.date ?? "",
     dateTo: reports[reports.length - 1]?.date ?? "",
     turbines,
+    sections,
     totals,
     preparedBy: [...preparedBySet].sort(),
     oemReps: [...oemRepSet].sort(),
