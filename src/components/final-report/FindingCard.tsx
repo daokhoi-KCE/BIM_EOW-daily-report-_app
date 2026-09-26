@@ -70,17 +70,30 @@ export default function FindingCard({
         <div className="col-span-2 p-3">
           {f.photos && f.photos.length > 0 ? (
             <div className="photo-list flex flex-wrap gap-2">
-              {f.photos.map((p) => (
-                <div key={p.id} className="photo-item avoid-break flex-1 min-w-[200px]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={p.url}
-                    alt="evidence"
-                    className="w-full h-auto rounded block"
-                    style={{ maxHeight: "150mm", objectFit: "contain" }}
-                  />
-                </div>
-              ))}
+              {f.photos.map((p) =>
+                // URL rỗng nghĩa là ảnh có trong CSDL nhưng ký URL hỏng. Nếu
+                // vẫn dựng thẻ <img> thì nó hiện ra khoảng trắng và người đọc
+                // tưởng phát hiện này vốn không có ảnh.
+                p.url ? (
+                  <div key={p.id} className="photo-item avoid-break flex-1 min-w-[200px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={p.url}
+                      alt="evidence"
+                      className="w-full h-auto rounded block"
+                      style={{ maxHeight: "150mm", objectFit: "contain" }}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    key={p.id}
+                    className="photo-item avoid-break flex-1 min-w-[200px] rounded border border-dashed border-red-300 bg-red-50 text-center py-6 px-2"
+                  >
+                    <div className="text-[11px] font-bold text-red-700">Không tải được ảnh</div>
+                    <div className="text-[10px] text-red-500 italic">Photo failed to load</div>
+                  </div>
+                ),
+              )}
             </div>
           ) : (
             <div className="text-slate-400 italic text-[11px] text-center py-8">

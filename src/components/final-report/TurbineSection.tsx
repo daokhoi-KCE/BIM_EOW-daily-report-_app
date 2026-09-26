@@ -1,13 +1,28 @@
 import type { TurbineAggregate } from "@/lib/final-report";
 import { NAVY, AMBER } from "@/lib/theme";
-import { td, ThCell } from "@/components/print/shared";
+import { td, ThCell, severityTier, TIER } from "@/components/print/shared";
 import FindingCard from "@/components/final-report/FindingCard";
+import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
 }
 
-export default function TurbineSection({ t }: { t: TurbineAggregate }) {
+/**
+ * Chi tiết một tuabin.
+ *
+ * `compact` dùng cho báo cáo nhiều trụ: ở đó mục 5 đã in đầy đủ từng phát
+ * hiện kèm ảnh, nên mục này chỉ liệt kê dạng bảng và trỏ ngược về mục 5.
+ * In lại cả thẻ ảnh sẽ nhân đôi toàn bộ ảnh của báo cáo — với 22 trụ là
+ * gần 5.700 thẻ ảnh, đủ để trang không tải nổi.
+ */
+export default function TurbineSection({
+  t,
+  compact = false,
+}: {
+  t: TurbineAggregate;
+  compact?: boolean;
+}) {
   const pctOk = t.latestPct !== null && t.latestPct >= 100;
 
   return (
@@ -94,12 +109,53 @@ export default function TurbineSection({ t }: { t: TurbineAggregate }) {
         <>
           <h4 className="text-[13px] font-bold text-slate-700 mt-4 mb-1.5">
             Phát hiện <span className="italic font-normal text-slate-400">/ Findings</span>
+            {compact && (
+              <span className="font-normal text-slate-400">
+                {" "}
+                — ảnh và diễn giải đầy đủ ở mục 5
+                <span className="italic"> / full detail and photos in section 5</span>
+              </span>
+            )}
           </h4>
-          <div className="space-y-4">
-            {t.findings.map((f, i) => (
-              <FindingCard key={`${f.id}-${i}`} f={f} />
-            ))}
-          </div>
+
+          {compact ? (
+            <table className="w-full border-collapse avoid-break">
+              <thead>
+                <tr style={{ background: "rgba(31,53,82,0.06)" }}>
+                  <ThCell en="Date" vi="Ngày" />
+                  <ThCell en="Section" vi="Hạng mục" />
+                  <ThCell en="Area" vi="Khu vực" />
+                  <ThCell en="Finding" vi="Phát hiện" />
+                  <ThCell en="Sev." vi="Mức" />
+                  <ThCell en="Photos" vi="Ảnh" />
+                </tr>
+              </thead>
+              <tbody>
+                {t.findings.map((f, i) => {
+                  const section = SECTION_BY_ID.get(classifyFinding(f.area, f.desc));
+                  const tone = TIER[severityTier(f.severity)];
+                  return (
+                    <tr key={`${f.id}-${i}`} className="avoid-break">
+                      <td className={`${td} pl-2 whitespace-nowrap`}>{f.date}</td>
+                      <td className={`${td} whitespace-nowrap`}>{section?.no ?? "—"}</td>
+                      <td className={td}>{f.area || "—"}</td>
+                      <td className={td}>{f.desc || "—"}</td>
+                      <td className={`${td} font-bold whitespace-nowrap ${tone.text}`}>
+                        M{f.severity || "?"}
+                      </td>
+                      <td className={`${td} text-right tabular-nums`}>{f.photos?.length ?? 0}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="space-y-4">
+              {t.findings.map((f, i) => (
+                <FindingCard key={`${f.id}-${i}`} f={f} />
+              ))}
+            </div>
+          )}
         </>
       )}
     </section>

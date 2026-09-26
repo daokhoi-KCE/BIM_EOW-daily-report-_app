@@ -418,7 +418,7 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
             <SectionTitle en="6. Turbine detail" vi="Chi tiết từng tuabin" />
           </div>
           {turbines.map((t) => (
-            <TurbineSection key={t.turbine} t={t} />
+            <TurbineSection key={t.turbine} t={t} compact />
           ))}
         </>
       )}

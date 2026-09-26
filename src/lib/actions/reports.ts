@@ -83,19 +83,46 @@ export async function createReportAction(): Promise<void> {
   redirect(`/reports/${id}`);
 }
 
+/**
+ * Số đường dẫn tối đa cho mỗi lần gọi ký URL.
+ *
+ * createSignedUrls gửi toàn bộ danh sách trong một POST. Một báo cáo ngày
+ * có thể có hơn 160 ảnh, và báo cáo tổng hợp cả 22 trụ lên tới gần 2.900 —
+ * gói vào một request là cách chắc chắn để gặp lỗi. Chia lô cho an toàn.
+ */
+const SIGN_BATCH_SIZE = 100;
+
 async function signPhotos(
   supabase: Awaited<ReturnType<typeof createClient>>,
   paths: string[],
 ): Promise<Map<string, string>> {
-  if (paths.length === 0) return new Map();
-  const { data, error } = await supabase.storage
-    .from(EVIDENCE_BUCKET)
-    .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
   const map = new Map<string, string>();
-  if (error || !data) return map;
-  data.forEach((d) => {
-    if (d.signedUrl && d.path) map.set(d.path, d.signedUrl);
-  });
+  if (paths.length === 0) return map;
+
+  for (let i = 0; i < paths.length; i += SIGN_BATCH_SIZE) {
+    const batch = paths.slice(i, i + SIGN_BATCH_SIZE);
+    const { data, error } = await supabase.storage
+      .from(EVIDENCE_BUCKET)
+      .createSignedUrls(batch, SIGNED_URL_TTL_SECONDS);
+
+    // Ký hỏng thì ảnh biến mất khỏi báo cáo mà không có dấu hiệu nào trên
+    // giao diện, nên ít nhất phải để lại vết trong log máy chủ.
+    if (error || !data) {
+      console.error(
+        `[signPhotos] Ký hỏng lô ${i / SIGN_BATCH_SIZE + 1} (${batch.length} ảnh): ` +
+          (error?.message ?? "không có dữ liệu trả về"),
+      );
+      continue;
+    }
+    for (const d of data) {
+      if (d.signedUrl && d.path) map.set(d.path, d.signedUrl);
+      else if (d.path) console.error(`[signPhotos] Không ký được: ${d.path} — ${d.error ?? "?"}`);
+    }
+  }
+
+  if (map.size < paths.length) {
+    console.error(`[signPhotos] Chỉ ký được ${map.size}/${paths.length} ảnh.`);
+  }
   return map;
 }
 
