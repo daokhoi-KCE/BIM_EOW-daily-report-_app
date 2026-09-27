@@ -17,15 +17,13 @@ export default function FindingsMatrix({ turbines }: { turbines: TurbineAggregat
           <ThCell en="Area" vi="Khu vực" />
           <ThCell en="Description" vi="Mô tả" />
           <ThCell en="Severity" vi="Mức độ" />
-          <ThCell en="OEM" vi="Báo OEM" />
         </tr>
       </thead>
       {withFindings.map((t) => {
-        const oemNotified = t.findings.filter((f) => f.oemNotified === "Có").length;
         return (
           <tbody key={t.turbine}>
             <tr className="avoid-break">
-              <td colSpan={5} className="pt-3 pb-1.5 px-2" style={{ borderBottom: `2px solid ${NAVY}` }}>
+              <td colSpan={4} className="pt-3 pb-1.5 px-2" style={{ borderBottom: `2px solid ${NAVY}` }}>
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-[14.5px] font-extrabold uppercase" style={{ color: NAVY }}>
                     {t.turbine}
@@ -41,7 +39,6 @@ export default function FindingsMatrix({ turbines }: { turbines: TurbineAggregat
                     {t.lowCount > 0 && (
                       <span className="font-bold text-emerald-700"> · {t.lowCount} thấp</span>
                     )}
-                    {" · "}OEM {oemNotified}/{t.findings.length}
                   </span>
                 </div>
               </td>
@@ -65,12 +62,6 @@ export default function FindingsMatrix({ turbines }: { turbines: TurbineAggregat
                     >
                       M{f.severity || "?"} · {tone.en}
                     </span>
-                  </td>
-                  <td
-                    className={`${td} font-semibold ${f.oemNotified === "Không" ? "font-bold text-red-700" : ""}`}
-                  >
-                    {f.oemNotified || "—"}
-                    {f.time && <span className="block text-[10.5px] font-normal text-slate-400">{f.time}</span>}
                   </td>
                 </tr>
               );

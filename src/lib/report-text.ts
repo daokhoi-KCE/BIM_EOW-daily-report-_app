@@ -36,7 +36,7 @@ export function buildText(rep: ReportDraft): string {
     L.push(`3. PHÁT HIỆN / FINDINGS`);
     sortFindingsByArea(rep.findings).forEach((f) => {
       L.push(
-        `- [M${f.severity || "?"}] ${f.turbine || "?"} ${f.area || ""}: ${f.desc || ""}${f.photo ? ` (${f.photo})` : ""}${f.photos?.length ? ` [${f.photos.length} ảnh đính kèm/attached]` : ""} — báo OEM/notified: ${f.oemNotified || "?"}`,
+        `- [M${f.severity || "?"}] ${f.turbine || "?"} ${f.area || ""}: ${f.desc || ""}${f.photo ? ` (${f.photo})` : ""}${f.photos?.length ? ` [${f.photos.length} ảnh đính kèm/attached]` : ""}`,
       );
     });
   }

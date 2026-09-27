@@ -40,22 +40,11 @@ export default function FindingCard({
           <p className="text-[14px] leading-snug text-slate-900 rounded px-3 py-2 bg-yellow-100/70 border-l-4 border-yellow-500 mb-2 font-semibold">
             {f.desc || "—"}
           </p>
-          <div className="text-[10.5px] text-slate-600 space-y-0.5">
-            {f.photo && (
-              <div>
-                <span className="font-semibold">Photo ref:</span> {f.photo}
-              </div>
-            )}
-            <div>
-              <span className="font-semibold">Time notified:</span> {f.time || "—"}
+          {f.photo && (
+            <div className="text-[10.5px] text-slate-600">
+              <span className="font-semibold">Photo ref:</span> {f.photo}
             </div>
-            <div className="flex items-center gap-1">
-              <span className="font-semibold">OEM notified:</span>
-              <span className={f.oemNotified === "Không" ? "font-bold text-red-700" : "font-semibold"}>
-                {f.oemNotified || "—"}
-              </span>
-            </div>
-          </div>
+          )}
           {tier === "high" && (
             <div className="mt-2 text-[10px] font-bold text-red-700 leading-tight">
               ⚠ REQUIRES

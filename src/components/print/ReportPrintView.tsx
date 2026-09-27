@@ -199,16 +199,11 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                       <p className="text-[18px] leading-relaxed text-slate-900 mb-3 font-normal">
                         {f.desc || "—"}
                       </p>
-                      <div className="space-y-1.5">
-                        {f.photo && <div className="text-[12px] text-slate-600"><span className="font-medium text-slate-700">Ref:</span> {f.photo}</div>}
-                        <div className="text-[12px] text-slate-600"><span className="font-medium text-slate-700">Notified:</span> {f.time || "—"}</div>
-                        <div className="text-[12px] text-slate-600 flex items-center gap-1.5">
-                          <span className="font-medium text-slate-700">OEM:</span>
-                          <span className={f.oemNotified === "Không" ? "font-semibold text-red-600" : "font-normal text-slate-600"}>
-                            {f.oemNotified || "—"}
-                          </span>
+                      {f.photo && (
+                        <div className="text-[12px] text-slate-600">
+                          <span className="font-medium text-slate-700">Ref:</span> {f.photo}
                         </div>
-                      </div>
+                      )}
                       {tier === "high" && (
                         <div className="mt-3 pt-3 border-t border-red-200">
                           <div className="text-[11px] font-semibold text-red-600 leading-snug">

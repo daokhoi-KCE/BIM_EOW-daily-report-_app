@@ -6,7 +6,6 @@ import {
   PROJECT,
   INSPECTORS,
   STANDARDS,
-  MANUALS,
   SEVERITY_SCALE,
   DOCUMENT_CLASSIFICATION,
   buildDocumentRef,
@@ -180,10 +179,6 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
       <div className="avoid-break">
         <TocLine href="#s1-introduction" no="1." en="Introduction" vi="Giới thiệu" />
         <TocLine href="#s2-reference" no="2." en="Reference documents" vi="Tài liệu tham chiếu" />
-        <div className="pl-5">
-          <TocLine href="#s2-reference" no="2.1" en="Standards" vi="Tiêu chuẩn" />
-          <TocLine href="#s2-reference" no="2.2" en="Manuals and documentation" vi="Tài liệu kỹ thuật" />
-        </div>
         <TocLine href="#s3-information" no="3." en="Information" vi="Thông tin" />
         <div className="pl-5">
           <TocLine href="#s3-information" no="3.1" en="Site information" vi="Thông tin công trường" />
@@ -263,10 +258,7 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
       <div id="s2-reference">
         <SectionTitle en="2. Reference documents" vi="Tài liệu tham chiếu" />
       </div>
-      <h4 className="text-[13px] font-bold text-slate-700 mb-1.5">
-        2.1 Standards <span className="italic font-normal text-slate-400">/ Tiêu chuẩn</span>
-      </h4>
-      <table className="w-full border-collapse text-[12.5px] avoid-break mb-4">
+      <table className="w-full border-collapse text-[12.5px] avoid-break">
         <tbody>
           {STANDARDS.map((s) => (
             <tr key={s.ref}>
@@ -278,23 +270,6 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
           ))}
         </tbody>
       </table>
-      <h4 className="text-[13px] font-bold text-slate-700 mb-1.5">
-        2.2 Manuals and documentation{" "}
-        <span className="italic font-normal text-slate-400">/ Tài liệu kỹ thuật</span>
-      </h4>
-      <table className="w-full border-collapse text-[12.5px] avoid-break">
-        <tbody>
-          {MANUALS.map((m) => (
-            <tr key={m.ref}>
-              <td className="border-b border-slate-200 py-1.5 pr-3 align-top font-semibold whitespace-nowrap" style={{ color: NAVY }}>
-                {m.ref}
-              </td>
-              <td className="border-b border-slate-200 py-1.5 align-top text-slate-700">{m.title}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
       {/* ── 3. Information ────────────────────────────────────────────── */}
       <div id="s3-information">
         <SectionTitle en="3. Information" vi="Thông tin" />

@@ -45,19 +45,12 @@ export const CLASSIFICATION_KEY = [
   { level: "FOR PUBLIC RELEASE", meaning: "No restriction", meaningVi: "Không hạn chế" },
 ] as const;
 
-/** Mục 2.1 — Standards. */
+/** Mục 2 — Standards. */
 export const STANDARDS = [
   { ref: "IEC 61400-1", title: "Wind energy generation systems — Design requirements" },
   { ref: "IEC 61400-5", title: "Wind energy generation systems — Wind turbine blades" },
   { ref: "ISO 9712", title: "Non-destructive testing — Qualification and certification of NDT personnel" },
   { ref: "DNVGL-ST-0376", title: "Rotor blades for wind turbines" },
-] as const;
-
-/** Mục 2.2 — Manuals and Documentation. */
-export const MANUALS = [
-  { ref: "GE O&M Manual", title: "Operation and maintenance manual for the installed turbine model" },
-  { ref: "GE Service Bulletins", title: "Technical bulletins applicable to the installed fleet" },
-  { ref: "Site EOW Scope of Work", title: "Agreed inspection scope between the Owner and the OEM" },
 ] as const;
 
 /** Thang mức độ nghiêm trọng dùng trong toàn báo cáo. */

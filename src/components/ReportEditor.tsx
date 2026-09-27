@@ -467,22 +467,7 @@ export default function ReportEditor({
                         onChange={(e) => updateFinding(f.id, { photo: e.target.value })}
                       />
                     </Field>
-                    <Field label="Giờ báo" en="Time notified">
-                      <input
-                        type="time"
-                        className={inputSm}
-                        value={f.time}
-                        onChange={(e) => updateFinding(f.id, { time: e.target.value })}
-                      />
-                    </Field>
                   </div>
-                  <Field label="Đã báo OEM" en="OEM notified">
-                    <QuickPick
-                      value={f.oemNotified}
-                      onChange={(v) => updateFinding(f.id, { oemNotified: v as YesNo })}
-                      options={["Có", "Không"]}
-                    />
-                  </Field>
                   <Field label="Ảnh bằng chứng" en="Evidence photos">
                     <PhotoGrid
                       photos={f.photos || []}
