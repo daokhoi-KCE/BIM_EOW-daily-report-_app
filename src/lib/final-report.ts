@@ -1,6 +1,7 @@
 import type { ReportDraft, TurbineWork, Finding } from "@/lib/types";
 import { severityTier } from "@/components/print/shared";
 import { SECTIONS, classifyFinding, type ReportSection } from "@/lib/report-sections";
+import { normalizeTurbineLabel } from "@/lib/turbine-label";
 
 export interface DatedTurbineWork extends TurbineWork {
   date: string;
@@ -58,16 +59,10 @@ export interface FinalReportData {
 /**
  * Khoá gộp tuabin.
  *
- * Đội hiện trường gõ tên trụ không thống nhất: "WTG 02", "WTG02", "WTG 2"
- * đều là một trụ. Bỏ khoảng trắng và số 0 đứng đầu để ba cách viết cùng về
- * một khoá, đồng thời "WTG 22" không bị nhầm với "WTG 2".
+ * "WTG 02", "WTG02" và "WTG 2" là một trụ, nên khoá dùng chính dạng đã
+ * chuẩn hoá — vừa gộp đúng, vừa cho ra nhãn hiển thị thống nhất.
  */
-const turbineKey = (t: string) =>
-  t
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "")
-    .replace(/(\D)0+(\d)/g, "$1$2");
+const turbineKey = (t: string) => normalizeTurbineLabel(t).toUpperCase();
 
 function lastNonEmpty(entries: DatedTurbineWork[], field: keyof TurbineWork): string {
   for (let i = entries.length - 1; i >= 0; i--) {
@@ -86,7 +81,7 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     let agg = turbineMap.get(key);
     if (!agg) {
       agg = {
-        turbine: label.trim() || key,
+        turbine: normalizeTurbineLabel(label) || key,
         work: [],
         findings: [],
         latestPct: null,

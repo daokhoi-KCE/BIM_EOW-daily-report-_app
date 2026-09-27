@@ -4,6 +4,7 @@ import PrintToolbar from "@/components/print/PrintToolbar";
 import ReportPrintView from "@/components/print/ReportPrintView";
 import { getReportDraft, getReportHeader } from "@/lib/actions/reports";
 import { buildExportName, EXPORT_DOC_NAME } from "@/lib/project-info";
+import { normalizeTurbineLabel } from "@/lib/turbine-label";
 
 /**
  * Tiêu đề trang quyết định tên file PDF. Thêm tên trụ và ngày để 22 báo cáo
@@ -15,7 +16,7 @@ export async function generateMetadata(
   const { id } = await props.params;
   const header = await getReportHeader(id);
   return {
-    title: header ? buildExportName(header.turbines, header.date) : EXPORT_DOC_NAME,
+    title: header ? buildExportName(normalizeTurbineLabel(header.turbines), header.date) : EXPORT_DOC_NAME,
   };
 }
 

@@ -5,6 +5,7 @@ import FinalReportView from "@/components/final-report/FinalReportView";
 import { getReportDraftsByIds, getReportHeader } from "@/lib/actions/reports";
 import { buildFinalReportData } from "@/lib/final-report";
 import { buildExportName, EXPORT_DOC_NAME } from "@/lib/project-info";
+import { normalizeTurbineLabel } from "@/lib/turbine-label";
 
 function idsFrom(raw: string | string[] | undefined): string[] {
   return Array.isArray(raw) ? raw : raw ? [raw] : [];
@@ -28,7 +29,7 @@ export async function generateMetadata(
 
   const header = await getReportHeader(ids[0]);
   return {
-    title: header ? buildExportName(header.turbines, header.date) : EXPORT_DOC_NAME,
+    title: header ? buildExportName(normalizeTurbineLabel(header.turbines), header.date) : EXPORT_DOC_NAME,
   };
 }
 
