@@ -3,6 +3,7 @@ import { NAVY, AMBER } from "@/lib/theme";
 import { td, ThCell, severityTier, TIER } from "@/components/print/shared";
 import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
+import { sortFindingsByArea } from "@/lib/finding-order";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
@@ -131,7 +132,7 @@ export default function TurbineSection({
                 </tr>
               </thead>
               <tbody>
-                {t.findings.map((f, i) => {
+                {sortFindingsByArea(t.findings).map((f, i) => {
                   const section = SECTION_BY_ID.get(classifyFinding(f.area, f.desc));
                   const tone = TIER[severityTier(f.severity)];
                   return (
@@ -151,7 +152,7 @@ export default function TurbineSection({
             </table>
           ) : (
             <div className="space-y-4">
-              {t.findings.map((f, i) => (
+              {sortFindingsByArea(t.findings).map((f, i) => (
                 <FindingCard key={`${f.id}-${i}`} f={f} />
               ))}
             </div>

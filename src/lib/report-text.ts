@@ -1,5 +1,6 @@
 import type { ReportDraft } from "./types";
 import { delayMinutes } from "./utils";
+import { sortFindingsByArea } from "./finding-order";
 
 /** Xuất text song ngữ để copy gửi Zalo/email */
 export function buildText(rep: ReportDraft): string {
@@ -33,7 +34,7 @@ export function buildText(rep: ReportDraft): string {
   if (rep.findings.length) {
     L.push(``);
     L.push(`3. PHÁT HIỆN / FINDINGS`);
-    rep.findings.forEach((f) => {
+    sortFindingsByArea(rep.findings).forEach((f) => {
       L.push(
         `- [M${f.severity || "?"}] ${f.turbine || "?"} ${f.area || ""}: ${f.desc || ""}${f.photo ? ` (${f.photo})` : ""}${f.photos?.length ? ` [${f.photos.length} ảnh đính kèm/attached]` : ""} — báo OEM/notified: ${f.oemNotified || "?"}`,
       );

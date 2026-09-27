@@ -13,6 +13,7 @@ import {
 } from "@/lib/project-info";
 import DocumentFrontMatter from "@/components/final-report/DocumentFrontMatter";
 import SectionFindings, { sectionAnchorId } from "@/components/final-report/SectionFindings";
+import DefectMatrix from "@/components/final-report/DefectMatrix";
 import FindingsMatrix from "@/components/final-report/FindingsMatrix";
 import TurbineSection, { turbineAnchorId } from "@/components/final-report/TurbineSection";
 
@@ -134,7 +135,10 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
           <TocLine href="#s4-summary" no="4.1" en="Summary" vi="Tóm tắt" />
           {/* Ma trận chỉ có nghĩa khi so sánh nhiều trụ. */}
           {multiTurbine && (
-            <TocLine href="#findings-matrix" no="4.2" en="Findings matrix" vi="Ma trận phát hiện" />
+            <>
+              <TocLine href="#defect-matrix" no="4.2" en="Defect matrix" vi="Ma trận lỗi OK/NG" />
+              <TocLine href="#findings-matrix" no="4.3" en="Findings matrix" vi="Ma trận phát hiện" />
+            </>
           )}
         </div>
         <TocLine href="#s5-main-findings" no="5." en="Main findings" vi="Chi tiết phát hiện" />
@@ -395,8 +399,14 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
 
       {multiTurbine && (
         <>
+          <h4 id="defect-matrix" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+            4.2 Defect matrix{" "}
+            <span className="italic font-normal text-slate-400">/ Ma trận lỗi — OK/NG theo trụ</span>
+          </h4>
+          <DefectMatrix turbines={turbines} />
+
           <h4 id="findings-matrix" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
-            4.2 Findings matrix{" "}
+            4.3 Findings matrix{" "}
             <span className="italic font-normal text-slate-400">/ Ma trận phát hiện</span>
           </h4>
           <FindingsMatrix turbines={turbines} />

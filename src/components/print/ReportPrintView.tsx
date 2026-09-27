@@ -3,6 +3,7 @@ import type { ReportDraft } from "@/lib/types";
 import { delayMinutes } from "@/lib/utils";
 import { NAVY, AMBER } from "@/lib/theme";
 import { td, severityTier, TIER, delayColor, SectionTitle, InfoRow, ThCell, SafetyBox } from "@/components/print/shared";
+import { sortFindingsByArea } from "@/lib/finding-order";
 
 export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
   const turbines = rep.turbines.filter((t) => t.turbine);
@@ -20,9 +21,9 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
           <Image
             src="/images/logo-mbwind-horizontal.png"
             alt="MB WIND"
-            width={220}
-            height={75}
-            className="h-12 w-auto object-contain"
+            width={420}
+            height={140}
+            className="h-32 w-auto object-contain"
           />
           <div className="flex-1">
             <h1 className="text-[21px] font-extrabold uppercase leading-tight" style={{ color: NAVY }}>
@@ -71,7 +72,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
 
       <div className="grid grid-cols-4 gap-3.5 avoid-break">
         <InfoRow en="Date" vi="Ngày" value={rep.date} />
-        <InfoRow en="Day" vi="Ngày thứ" value={rep.dayNum ? `${rep.dayNum} /15` : ""} />
+        <InfoRow en="Day" vi="Ngày thứ" value={rep.dayNum ? `${rep.dayNum}` : ""} />
         <InfoRow en="Planned" vi="Trụ kế hoạch" value={rep.plannedTurbines} />
         <InfoRow en="Actual" vi="Trụ thực tế" value={rep.actualTurbines} />
         <InfoRow en="Prepared by" vi="Người lập" value={rep.preparedBy} />
@@ -173,7 +174,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
             </span>
           </div>
           <div className="space-y-4">
-            {rep.findings.map((f, i) => {
+            {sortFindingsByArea(rep.findings).map((f, i) => {
               const tier = severityTier(f.severity);
               const t = TIER[tier];
               return (
@@ -183,43 +184,46 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                 >
                   <div className="grid grid-cols-3 gap-0 print:gap-0">
                     {/* Cột trái: Diễn giải & thông tin */}
-                    <div className="col-span-1 p-3 border-r print:border-r" style={{ borderRightColor: `var(--tone-border, ${t.border})` }}>
-                      <div className="mb-2">
-                        <div className="text-[14px] font-extrabold text-slate-900 mb-1">
-                          #{i + 1} — {f.turbine || "?"} {f.area ? `· ${f.area}` : ""}
+                    <div className="col-span-1 p-4 border-r print:border-r bg-white" style={{ borderRightColor: `var(--tone-border, ${t.border})` }}>
+                      <div className="mb-3">
+                        <div className="text-[20px] font-bold text-slate-900 mb-2 tracking-tight">
+                          #{i + 1} — {f.area || "?"}
                         </div>
                         <div
-                          className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded border bg-white ${t.border} ${t.text}`}
+                          className={`inline-block text-[12px] font-semibold px-2 py-1 rounded-sm ${t.border} ${t.text} bg-opacity-10`}
+                          style={{ backgroundColor: t.border + '15' }}
                         >
-                          M{f.severity || "?"} · {t.en}
+                          M{f.severity || "?"} • {t.en}
                         </div>
                       </div>
-                      <p className="text-[14px] leading-snug text-slate-900 rounded px-3 py-2 bg-yellow-100/70 border-l-4 border-yellow-500 mb-2 font-semibold">
+                      <p className="text-[18px] leading-relaxed text-slate-900 mb-3 font-normal">
                         {f.desc || "—"}
                       </p>
-                      <div className="text-[10.5px] text-slate-600 space-y-0.5">
-                        {f.photo && <div><span className="font-semibold">Photo ref:</span> {f.photo}</div>}
-                        <div><span className="font-semibold">Time notified:</span> {f.time || "—"}</div>
-                        <div className="flex items-center gap-1">
-                          <span className="font-semibold">OEM notified:</span>
-                          <span className={f.oemNotified === "Không" ? "font-bold text-red-700" : "font-semibold"}>
+                      <div className="space-y-1.5">
+                        {f.photo && <div className="text-[12px] text-slate-600"><span className="font-medium text-slate-700">Ref:</span> {f.photo}</div>}
+                        <div className="text-[12px] text-slate-600"><span className="font-medium text-slate-700">Notified:</span> {f.time || "—"}</div>
+                        <div className="text-[12px] text-slate-600 flex items-center gap-1.5">
+                          <span className="font-medium text-slate-700">OEM:</span>
+                          <span className={f.oemNotified === "Không" ? "font-semibold text-red-600" : "font-normal text-slate-600"}>
                             {f.oemNotified || "—"}
                           </span>
                         </div>
                       </div>
                       {tier === "high" && (
-                        <div className="mt-2 text-[10px] font-bold text-red-700 leading-tight">
-                          ⚠ REQUIRES<br />IMMEDIATE<br />ATTENTION
+                        <div className="mt-3 pt-3 border-t border-red-200">
+                          <div className="text-[11px] font-semibold text-red-600 leading-snug">
+                            ⚠ REQUIRES IMMEDIATE ATTENTION
+                          </div>
                         </div>
                       )}
                     </div>
 
                     {/* Cột phải: Ảnh chứng cứ */}
-                    <div className="col-span-2 p-3">
+                    <div className="col-span-2 p-5">
                       {f.photos && f.photos.length > 0 ? (
-                        <div className="photo-list flex flex-wrap gap-2">
+                        <div className="photo-list flex flex-wrap gap-3">
                           {f.photos.map((p) => (
-                            <div key={p.id} className="photo-item avoid-break flex-1 min-w-[200px]">
+                            <div key={p.id} className="photo-item avoid-break flex-1 min-w-[220px]">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={p.url}
@@ -231,7 +235,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-slate-400 italic text-[11px] text-center py-8">
+                        <div className="text-slate-400 italic text-[12px] text-center py-12">
                           No photos attached / Không có ảnh
                         </div>
                       )}

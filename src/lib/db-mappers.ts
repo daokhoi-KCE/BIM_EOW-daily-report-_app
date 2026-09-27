@@ -34,15 +34,8 @@ export function rowToListItem(row: ReportListViewRow): ReportListItem {
   };
 }
 
-export function rowsToReportDraft(
-  report: ReportRow,
-  turbineRows: TurbineWorkRow[],
-  lockRows: LockScheduleRow[],
-  findingRows: FindingRow[],
-  findingPhotos: Map<string, Photo[]>,
-  sitePhotos: Photo[],
-): ReportDraft {
-  const turbines: TurbineWork[] = turbineRows.map((t) => ({
+export function rowToTurbine(t: TurbineWorkRow): TurbineWork {
+  return {
     id: t.id,
     turbine: s(t.turbine),
     blade: s(t.blade_done),
@@ -52,18 +45,22 @@ export function rowsToReportDraft(
     drone: s(t.drone),
     pct: numStr(t.pct_done),
     notes: s(t.notes),
-  }));
+  };
+}
 
-  const locks: LockCycle[] = lockRows.map((l) => ({
+export function rowToLock(l: LockScheduleRow): LockCycle {
+  return {
     id: l.id,
     turbine: s(l.turbine),
     pos: s(l.blade_position),
     planned: timeStr(l.planned_time),
     actual: timeStr(l.actual_time),
     notes: s(l.notes),
-  }));
+  };
+}
 
-  const findings: Finding[] = findingRows.map((f) => ({
+export function rowToFinding(f: FindingRow, photos: Photo[] = []): Finding {
+  return {
     id: f.id,
     turbine: s(f.turbine),
     area: s(f.area),
@@ -72,8 +69,57 @@ export function rowsToReportDraft(
     photo: s(f.photo_ref),
     oemNotified: yn(f.oem_notified),
     time: timeStr(f.time_notified),
-    photos: findingPhotos.get(f.id) ?? [],
-  }));
+    photos,
+  };
+}
+
+// Các trường scalar của báo cáo (không gồm mảng con) — dùng khi merge realtime.
+export function reportRowToScalars(
+  report: ReportRow,
+): Omit<ReportDraft, "turbines" | "locks" | "findings" | "photos"> {
+  return {
+    id: report.id,
+    date: report.report_date,
+    dayNum: numStr(report.day_number),
+    plannedTurbines: s(report.planned_turbines),
+    actualTurbines: s(report.actual_turbines),
+    preparedBy: s(report.prepared_by),
+    oemRep: s(report.oem_rep),
+    sentTo: s(report.sent_to),
+    weather: s(report.weather),
+    safety: {
+      hazard: { yn: yn(report.safety_hazard_yn), detail: s(report.safety_hazard_detail) },
+      shutdown: { yn: yn(report.safety_shutdown_yn), detail: s(report.safety_shutdown_detail) },
+      major: { yn: yn(report.safety_major_yn), detail: s(report.safety_major_detail) },
+    },
+    progress: {
+      plannedToday: s(report.progress_planned_today),
+      actualToday: s(report.progress_actual_today),
+      cumulative: numStr(report.progress_cumulative),
+      onSchedule: s(report.progress_on_schedule),
+    },
+    issues: s(report.issues),
+    tomorrow: s(report.tomorrow_plan),
+    signPrepared: s(report.sign_prepared),
+    signOEM: s(report.sign_oem),
+    signSite: s(report.sign_site),
+    updatedAt: new Date(report.updated_at).getTime(),
+  };
+}
+
+export function rowsToReportDraft(
+  report: ReportRow,
+  turbineRows: TurbineWorkRow[],
+  lockRows: LockScheduleRow[],
+  findingRows: FindingRow[],
+  findingPhotos: Map<string, Photo[]>,
+  sitePhotos: Photo[],
+): ReportDraft {
+  const turbines: TurbineWork[] = turbineRows.map(rowToTurbine);
+  const locks: LockCycle[] = lockRows.map(rowToLock);
+  const findings: Finding[] = findingRows.map((f) =>
+    rowToFinding(f, findingPhotos.get(f.id) ?? []),
+  );
 
   return {
     id: report.id,
