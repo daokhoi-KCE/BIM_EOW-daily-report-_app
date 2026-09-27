@@ -343,20 +343,23 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
       <h4 className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5">
         Severity scale <span className="italic font-normal text-slate-400">/ Thang mức độ</span>
       </h4>
-      <table className="w-full border-collapse text-[12px] avoid-break">
-        <tbody>
-          {SEVERITY_SCALE.map((s) => (
-            <tr key={s.level}>
-              <td className="border-b border-slate-200 py-1 pr-3 align-top font-bold whitespace-nowrap" style={{ color: NAVY }}>
-                M{s.level}
-              </td>
-              <td className="border-b border-slate-200 py-1 align-top text-slate-700">
-                {s.en} <span className="italic text-slate-400">/ {s.vi}</span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="avoid-break">
+        {SEVERITY_SCALE.map((s) => (
+          <div key={s.title} className="avoid-break flex items-stretch gap-3 mb-1.5">
+            {/* Dải màu bên trái, tra nhanh như bảng chú giải của tài liệu mẫu. */}
+            <div className="w-[7px] shrink-0 rounded-sm" style={{ background: s.color }} />
+            <div className="flex-1 py-0.5">
+              <div className="text-[12.5px] font-bold" style={{ color: NAVY }}>
+                {s.level !== null ? `M${s.level} — ` : ""}
+                {s.title}
+                <span className="font-normal italic text-slate-400"> / {s.titleVi}</span>
+              </div>
+              <div className="text-[11.5px] text-slate-700 leading-snug">{s.en}</div>
+              <div className="text-[11px] italic text-slate-500 leading-snug">{s.vi}</div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <h4 className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5">
         Findings by section <span className="italic font-normal text-slate-400">/ Phân bố theo hạng mục</span>

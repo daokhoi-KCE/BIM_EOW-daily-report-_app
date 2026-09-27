@@ -53,13 +53,63 @@ export const STANDARDS = [
   { ref: "DNVGL-ST-0376", title: "Rotor blades for wind turbines" },
 ] as const;
 
-/** Thang mức độ nghiêm trọng dùng trong toàn báo cáo. */
+/**
+ * Thang mức độ nghiêm trọng dùng trong toàn báo cáo.
+ *
+ * Diễn đạt theo lối của báo cáo visual inspection tiêu chuẩn: mỗi mức nêu
+ * tình trạng cụm thiết bị rồi đến hành động khuyến nghị, kèm một dải màu để
+ * tra nhanh. Mức "chưa phân loại" dành cho phát hiện chưa được chấm điểm —
+ * dữ liệu hiện trường có những dòng như vậy.
+ */
 export const SEVERITY_SCALE = [
-  { level: 1, en: "No action required", vi: "Không cần xử lý" },
-  { level: 2, en: "Monitor at next scheduled service", vi: "Theo dõi ở lần bảo dưỡng kế tiếp" },
-  { level: 3, en: "Repair within the agreed maintenance window", vi: "Sửa trong đợt bảo dưỡng đã thống nhất" },
-  { level: 4, en: "Repair required before continued operation", vi: "Phải sửa trước khi vận hành tiếp" },
-  { level: 5, en: "Stop the turbine immediately", vi: "Dừng máy ngay" },
+  {
+    level: 1,
+    title: "Good",
+    titleVi: "Tốt",
+    en: "Component in good status and no conspicuous issues found. Recorded for reference only; no action required.",
+    vi: "Cụm thiết bị ở tình trạng tốt, không phát hiện vấn đề đáng kể. Chỉ ghi nhận để theo dõi, không cần xử lý.",
+    color: "#16A34A",
+  },
+  {
+    level: 2,
+    title: "Minor defects",
+    titleVi: "Lỗi nhẹ",
+    en: "Component has minor defects and nonconformities. Monitor at the next scheduled service.",
+    vi: "Cụm thiết bị có lỗi nhẹ và điểm không phù hợp. Theo dõi ở lần bảo dưỡng kế tiếp.",
+    color: "#FACC15",
+  },
+  {
+    level: 3,
+    title: "Moderate defects",
+    titleVi: "Lỗi trung bình",
+    en: "Component has defects and nonconformities that require repair within the agreed maintenance window.",
+    vi: "Cụm thiết bị có lỗi và điểm không phù hợp, cần sửa trong đợt bảo dưỡng đã thống nhất.",
+    color: "#F59E0B",
+  },
+  {
+    level: 4,
+    title: "Major defects",
+    titleVi: "Lỗi nặng",
+    en: "Component has major defects and nonconformities and immediate action is recommended. Repair before continued operation.",
+    vi: "Cụm thiết bị có lỗi nặng và điểm không phù hợp, khuyến nghị xử lý ngay. Phải sửa trước khi vận hành tiếp.",
+    color: "#EA580C",
+  },
+  {
+    level: 5,
+    title: "Severe defects",
+    titleVi: "Lỗi nghiêm trọng",
+    en: "Component has severe defects and nonconformities and further operation of the turbine is not recommended. Stop the turbine immediately.",
+    vi: "Cụm thiết bị có lỗi nghiêm trọng và điểm không phù hợp, không khuyến nghị tiếp tục vận hành tuabin. Dừng máy ngay.",
+    color: "#DC2626",
+  },
+  {
+    level: null,
+    title: "Unclassified",
+    titleVi: "Chưa phân loại",
+    en: "No severity recorded at the time of inspection, or the component could not be accessed.",
+    vi: "Chưa chấm mức độ tại thời điểm kiểm tra, hoặc không tiếp cận được cụm thiết bị.",
+    color: "#9CA3AF",
+  },
 ] as const;
 
 /**
