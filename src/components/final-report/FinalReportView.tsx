@@ -19,6 +19,15 @@ import TurbineSection, { turbineAnchorId } from "@/components/final-report/Turbi
 
 const ISSUE = "A";
 
+/**
+ * Mã commit đang chạy, để biết trang đang xem là bản nào.
+ *
+ * Bản production và bản preview của một nhánh dùng chung cơ sở dữ liệu nên
+ * nhìn dữ liệu thì không phân biệt được; mở nhầm bản là chuyện rất dễ xảy ra.
+ * Vercel đặt sẵn biến này cho mọi lần build.
+ */
+const BUILD_REF = (process.env.VERCEL_GIT_COMMIT_SHA ?? "local").slice(0, 7);
+
 function StatCard({
   label,
   labelVi,
@@ -437,6 +446,9 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         {docRef} · Issue {ISSUE} · {DOCUMENT_CLASSIFICATION} · Tổng hợp tự động từ {totals.reports}{" "}
         báo cáo hằng ngày ({data.dateFrom} → {data.dateTo}).{" "}
         <span className="italic">Auto-generated from {totals.reports} daily reports.</span>
+        {" · "}
+        {/* Mã build: để phân biệt bản preview đang xem với bản production. */}
+        <span className="font-mono">build {BUILD_REF}</span>
       </p>
     </div>
   );
