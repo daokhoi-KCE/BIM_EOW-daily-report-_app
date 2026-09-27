@@ -1,5 +1,4 @@
 import type { ReportDraft } from "./types";
-import { delayMinutes } from "./utils";
 import { sortFindingsByArea } from "./finding-order";
 
 /** Xuất text song ngữ để copy gửi Zalo/email */
@@ -22,18 +21,9 @@ export function buildText(rep: ReportDraft): string {
       `- ${t.turbine}: cánh/blade ${t.blade || "—"}, Hub ${t.hub || "—"}, Nacelle ${t.nacelle || "—"}, Tower ${t.tower || "—"}, Drone ${t.drone || "—"}, ${t.pct || "?"}%${t.notes ? " — " + t.notes : ""}`,
     );
   });
-  L.push(``);
-  L.push(`2. LỊCH KHÓA ROTOR / LOCK SCHEDULE`);
-  rep.locks.forEach((l) => {
-    if (!l.turbine) return;
-    const d = delayMinutes(l.planned, l.actual);
-    L.push(
-      `- ${l.turbine} (${l.pos || "?"}): KH ${l.planned || "--:--"} → TT ${l.actual || "--:--"}${d !== null ? ` (trễ/delay ${d}p)` : ""}${l.notes ? " — " + l.notes : ""}`,
-    );
-  });
   if (rep.findings.length) {
     L.push(``);
-    L.push(`3. PHÁT HIỆN / FINDINGS`);
+    L.push(`2. PHÁT HIỆN / FINDINGS`);
     sortFindingsByArea(rep.findings).forEach((f) => {
       L.push(
         `- [M${f.severity || "?"}] ${f.turbine || "?"} ${f.area || ""}: ${f.desc || ""}${f.photo ? ` (${f.photo})` : ""}${f.photos?.length ? ` [${f.photos.length} ảnh đính kèm/attached]` : ""}`,
@@ -41,7 +31,7 @@ export function buildText(rep: ReportDraft): string {
     });
   }
   L.push(``);
-  L.push(`4. AN TOÀN / SAFETY`);
+  L.push(`3. AN TOÀN / SAFETY`);
   L.push(
     `- Nguy hiểm/Hazard: ${rep.safety.hazard.yn || "—"}${rep.safety.hazard.detail ? " — " + rep.safety.hazard.detail : ""}`,
   );
@@ -52,18 +42,18 @@ export function buildText(rep: ReportDraft): string {
     `- Lỗi nặng M4-5/Major defect: ${rep.safety.major.yn || "—"}${rep.safety.major.detail ? " — " + rep.safety.major.detail : ""}`,
   );
   L.push(``);
-  L.push(`5. SO VỚI KẾ HOẠCH / PROGRESS`);
+  L.push(`4. SO VỚI KẾ HOẠCH / PROGRESS`);
   L.push(
     `Lũy kế / Cumulative: ${rep.progress.cumulative || "—"} /22   Đúng tiến độ / On schedule: ${rep.progress.onSchedule || "—"}`,
   );
   if (rep.issues) {
     L.push(``);
-    L.push(`6. VƯỚNG MẮC / ISSUES`);
+    L.push(`5. VƯỚNG MẮC / ISSUES`);
     L.push(rep.issues);
   }
   if (rep.tomorrow) {
     L.push(``);
-    L.push(`7. KẾ HOẠCH MAI / TOMORROW`);
+    L.push(`6. KẾ HOẠCH MAI / TOMORROW`);
     L.push(rep.tomorrow);
   }
   L.push(``);

@@ -1,13 +1,11 @@
 import Image from "next/image";
 import type { ReportDraft } from "@/lib/types";
-import { delayMinutes } from "@/lib/utils";
 import { NAVY, AMBER } from "@/lib/theme";
-import { td, severityTier, TIER, delayColor, SectionTitle, InfoRow, ThCell, SafetyBox } from "@/components/print/shared";
+import { td, severityTier, TIER, SectionTitle, InfoRow, ThCell, SafetyBox } from "@/components/print/shared";
 import { sortFindingsByArea } from "@/lib/finding-order";
 
 export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
   const turbines = rep.turbines.filter((t) => t.turbine);
-  const locks = rep.locks.filter((l) => l.turbine);
   const totalPhotos =
     (rep.photos?.length || 0) + rep.findings.reduce((s, f) => s + (f.photos?.length || 0), 0);
   const highFindings = rep.findings.filter((f) => severityTier(f.severity) === "high").length;
@@ -117,43 +115,10 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
         </table>
       )}
 
-      <SectionTitle en="2. Lock schedule" vi="Lịch khóa / mở rotor" />
-      {locks.length === 0 ? (
-        <p className="text-[12px] text-slate-400 italic">No data / Không có dữ liệu</p>
-      ) : (
-        <table className="w-full border-collapse avoid-break">
-          <thead>
-            <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-              <ThCell en="Turbine" vi="Trụ" />
-              <ThCell en="Position" vi="Vị trí" />
-              <ThCell en="Planned" vi="Giờ KH" />
-              <ThCell en="Actual" vi="Giờ TT" />
-              <ThCell en="Delay (min)" vi="Trễ (phút)" />
-              <ThCell en="Notes" vi="Ghi chú" />
-            </tr>
-          </thead>
-          <tbody>
-            {locks.map((l) => {
-              const d = delayMinutes(l.planned, l.actual);
-              return (
-                <tr key={l.id} className="avoid-break">
-                  <td className={`${td} pl-2 font-semibold`}>{l.turbine}</td>
-                  <td className={td}>{l.pos || "—"}</td>
-                  <td className={td}>{l.planned || "--:--"}</td>
-                  <td className={td}>{l.actual || "--:--"}</td>
-                  <td className={`${td} font-bold ${delayColor(d)}`}>{d !== null ? d : "—"}</td>
-                  <td className={td}>{l.notes || ""}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-
       {rep.findings.length > 0 && (
         <>
           <SectionTitle
-            en={`3. Findings (${rep.findings.length} total${highFindings > 0 ? ` — ${highFindings} critical` : ""})`}
+            en={`2. Findings (${rep.findings.length} total${highFindings > 0 ? ` — ${highFindings} critical` : ""})`}
             vi={`Phát hiện (tổng ${rep.findings.length}${highFindings > 0 ? ` — ${highFindings} nghiêm trọng` : ""})`}
           />
           <div className="flex items-center gap-2 -mt-1 mb-3 flex-wrap">
@@ -243,14 +208,14 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
         </>
       )}
 
-      <SectionTitle en="4. Safety & incidents" vi="An toàn & sự cố" />
+      <SectionTitle en="3. Safety & incidents" vi="An toàn & sự cố" />
       <div className="grid grid-cols-1 gap-2">
         <SafetyBox en="Safety hazard" vi="Nguy hiểm an toàn" item={rep.safety.hazard} />
         <SafetyBox en="Shutdown requirement" vi="Yêu cầu dừng máy" item={rep.safety.shutdown} />
         <SafetyBox en="Severity 4–5 defect" vi="Lỗi mức 4–5" item={rep.safety.major} />
       </div>
 
-      <SectionTitle en="5. Progress vs plan" vi="So với kế hoạch" />
+      <SectionTitle en="4. Progress vs plan" vi="So với kế hoạch" />
       <div className="grid grid-cols-3 gap-3.5 avoid-break">
         <InfoRow en="Planned today" vi="Trụ KH hôm nay" value={rep.progress.plannedToday} />
         <InfoRow en="Actual done" vi="Trụ xong hôm nay" value={rep.progress.actualToday} />
@@ -277,14 +242,14 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
 
       {rep.issues && (
         <>
-          <SectionTitle en="6. Issues" vi="Vướng mắc" />
+          <SectionTitle en="5. Issues" vi="Vướng mắc" />
           <p className="text-[14px] whitespace-pre-wrap avoid-break">{rep.issues}</p>
         </>
       )}
 
       {rep.tomorrow && (
         <>
-          <SectionTitle en="7. Tomorrow's plan" vi="Kế hoạch ngày mai" />
+          <SectionTitle en="6. Tomorrow's plan" vi="Kế hoạch ngày mai" />
           <p className="text-[14px] whitespace-pre-wrap avoid-break">{rep.tomorrow}</p>
         </>
       )}

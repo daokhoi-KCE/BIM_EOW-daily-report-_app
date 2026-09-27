@@ -15,8 +15,7 @@ import YesNoToggle from "@/components/form/YesNoToggle";
 import PhotoGrid from "@/components/form/PhotoGrid";
 import Lightbox from "@/components/form/Lightbox";
 import { NAVY, AMBER, NAVY_DARK } from "@/lib/theme";
-import { delayMinutes } from "@/lib/utils";
-import { emptyTurbine, emptyLock, emptyFinding } from "@/lib/blank-report";
+import { emptyTurbine, emptyFinding } from "@/lib/blank-report";
 import { buildText } from "@/lib/report-text";
 import { saveReport } from "@/lib/actions/reports";
 import {
@@ -31,7 +30,6 @@ import { useReportCollab } from "@/hooks/useReportCollab";
 type OpenSections = {
   info: boolean;
   turbines: boolean;
-  locks: boolean;
   findings: boolean;
   photos: boolean;
   safety: boolean;
@@ -44,7 +42,6 @@ type OpenSections = {
 const initialOpen: OpenSections = {
   info: true,
   turbines: true,
-  locks: false,
   findings: false,
   photos: false,
   safety: false,
@@ -121,18 +118,6 @@ export default function ReportEditor({
     setSaveState("dirty");
   };
 
-  const updateLock = (id: string, patch: Partial<ReportDraft["locks"][number]>) => {
-    setRep((r) => ({ ...r, locks: r.locks.map((l) => (l.id === id ? { ...l, ...patch } : l)) }));
-    setSaveState("dirty");
-  };
-  const addLock = () => {
-    setRep((r) => ({ ...r, locks: [...r.locks, emptyLock()] }));
-    setSaveState("dirty");
-  };
-  const delLock = (id: string) => {
-    setRep((r) => ({ ...r, locks: r.locks.filter((l) => l.id !== id) }));
-    setSaveState("dirty");
-  };
 
   const updateFinding = (id: string, patch: Partial<ReportDraft["findings"][number]>) => {
     onFindingFocus(id); // giữ lock kể cả khi thao tác không tạo focus (QuickPick trên Safari/mobile)
@@ -348,67 +333,7 @@ export default function ReportEditor({
         </SectionCard>
 
         <SectionCard
-          title="2. Lịch khóa / mở rotor"
-          en="Rotor lock/unlock schedule"
-          open={open.locks}
-          onToggle={() => toggle("locks")}
-          badge={<span className="text-[11px] text-white/70 font-mono">{rep.locks.length}</span>}
-        >
-          {rep.locks.map((l) => {
-            const d = delayMinutes(l.planned, l.actual);
-            return (
-              <RowCard key={l.id} onDelete={() => delLock(l.id)}>
-                <div className="grid grid-cols-2 gap-2 pr-6">
-                  <Field label="Trụ" en="Turbine">
-                    <input
-                      className={inputSm}
-                      placeholder="T05"
-                      value={l.turbine}
-                      onChange={(e) => updateLock(l.id, { turbine: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Vị trí cánh" en="Blade position">
-                    <QuickPick value={l.pos} onChange={(v) => updateLock(l.id, { pos: v })} options={["A", "B", "C"]} />
-                  </Field>
-                </div>
-                <div className="grid grid-cols-2 gap-2 pr-6">
-                  <Field label="Giờ KH" en="Planned time">
-                    <input
-                      type="time"
-                      className={inputSm}
-                      value={l.planned}
-                      onChange={(e) => updateLock(l.id, { planned: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Giờ thực tế" en="Actual time">
-                    <input
-                      type="time"
-                      className={inputSm}
-                      value={l.actual}
-                      onChange={(e) => updateLock(l.id, { actual: e.target.value })}
-                    />
-                  </Field>
-                </div>
-                {d !== null && (
-                  <div
-                    className={`text-[11.5px] font-bold ${
-                      d > 15 ? "text-red-600" : d > 0 ? "text-amber-600" : "text-emerald-600"
-                    }`}
-                  >
-                    {d > 0 ? `Trễ / Delay: ${d} phút` : d < 0 ? `Sớm / Early: ${-d} phút` : "Đúng giờ / On time"}
-                  </div>
-                )}
-                <Field label="Ghi chú" en="Notes">
-                  <input className={inputSm} value={l.notes} onChange={(e) => updateLock(l.id, { notes: e.target.value })} />
-                </Field>
-              </RowCard>
-            );
-          })}
-          <AddButton label="Thêm lần khóa / Add lock cycle" onClick={addLock} />
-        </SectionCard>
-
-        <SectionCard
-          title="3. Phát hiện trong ngày"
+          title="2. Phát hiện trong ngày"
           en="Findings today"
           open={open.findings}
           onToggle={() => toggle("findings")}
@@ -503,7 +428,7 @@ export default function ReportEditor({
         </SectionCard>
 
         <SectionCard
-          title="4. An toàn & sự cố"
+          title="3. An toàn & sự cố"
           en="Safety & incidents — mandatory, Scope 3.1"
           open={open.safety}
           onToggle={() => toggle("safety")}
@@ -547,7 +472,7 @@ export default function ReportEditor({
           )}
         </SectionCard>
 
-        <SectionCard title="5. So với kế hoạch" en="Progress vs plan" open={open.progress} onToggle={() => toggle("progress")}>
+        <SectionCard title="4. So với kế hoạch" en="Progress vs plan" open={open.progress} onToggle={() => toggle("progress")}>
           <div className="grid grid-cols-2 gap-2.5">
             <Field label="Trụ KH hôm nay" en="Planned today">
               <input
@@ -594,7 +519,7 @@ export default function ReportEditor({
           </Field>
         </SectionCard>
 
-        <SectionCard title="6. Vướng mắc trong ngày" en="Issues today" open={open.issues} onToggle={() => toggle("issues")}>
+        <SectionCard title="5. Vướng mắc trong ngày" en="Issues today" open={open.issues} onToggle={() => toggle("issues")}>
           <textarea
             rows={3}
             className={inputCls}
@@ -604,7 +529,7 @@ export default function ReportEditor({
           />
         </SectionCard>
 
-        <SectionCard title="7. Kế hoạch ngày mai" en="Tomorrow's plan" open={open.tomorrow} onToggle={() => toggle("tomorrow")}>
+        <SectionCard title="6. Kế hoạch ngày mai" en="Tomorrow's plan" open={open.tomorrow} onToggle={() => toggle("tomorrow")}>
           <textarea
             rows={3}
             className={inputCls}
