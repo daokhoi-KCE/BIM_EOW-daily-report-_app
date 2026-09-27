@@ -81,6 +81,56 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
 
   return (
     <div className="max-w-[800px] mx-auto bg-white text-slate-900 px-6 py-6 print:px-0 print:py-0">
+      {/* ── Dải chẩn đoán ───────────────────────────────────────────────
+          Đếm thẳng trên dữ liệu vừa lấy từ Supabase, trước mọi bước lọc và
+          gom nhóm. Khi báo cáo trống, dải này cho biết dữ liệu chết ở đâu:
+          lấy về đã rỗng, hay lấy được nhưng gom nhóm đánh rơi. Chỉ hiện
+          trên màn hình, không in ra. */}
+      {(() => {
+        const rawFindings = data.reports.reduce((s, r) => s + r.findings.length, 0);
+        const rawPhotos = data.reports.reduce(
+          (s, r) => s + r.findings.reduce((n, f) => n + (f.photos?.length ?? 0), 0),
+          0,
+        );
+        const signedPhotos = data.reports.reduce(
+          (s, r) => s + r.findings.reduce((n, f) => n + (f.photos?.filter((p) => p.url).length ?? 0), 0),
+          0,
+        );
+        const withTurbine = data.reports.reduce(
+          (s, r) => s + r.findings.filter((f) => f.turbine.trim()).length,
+          0,
+        );
+        const healthy = rawFindings > 0 && rawFindings === totals.findings && signedPhotos === rawPhotos;
+        return (
+          <div
+            className={`print-hide mb-3 rounded-md border px-3 py-2 text-[11.5px] leading-relaxed ${
+              healthy ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-400 bg-amber-50 text-amber-900"
+            }`}
+          >
+            <b>Chẩn đoán dữ liệu</b> (chỉ hiện trên màn hình, không in):{" "}
+            {data.reports.length} báo cáo lấy được · {rawFindings} finding thô ·{" "}
+            {withTurbine} finding tự khai tên trụ · {totals.findings} finding vào báo cáo ·{" "}
+            {signedPhotos}/{rawPhotos} ảnh ký được URL · build {BUILD_REF}
+            {rawFindings === 0 && (
+              <div className="font-bold mt-1">
+                → Không lấy được finding nào từ CSDL. Lỗi ở khâu truy vấn hoặc phân quyền, không phải
+                ở phần gom nhóm.
+              </div>
+            )}
+            {rawFindings > 0 && totals.findings === 0 && (
+              <div className="font-bold mt-1">
+                → Lấy được finding nhưng gom nhóm đánh rơi hết. Lỗi ở bước xác định tên trụ.
+              </div>
+            )}
+            {rawPhotos > 0 && signedPhotos < rawPhotos && (
+              <div className="font-bold mt-1">
+                → {rawPhotos - signedPhotos} ảnh không ký được URL. Lỗi ở Supabase Storage.
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── Dòng đầu trang, lặp lại kiểu tài liệu kiểm định ────────────── */}
       <div className="flex items-start justify-between gap-4 text-[10px] text-slate-500 pb-1.5 border-b border-slate-300">
         <div>
