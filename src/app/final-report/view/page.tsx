@@ -4,15 +4,15 @@ import PrintToolbar from "@/components/print/PrintToolbar";
 import FinalReportView from "@/components/final-report/FinalReportView";
 import { getReportDraftsByIds } from "@/lib/actions/reports";
 import { buildFinalReportData } from "@/lib/final-report";
+import { EXPORT_DOC_NAME } from "@/lib/project-info";
 
 /**
  * Trình duyệt lấy tên file PDF từ tiêu đề trang, nên tiêu đề ở đây chính là
  * tên file khi bấm Xuất PDF. Phải ghi đè tiêu đề của layout gốc
- * ("BIM EOW — Báo cáo hằng ngày"), vốn là tên của báo cáo ngày chứ không
- * phải báo cáo tổng hợp.
+ * ("BIM EOW — Báo cáo hằng ngày"), vốn là tên của báo cáo ngày.
  */
 export const metadata: Metadata = {
-  title: "BIM - Final inspection",
+  title: EXPORT_DOC_NAME,
 };
 
 export default async function FinalReportViewPage(props: PageProps<"/final-report/view">) {

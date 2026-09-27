@@ -45,6 +45,28 @@ export const CLASSIFICATION_KEY = [
   { level: "FOR PUBLIC RELEASE", meaning: "No restriction", meaningVi: "Không hạn chế" },
 ] as const;
 
+/**
+ * Tên tài liệu khi xuất PDF.
+ *
+ * Trình duyệt lấy tên file từ tiêu đề trang, nên đây chính là tên file người
+ * dùng nhận được.
+ */
+export const EXPORT_DOC_NAME = "BIM - Final inspection";
+
+/**
+ * Ghép tên file cho một bản in cụ thể.
+ *
+ * Báo cáo tổng hợp chỉ có một bản nên dùng tên gốc. Báo cáo ngày có 22 bản;
+ * nếu để trùng tên thì tải về cái sau đè cái trước, nên nối thêm tên trụ và
+ * ngày. Loại bỏ các ký tự mà hệ điều hành không cho đặt trong tên file.
+ */
+export function buildExportName(...parts: (string | undefined)[]) {
+  const clean = parts
+    .map((p) => (p ?? "").replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  return [EXPORT_DOC_NAME, ...clean].join(" - ");
+}
+
 /** Mục 2 — Standards. */
 export const STANDARDS = [
   { ref: "IEC 61400-1", title: "Wind energy generation systems — Design requirements" },

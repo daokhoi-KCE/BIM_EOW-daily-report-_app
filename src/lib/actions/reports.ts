@@ -128,6 +128,31 @@ async function signPhotos(
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Chỉ lấy ngày và tên trụ của một báo cáo.
+ *
+ * Dùng cho tiêu đề trang in — tiêu đề quyết định tên file PDF. Gọi
+ * getReportDraft cho việc này sẽ kéo theo toàn bộ finding và ký URL cho
+ * hàng trăm ảnh, hoàn toàn thừa khi chỉ cần hai chuỗi.
+ */
+export async function getReportHeader(
+  id: string,
+): Promise<{ date: string; turbines: string } | null> {
+  if (!UUID_RE.test(id)) return null;
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase
+    .from("reports")
+    .select("report_date, planned_turbines, actual_turbines")
+    .eq("id", id)
+    .returns<{ report_date: string; planned_turbines: string | null; actual_turbines: string | null }[]>()
+    .maybeSingle();
+  if (error || !data) return null;
+  return {
+    date: data.report_date ?? "",
+    turbines: (data.planned_turbines ?? data.actual_turbines ?? "").trim(),
+  };
+}
+
 export async function getReportDraft(id: string): Promise<ReportDraft | null> {
   if (!UUID_RE.test(id)) return null;
 
