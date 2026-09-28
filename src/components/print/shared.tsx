@@ -8,8 +8,7 @@ export const td = "text-[14px] align-top border-b border-slate-300 py-2 pr-2";
  *
  * Bản final gộp dữ liệu của cả 22 trụ nên bảng nào cũng dài; cỡ chữ của báo
  * cáo ngày làm số trang phình ra và khó nhìn tổng thể. Báo cáo ngày giữ
- * nguyên `td`, vì ở đó mỗi trang chỉ có một trụ và chữ to dễ đọc tại hiện
- * trường.
+ * nguyên `td` vì mỗi bản chỉ có một trụ, bảng ngắn, không cần nén.
  */
 export const tdSm = "text-[11.5px] align-top border-b border-slate-300 py-1.5 pr-2";
 
