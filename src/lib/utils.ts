@@ -14,3 +14,12 @@ export function delayMinutes(planned: string, actual: string): number | null {
   if (diff < -600) diff += 1440; // qua ngày hôm sau, hiếm nhưng phòng trường hợp
   return diff;
 }
+
+/**
+ * "2026-08-17" → "17/08/2026". Ngày tháng trong báo cáo in theo thói quen
+ * Việt Nam; chuỗi không đúng dạng ISO được trả lại nguyên vẹn.
+ */
+export function formatDateDMY(iso: string | undefined): string {
+  const m = (iso ?? "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso ?? "");
+}

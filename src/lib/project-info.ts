@@ -25,6 +25,18 @@ export const PROJECT = {
   location: "Việt Nam",
 } as const;
 
+/**
+ * Thời gian của đợt kiểm tra EOW trên toàn công trường.
+ *
+ * Đây là mốc cố định của cả chiến dịch, không phải khoảng ngày của những
+ * báo cáo đang được chọn: bản final cho một trụ chỉ gộp đúng một báo cáo
+ * ngày, nhưng phần giới thiệu vẫn phải nêu thời gian kiểm tra của cả đợt.
+ */
+export const INSPECTION_PERIOD = {
+  from: "2026-08-17",
+  to: "2026-09-15",
+} as const;
+
 /** Bảng DOCUMENT CONTRIBUTORS. */
 export const INSPECTORS = [
   { name: "Đào Duy Khôi", role: "Inspector", roleVi: "Kỹ sư kiểm tra" },

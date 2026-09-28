@@ -2,6 +2,7 @@ import type { ReportDraft, TurbineWork, Finding } from "@/lib/types";
 import { severityTier } from "@/components/print/shared";
 import { SECTIONS, classifyFinding, type ReportSection } from "@/lib/report-sections";
 import { normalizeTurbineLabel } from "@/lib/turbine-label";
+import { excludeBladeSurvey } from "@/lib/final-report-filter";
 
 export interface DatedTurbineWork extends TurbineWork {
   date: string;
@@ -51,6 +52,11 @@ export interface FinalReportData {
     photos: number;
     turbinesCompleted: number;
   };
+  /**
+   * Số phát hiện thuộc đợt khảo sát cánh đã bị loại khỏi bản tổng hợp.
+   * Dữ liệu vẫn còn nguyên trong CSDL và trong báo cáo hằng ngày.
+   */
+  excludedBladeFindings: number;
   preparedBy: string[];
   oemReps: string[];
   safetyFlags: { date: string; hazard: boolean; shutdown: boolean; major: boolean }[];
@@ -100,6 +106,7 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
   const oemRepSet = new Set<string>();
   const safetyFlags: FinalReportData["safetyFlags"] = [];
   let sitePhotos = 0;
+  let excludedBladeFindings = 0;
 
   for (const r of reports) {
     if (r.preparedBy.trim()) preparedBySet.add(r.preparedBy.trim());
@@ -120,7 +127,12 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
       if (!label) continue;
       getAgg(label).work.push({ ...t, date: r.date });
     }
-    for (const f of r.findings) {
+    // Đợt khảo sát kết cấu cánh không thuộc phạm vi bản tổng hợp; báo cáo
+    // hằng ngày vẫn in đầy đủ.
+    const reportFindings = excludeBladeSurvey(r.findings);
+    excludedBladeFindings += r.findings.length - reportFindings.length;
+
+    for (const f of reportFindings) {
       const label = f.turbine.trim() || fallbackTurbine;
       if (!label) continue;
       const agg = getAgg(label);
@@ -209,6 +221,7 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     turbines,
     sections,
     totals,
+    excludedBladeFindings,
     preparedBy: [...preparedBySet].sort(),
     oemReps: [...oemRepSet].sort(),
     safetyFlags,

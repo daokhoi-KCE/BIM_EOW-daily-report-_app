@@ -2,8 +2,10 @@ import Image from "next/image";
 import type { FinalReportData } from "@/lib/final-report";
 import { NAVY, AMBER } from "@/lib/theme";
 import { SectionTitle, InfoRow } from "@/components/print/shared";
+import { formatDateDMY } from "@/lib/utils";
 import {
   PROJECT,
+  INSPECTION_PERIOD,
   INSPECTORS,
   STANDARDS,
   SEVERITY_SCALE,
@@ -77,6 +79,14 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
   const docRef = buildDocumentRef(data.dateFrom, data.dateTo, turbines.length);
   const scopeLabel = multiTurbine ? `${turbines.length} WTG` : turbines[0]?.turbine ?? "—";
   const sectionsWithFindings = sections.filter((s) => s.findings.length > 0);
+  // Thời gian kiểm tra là mốc của cả đợt, không phải khoảng ngày của những
+  // báo cáo đang chọn — bản một trụ chỉ có đúng một ngày.
+  const periodFrom = formatDateDMY(INSPECTION_PERIOD.from);
+  const periodTo = formatDateDMY(INSPECTION_PERIOD.to);
+  const reportDates =
+    data.dateFrom === data.dateTo
+      ? formatDateDMY(data.dateFrom)
+      : `${formatDateDMY(data.dateFrom)} → ${formatDateDMY(data.dateTo)}`;
 
   return (
     <div className="max-w-[800px] mx-auto bg-white text-slate-900 px-6 py-6 print:px-0 print:py-0">
@@ -99,7 +109,9 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
           (s, r) => s + r.findings.filter((f) => f.turbine.trim()).length,
           0,
         );
-        const healthy = rawFindings > 0 && rawFindings === totals.findings && signedPhotos === rawPhotos;
+        // Phần khảo sát cánh bị loại có chủ đích, nên trừ ra trước khi so.
+        const expected = rawFindings - data.excludedBladeFindings;
+        const healthy = rawFindings > 0 && expected === totals.findings && signedPhotos === rawPhotos;
         return (
           <div
             className={`print-hide mb-3 rounded-md border px-3 py-2 text-[11.5px] leading-relaxed ${
@@ -108,7 +120,8 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
           >
             <b>Chẩn đoán dữ liệu</b> (chỉ hiện trên màn hình, không in):{" "}
             {data.reports.length} báo cáo lấy được · {rawFindings} finding thô ·{" "}
-            {withTurbine} finding tự khai tên trụ · {totals.findings} finding vào báo cáo ·{" "}
+            {withTurbine} finding tự khai tên trụ · {data.excludedBladeFindings} finding khảo sát
+            cánh không in · {totals.findings} finding vào báo cáo ·{" "}
             {signedPhotos}/{rawPhotos} ảnh ký được URL · build {BUILD_REF}
             {rawFindings === 0 && (
               <div className="font-bold mt-1">
@@ -116,7 +129,7 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
                 ở phần gom nhóm.
               </div>
             )}
-            {rawFindings > 0 && totals.findings === 0 && (
+            {expected > 0 && totals.findings === 0 && (
               <div className="font-bold mt-1">
                 → Lấy được finding nhưng gom nhóm đánh rơi hết. Lỗi ở bước xác định tên trụ.
               </div>
@@ -237,8 +250,9 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         trách nhiệm bảo trì từ nhà sản xuất sang chủ đầu tư.
       </p>
       <p className="text-[13.5px] leading-relaxed text-justify mt-2">
-        Báo cáo này tổng hợp <b>{totals.reports}</b> báo cáo kiểm tra hằng ngày lập từ{" "}
-        <b>{data.dateFrom || "—"}</b> đến <b>{data.dateTo || "—"}</b>, bao phủ{" "}
+        Đợt kiểm tra được thực hiện tại hiện trường từ <b>{periodFrom}</b> đến{" "}
+        <b>{periodTo}</b>. Báo cáo này tổng hợp <b>{totals.reports}</b> báo cáo kiểm tra hằng ngày
+        ({reportDates}), bao phủ{" "}
         <b>{totals.turbines}</b> tuabin với tổng cộng <b>{totals.findings}</b> phát hiện và{" "}
         <b>{totals.photos}</b> ảnh hiện trường. Toàn bộ phát hiện được sắp xếp lại theo cụm thiết bị
         (mục 5) để tiện đối chiếu giữa các trụ, và giữ nguyên cách trình bày theo từng trụ ở mục
@@ -246,8 +260,9 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         <b>{INSPECTORS.map((p) => p.name).join(" và ")}</b> thực hiện tại hiện trường.
       </p>
       <p className="text-[11.5px] italic text-slate-500 leading-relaxed text-justify mt-2">
-        This report consolidates {totals.reports} daily inspection reports issued between{" "}
-        {data.dateFrom || "—"} and {data.dateTo || "—"}, covering {totals.turbines} turbines with a
+        The inspection was carried out on site between {periodFrom} and {periodTo}. This report
+        consolidates {totals.reports} daily inspection reports ({reportDates}), covering{" "}
+        {totals.turbines} turbines with a
         total of {totals.findings} findings and {totals.photos} site photographs, recorded during the
         End-of-Warranty visual inspection of the {PROJECT.siteName}. Findings are regrouped by
         component and location in Section 5 to allow comparison across turbines; the per-turbine view
@@ -282,11 +297,7 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         <InfoRow en="Owner" vi="Chủ đầu tư" value={PROJECT.owner} />
         <InfoRow en="Location" vi="Địa điểm" value={PROJECT.location} />
         <InfoRow en="Inspection type" vi="Loại kiểm tra" value="EOW visual" />
-        <InfoRow
-          en="Period"
-          vi="Giai đoạn"
-          value={data.dateFrom && data.dateTo ? `${data.dateFrom} → ${data.dateTo}` : ""}
-        />
+        <InfoRow en="Inspection period" vi="Thời gian kiểm tra" value={`${periodFrom} → ${periodTo}`} />
         <InfoRow en="Daily reports" vi="Số báo cáo ngày" value={String(totals.reports)} />
         <InfoRow en="Inspectors" vi="Kỹ sư kiểm tra" value={INSPECTORS.map((p) => p.name).join(", ")} />
         <InfoRow en="Issued" vi="Ngày phát hành" value={generatedAt} />
@@ -472,7 +483,7 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
 
       <p className="text-[10.5px] text-slate-400 mt-8 pt-2 border-t border-slate-200">
         {docRef} · Issue {ISSUE} · {DOCUMENT_CLASSIFICATION} · Tổng hợp tự động từ {totals.reports}{" "}
-        báo cáo hằng ngày ({data.dateFrom} → {data.dateTo}).{" "}
+        báo cáo hằng ngày ({reportDates}).{" "}
         <span className="italic">Auto-generated from {totals.reports} daily reports.</span>
         {" · "}
         {/* Mã build: để phân biệt bản preview đang xem với bản production. */}
