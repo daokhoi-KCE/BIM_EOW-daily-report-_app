@@ -49,13 +49,13 @@ function StatCard({
       className="avoid-break rounded-md p-3 text-center"
       style={{ background: "rgba(31,53,82,0.05)", border: "1px solid rgba(31,53,82,0.15)" }}
     >
-      <div className="text-[22px] font-extrabold leading-tight" style={{ color: toneColor }}>
+      <div className="text-[18px] font-extrabold leading-tight" style={{ color: toneColor }}>
         {value}
       </div>
-      <div className="text-[11px] font-bold uppercase tracking-wide text-slate-600 leading-tight mt-0.5">
+      <div className="text-[9.5px] font-bold uppercase tracking-wide text-slate-600 leading-tight mt-0.5">
         {label}
       </div>
-      <div className="text-[9.5px] italic text-slate-400 leading-tight">{labelVi}</div>
+      <div className="text-[8px] italic text-slate-400 leading-tight">{labelVi}</div>
     </div>
   );
 }
@@ -63,12 +63,12 @@ function StatCard({
 function TocLine({ href, no, en, vi, page }: { href: string; no: string; en: string; vi?: string; page?: string }) {
   return (
     <a href={href} className="flex items-baseline gap-2 py-[3px] group">
-      <span className="text-[12.5px] text-slate-800 group-hover:underline whitespace-nowrap">
+      <span className="text-[10.5px] text-slate-800 group-hover:underline whitespace-nowrap">
         {no} {en}
       </span>
-      {vi && <span className="text-[10.5px] italic text-slate-400 whitespace-nowrap">/ {vi}</span>}
+      {vi && <span className="text-[9px] italic text-slate-400 whitespace-nowrap">/ {vi}</span>}
       <span className="flex-1 border-b border-dotted border-slate-300 translate-y-[-3px]" />
-      {page && <span className="text-[11.5px] text-slate-500 tabular-nums">{page}</span>}
+      {page && <span className="text-[9.5px] text-slate-500 tabular-nums">{page}</span>}
     </a>
   );
 }
@@ -142,7 +142,7 @@ export default function FinalReportView({
         const healthy = rawFindings > 0 && expected === totals.findings && signedPhotos === rawPhotos;
         return (
           <div
-            className={`print-hide mb-3 rounded-md border px-3 py-2 text-[11.5px] leading-relaxed ${
+            className={`print-hide mb-3 rounded-md border px-3 py-2 text-[9.5px] leading-relaxed ${
               healthy ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-400 bg-amber-50 text-amber-900"
             }`}
           >
@@ -173,7 +173,7 @@ export default function FinalReportView({
       })()}
 
       {/* ── Dòng đầu trang, lặp lại kiểu tài liệu kiểm định ────────────── */}
-      <div className="flex items-start justify-between gap-4 text-[10px] text-slate-500 pb-1.5 border-b border-slate-300">
+      <div className="flex items-start justify-between gap-4 text-[8.5px] text-slate-500 pb-1.5 border-b border-slate-300">
         <div>
           <div className="font-semibold text-slate-700">
             {PROJECT.siteName} — {PROJECT.inspectionType} — {scopeLabel}
@@ -197,18 +197,18 @@ export default function FinalReportView({
             className="h-12 w-auto object-contain"
           />
           <div className="flex-1">
-            <h1 className="text-[22px] font-extrabold uppercase leading-tight" style={{ color: NAVY }}>
+            <h1 className="text-[18px] font-extrabold uppercase leading-tight" style={{ color: NAVY }}>
               End-of-Warranty Visual Inspection Report
             </h1>
-            <div className="text-[12px] italic text-slate-500 leading-tight">
+            <div className="text-[10px] italic text-slate-500 leading-tight">
               Báo cáo kiểm tra trực quan hết hạn bảo hành
             </div>
-            <div className="text-[12.5px] text-slate-600 mt-0.5">
+            <div className="text-[10.5px] text-slate-600 mt-0.5">
               {PROJECT.siteName} — {scopeLabel} × {PROJECT.turbineModel}
             </div>
           </div>
         </div>
-        <div className="mt-2 inline-block text-[10.5px] font-bold px-2 py-0.5 rounded" style={{ background: NAVY, color: "white" }}>
+        <div className="mt-2 inline-block text-[9px] font-bold px-2 py-0.5 rounded" style={{ background: NAVY, color: "white" }}>
           {DOCUMENT_CLASSIFICATION}
         </div>
       </div>
@@ -217,7 +217,7 @@ export default function FinalReportView({
       <DocumentFrontMatter issue={ISSUE} issueDate={generatedAt} reportCount={totals.reports} />
 
       {/* ── Mục lục ───────────────────────────────────────────────────── */}
-      <SectionTitle en="Table of content" vi="Mục lục" />
+      <SectionTitle en="Table of content" vi="Mục lục" compact />
       <div className="avoid-break">
         <TocLine href="#s1-introduction" no="1." en="Introduction" vi="Giới thiệu" />
         <TocLine href="#s2-reference" no="2." en="Reference documents" vi="Tài liệu tham chiếu" />
@@ -283,23 +283,23 @@ export default function FinalReportView({
 
       {/* ── 1. Introduction ───────────────────────────────────────────── */}
       <div id="s1-introduction">
-        <SectionTitle en="1. Introduction" vi="Giới thiệu" />
+        <SectionTitle en="1. Introduction" vi="Giới thiệu" compact />
       </div>
-      <p className="text-[13.5px] leading-relaxed text-justify">
+      <p className="text-[11.5px] leading-relaxed text-justify">
         Dự án <b>{PROJECT.siteName}</b> do <b>{PROJECT.owner}</b> làm chủ đầu tư, gồm{" "}
         {PROJECT.totalTurbines} tuabin gió <b>{PROJECT.turbineModel}</b> của {PROJECT.oem}. Khi các
         tuabin đến hạn kết thúc thời gian bảo hành, chủ đầu tư tổ chức đợt kiểm tra trực quan
         End-of-Warranty (EOW) nhằm ghi nhận đầy đủ tình trạng thiết bị trước thời điểm chuyển giao
         trách nhiệm bảo trì từ nhà sản xuất sang chủ đầu tư.
       </p>
-      <p className="text-[13.5px] leading-relaxed text-justify mt-2">
+      <p className="text-[11.5px] leading-relaxed text-justify mt-2">
         Đợt kiểm tra được thực hiện tại hiện trường từ <b>{periodFrom}</b> đến{" "}
         <b>{periodTo}</b>, gồm <b>{site.totals.reports}</b> báo cáo kiểm tra hằng ngày trên{" "}
         <b>{site.totals.turbines}</b> tuabin, ghi nhận <b>{site.totals.findings}</b> phát hiện và{" "}
         <b>{site.totals.photos}</b> ảnh hiện trường. Công tác kiểm tra do{" "}
         <b>{INSPECTORS.map((p) => p.name).join(" và ")}</b> thực hiện.
       </p>
-      <p className="text-[13.5px] leading-relaxed text-justify mt-2">
+      <p className="text-[11.5px] leading-relaxed text-justify mt-2">
         {siteHasMore ? (
           <>
             Bản báo cáo này dành riêng cho <b>{scopeLabel}</b> ({reportDates}), với{" "}
@@ -318,7 +318,7 @@ export default function FinalReportView({
           </>
         )}
       </p>
-      <p className="text-[11.5px] italic text-slate-500 leading-relaxed text-justify mt-2">
+      <p className="text-[9.5px] italic text-slate-500 leading-relaxed text-justify mt-2">
         The End-of-Warranty visual inspection of the {PROJECT.siteName} was carried out on site
         between {periodFrom} and {periodTo}, covering {site.totals.turbines} turbines over{" "}
         {site.totals.reports} daily reports, with {site.totals.findings} findings and{" "}
@@ -330,9 +330,9 @@ export default function FinalReportView({
 
       {/* ── 2. Reference documents ────────────────────────────────────── */}
       <div id="s2-reference">
-        <SectionTitle en="2. Reference documents" vi="Tài liệu tham chiếu" />
+        <SectionTitle en="2. Reference documents" vi="Tài liệu tham chiếu" compact />
       </div>
-      <table className="w-full border-collapse text-[12.5px] avoid-break">
+      <table className="w-full border-collapse text-[10.5px] avoid-break">
         <tbody>
           {STANDARDS.map((s) => (
             <tr key={s.ref}>
@@ -346,33 +346,34 @@ export default function FinalReportView({
       </table>
       {/* ── 3. Information ────────────────────────────────────────────── */}
       <div id="s3-information">
-        <SectionTitle en="3. Information" vi="Thông tin" />
+        <SectionTitle en="3. Information" vi="Thông tin" compact />
       </div>
-      <h4 className="text-[13px] font-bold text-slate-700 mb-1.5">
+      <h4 className="text-[11px] font-bold text-slate-700 mb-1.5">
         3.1 Site information <span className="italic font-normal text-slate-400">/ Thông tin công trường</span>
       </h4>
       <div className="grid grid-cols-4 gap-3.5 avoid-break mb-4">
-        <InfoRow en="Site" vi="Công trường" value={PROJECT.siteName} />
-        <InfoRow en="Owner" vi="Chủ đầu tư" value={PROJECT.owner} />
-        <InfoRow en="Location" vi="Địa điểm" value={PROJECT.location} />
-        <InfoRow en="Inspection type" vi="Loại kiểm tra" value="EOW visual" />
-        <InfoRow en="Inspection period" vi="Thời gian kiểm tra" value={`${periodFrom} → ${periodTo}`} />
-        <InfoRow en="Daily reports" vi="Số báo cáo ngày" value={String(site.totals.reports)} />
-        <InfoRow en="Inspectors" vi="Kỹ sư kiểm tra" value={INSPECTORS.map((p) => p.name).join(", ")} />
-        <InfoRow en="Issued" vi="Ngày phát hành" value={generatedAt} />
-        <InfoRow en="Report scope" vi="Phạm vi bản này" value={`${scopeLabel} — ${reportDates}`} />
+        <InfoRow en="Site" vi="Công trường" value={PROJECT.siteName} compact />
+        <InfoRow en="Owner" vi="Chủ đầu tư" value={PROJECT.owner} compact />
+        <InfoRow en="Location" vi="Địa điểm" value={PROJECT.location} compact />
+        <InfoRow en="Inspection type" vi="Loại kiểm tra" value="EOW visual" compact />
+        <InfoRow en="Inspection period" vi="Thời gian kiểm tra" value={`${periodFrom} → ${periodTo}`} compact />
+        <InfoRow en="Daily reports" vi="Số báo cáo ngày" value={String(site.totals.reports)} compact />
+        <InfoRow en="Inspectors" vi="Kỹ sư kiểm tra" value={INSPECTORS.map((p) => p.name).join(", ")} compact />
+        <InfoRow en="Issued" vi="Ngày phát hành" value={generatedAt} compact />
+        <InfoRow en="Report scope" vi="Phạm vi bản này" value={`${scopeLabel} — ${reportDates}`} compact />
       </div>
-      <h4 className="text-[13px] font-bold text-slate-700 mb-1.5">
+      <h4 className="text-[11px] font-bold text-slate-700 mb-1.5">
         3.2 Turbine information <span className="italic font-normal text-slate-400">/ Thông tin tuabin</span>
       </h4>
       <div className="grid grid-cols-4 gap-3.5 avoid-break">
-        <InfoRow en="OEM" vi="Nhà sản xuất" value={PROJECT.oem} />
-        <InfoRow en="Model" vi="Model" value={PROJECT.turbineModel} />
-        <InfoRow en="Turbines surveyed" vi="Số trụ đã khảo sát" value={String(site.totals.turbines)} />
+        <InfoRow en="OEM" vi="Nhà sản xuất" value={PROJECT.oem} compact />
+        <InfoRow en="Model" vi="Model" value={PROJECT.turbineModel} compact />
+        <InfoRow en="Turbines surveyed" vi="Số trụ đã khảo sát" value={String(site.totals.turbines)} compact />
         <InfoRow
           en="Fleet size"
           vi="Tổng số trụ dự án"
           value={String(PROJECT.totalTurbines)}
+          compact
         />
       </div>
 
@@ -381,9 +382,10 @@ export default function FinalReportView({
         <SectionTitle
           en="4. Summary of the main findings — all turbines"
           vi="Tóm tắt phát hiện chính — toàn dự án"
+          compact
         />
       </div>
-      <h4 className="text-[13px] font-bold text-slate-700 mb-2">
+      <h4 className="text-[11px] font-bold text-slate-700 mb-2">
         4.1 Summary <span className="italic font-normal text-slate-400">/ Tóm tắt — số liệu của cả dự án</span>
       </h4>
       <div className="grid grid-cols-4 gap-2.5 avoid-break">
@@ -414,14 +416,14 @@ export default function FinalReportView({
         />
       </div>
       {siteHasMore && (
-        <p className="text-[11.5px] text-slate-500 mt-2 px-0.5">
+        <p className="text-[9.5px] text-slate-500 mt-2 px-0.5">
           Số liệu trên là của toàn bộ <b>{site.totals.turbines}</b> trụ. Riêng <b>{scopeLabel}</b>:{" "}
           <b>{totals.findings}</b> phát hiện ({totals.critical} nặng · {totals.medium} trung bình ·{" "}
           {totals.low} nhẹ), <b>{totals.photos}</b> ảnh — chi tiết ở mục 5.
         </p>
       )}
 
-      <h4 className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5">
+      <h4 className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5">
         Severity scale <span className="italic font-normal text-slate-400">/ Thang mức độ</span>
       </h4>
       <div className="avoid-break">
@@ -430,31 +432,31 @@ export default function FinalReportView({
             {/* Dải màu bên trái, tra nhanh như bảng chú giải của tài liệu mẫu. */}
             <div className="w-[7px] shrink-0 rounded-sm" style={{ background: s.color }} />
             <div className="flex-1 py-0.5">
-              <div className="text-[12.5px] font-bold" style={{ color: NAVY }}>
+              <div className="text-[10.5px] font-bold" style={{ color: NAVY }}>
                 {s.level !== null ? `M${s.level} — ` : ""}
                 {s.title}
                 <span className="font-normal italic text-slate-400"> / {s.titleVi}</span>
               </div>
-              <div className="text-[11.5px] text-slate-700 leading-snug">{s.en}</div>
-              <div className="text-[11px] italic text-slate-500 leading-snug">{s.vi}</div>
+              <div className="text-[9.5px] text-slate-700 leading-snug">{s.en}</div>
+              <div className="text-[9.5px] italic text-slate-500 leading-snug">{s.vi}</div>
             </div>
           </div>
         ))}
       </div>
 
-      <h4 className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5">
+      <h4 className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5">
         Findings by section <span className="italic font-normal text-slate-400">/ Phân bố theo hạng mục</span>
       </h4>
-      <table className="w-full border-collapse text-[12px] avoid-break">
+      <table className="w-full border-collapse text-[10px] avoid-break">
         <thead>
           <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-            <th className="text-left py-1.5 px-2 border-b-2 text-[11.5px] font-bold uppercase" style={{ borderColor: NAVY, color: NAVY }}>
+            <th className="text-left py-1.5 px-2 border-b-2 text-[9.5px] font-bold uppercase" style={{ borderColor: NAVY, color: NAVY }}>
               Section / Hạng mục
             </th>
             {["Total", "M4-5", "M3", "M1-2"].map((h) => (
               <th
                 key={h}
-                className="text-right py-1.5 px-2 border-b-2 text-[11.5px] font-bold uppercase whitespace-nowrap"
+                className="text-right py-1.5 px-2 border-b-2 text-[9.5px] font-bold uppercase whitespace-nowrap"
                 style={{ borderColor: NAVY, color: NAVY }}
               >
                 {h}
@@ -462,7 +464,7 @@ export default function FinalReportView({
             ))}
             {siteHasMore && (
               <th
-                className="text-right py-1.5 px-2 border-b-2 text-[11.5px] font-bold uppercase whitespace-nowrap"
+                className="text-right py-1.5 px-2 border-b-2 text-[9.5px] font-bold uppercase whitespace-nowrap"
                 style={{ borderColor: NAVY, color: NAVY, background: "rgba(31,53,82,0.05)" }}
               >
                 {scopeLabel}
@@ -519,11 +521,11 @@ export default function FinalReportView({
 
       {safetyCount > 0 && (
         <div className="avoid-break rounded-md border-2 border-red-600 bg-red-50 px-3 py-2.5 mt-3">
-          <div className="text-[12.5px] font-bold text-red-700 mb-1">
+          <div className="text-[10.5px] font-bold text-red-700 mb-1">
             ⚠ {safetyCount} ngày có vấn đề an toàn{" "}
             <span className="font-normal italic">/ day(s) with safety issue(s)</span>
           </div>
-          <div className="text-[12px] text-red-800 flex flex-wrap gap-x-3 gap-y-0.5">
+          <div className="text-[10px] text-red-800 flex flex-wrap gap-x-3 gap-y-0.5">
             {site.safetyFlags.map((s) => (
               <span key={s.date}>
                 {s.date}
@@ -538,13 +540,13 @@ export default function FinalReportView({
 
       {siteMulti && (
         <>
-          <h4 id="main-defects" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+          <h4 id="main-defects" className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
             4.2 Main defects by turbine{" "}
             <span className="italic font-normal text-slate-400">/ Lỗi chính theo từng trụ</span>
           </h4>
           <FleetMainDefects turbines={site.turbines} highlight={scopeTurbines} />
 
-          <h4 id="defect-matrix" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+          <h4 id="defect-matrix" className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
             4.3 Defect matrix{" "}
             <span className="italic font-normal text-slate-400">/ Ma trận lỗi — OK/NG theo trụ</span>
           </h4>
@@ -552,7 +554,7 @@ export default function FinalReportView({
 
           {INCLUDE_FULL_FINDINGS_MATRIX && (
             <>
-              <h4 id="findings-matrix" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+              <h4 id="findings-matrix" className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
                 4.4 Findings matrix{" "}
                 <span className="italic font-normal text-slate-400">
                   / Ma trận phát hiện — toàn bộ các trụ
@@ -569,6 +571,7 @@ export default function FinalReportView({
         <SectionTitle
           en={`5. Main findings — ${scopeLabel}`}
           vi="Chi tiết phát hiện theo hạng mục"
+          compact
         />
       </div>
       {sections.map((g) => (
@@ -579,7 +582,7 @@ export default function FinalReportView({
       {multiTurbine && (
         <>
           <div id="s6-turbine-detail">
-            <SectionTitle en="6. Turbine detail" vi="Chi tiết từng tuabin" />
+            <SectionTitle en="6. Turbine detail" vi="Chi tiết từng tuabin" compact />
           </div>
           {turbines.map((t) => (
             <TurbineSection key={t.turbine} t={t} compact />
@@ -587,7 +590,7 @@ export default function FinalReportView({
         </>
       )}
 
-      <p className="text-[10.5px] text-slate-400 mt-8 pt-2 border-t border-slate-200">
+      <p className="text-[9px] text-slate-400 mt-8 pt-2 border-t border-slate-200">
         {docRef} · Issue {ISSUE} · {DOCUMENT_CLASSIFICATION} · Tổng hợp tự động từ {totals.reports}{" "}
         báo cáo hằng ngày ({reportDates}).{" "}
         <span className="italic">Auto-generated from {totals.reports} daily reports.</span>

@@ -1,6 +1,6 @@
 import type { TurbineAggregate } from "@/lib/final-report";
 import { NAVY, AMBER } from "@/lib/theme";
-import { td, ThCell, severityTier, TIER } from "@/components/print/shared";
+import { tdSm as td, ThCell, severityTier, TIER } from "@/components/print/shared";
 import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 import { sortFindingsByArea } from "@/lib/finding-order";
@@ -33,16 +33,16 @@ export default function TurbineSection({
         style={{ background: NAVY }}
       >
         <div>
-          <h3 className="text-[19px] font-extrabold uppercase tracking-wide leading-tight text-white">
+          <h3 className="text-[16px] font-extrabold uppercase tracking-wide leading-tight text-white">
             {t.turbine}
           </h3>
-          <div className="text-[11px] text-white/70 leading-tight">
+          <div className="text-[9.5px] text-white/70 leading-tight">
             {t.work.length} lần cập nhật · {t.findings.length} phát hiện{" "}
             <span className="italic">/ {t.work.length} updates · {t.findings.length} findings</span>
           </div>
         </div>
         <div
-          className="shrink-0 text-[15px] font-extrabold px-3.5 py-1.5 rounded"
+          className="shrink-0 text-[12.5px] font-extrabold px-3.5 py-1.5 rounded"
           style={{ background: pctOk ? "#1E9E5A" : AMBER, color: pctOk ? "white" : "#14222E" }}
         >
           {t.latestPct !== null ? `${t.latestPct}%` : "—"}
@@ -64,28 +64,28 @@ export default function TurbineSection({
             className="rounded-md p-2"
             style={{ background: "rgba(31,53,82,0.05)", border: "1px solid rgba(31,53,82,0.15)" }}
           >
-            <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: NAVY }}>
+            <div className="text-[8.5px] font-bold uppercase tracking-wide" style={{ color: NAVY }}>
               {en} <span className="italic font-normal text-slate-400 normal-case">/ {vi}</span>
             </div>
-            <div className="text-[13px] font-semibold text-slate-900 mt-0.5">{value || "—"}</div>
+            <div className="text-[11px] font-semibold text-slate-900 mt-0.5">{value || "—"}</div>
           </div>
         ))}
       </div>
 
-      <h4 className="text-[13px] font-bold text-slate-700 mt-4 mb-1.5">
+      <h4 className="text-[11px] font-bold text-slate-700 mt-4 mb-1.5">
         Tiến độ theo ngày <span className="italic font-normal text-slate-400">/ Progress by day</span>
       </h4>
       <table className="w-full border-collapse avoid-break">
         <thead>
           <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-            <ThCell en="Date" vi="Ngày" />
-            <ThCell en="Blade" vi="Cánh" />
-            <ThCell en="Hub" vi="Hub" />
-            <ThCell en="Nacelle" vi="Nacelle" />
-            <ThCell en="Tower" vi="Tháp" />
-            <ThCell en="Drone" vi="Drone" />
-            <ThCell en="%" vi="%" />
-            <ThCell en="Notes" vi="Ghi chú" />
+            <ThCell en="Date" vi="Ngày" compact />
+            <ThCell en="Blade" vi="Cánh" compact />
+            <ThCell en="Hub" vi="Hub" compact />
+            <ThCell en="Nacelle" vi="Nacelle" compact />
+            <ThCell en="Tower" vi="Tháp" compact />
+            <ThCell en="Drone" vi="Drone" compact />
+            <ThCell en="%" vi="%" compact />
+            <ThCell en="Notes" vi="Ghi chú" compact />
           </tr>
         </thead>
         <tbody>
@@ -108,7 +108,7 @@ export default function TurbineSection({
 
       {t.findings.length > 0 && (
         <>
-          <h4 className="text-[13px] font-bold text-slate-700 mt-4 mb-1.5">
+          <h4 className="text-[11px] font-bold text-slate-700 mt-4 mb-1.5">
             Phát hiện <span className="italic font-normal text-slate-400">/ Findings</span>
             {compact && (
               <span className="font-normal text-slate-400">
@@ -123,12 +123,12 @@ export default function TurbineSection({
             <table className="w-full border-collapse avoid-break">
               <thead>
                 <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-                  <ThCell en="Date" vi="Ngày" />
-                  <ThCell en="Section" vi="Hạng mục" />
-                  <ThCell en="Area" vi="Khu vực" />
-                  <ThCell en="Finding" vi="Phát hiện" />
-                  <ThCell en="Sev." vi="Mức" />
-                  <ThCell en="Photos" vi="Ảnh" />
+                  <ThCell en="Date" vi="Ngày" compact />
+                  <ThCell en="Section" vi="Hạng mục" compact />
+                  <ThCell en="Area" vi="Khu vực" compact />
+                  <ThCell en="Finding" vi="Phát hiện" compact />
+                  <ThCell en="Sev." vi="Mức" compact />
+                  <ThCell en="Photos" vi="Ảnh" compact />
                 </tr>
               </thead>
               <tbody>

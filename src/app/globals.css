@@ -25,7 +25,46 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Lưới ảnh của báo cáo tổng hợp: ba ảnh một hàng, khung cao bằng nhau.
+   Cố tình không dùng "grid grid-cols-3" của Tailwind — khi in có một quy tắc
+   chung ép mọi .grid.grid-cols-3 thành hai cột 1fr 2fr cho bố cục finding,
+   và nó sẽ nuốt luôn lưới ảnh này. Báo cáo ngày giữ .photo-list riêng, ảnh
+   vẫn to như cũ. */
+.fr-photo-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
 @media print {
+  /* WebKit bỏ qua break-inside:avoid trên con của grid/flex, nên khi in
+     chuyển lưới ảnh sang inline-block: vẫn ba ảnh một hàng, nhưng mỗi khung
+     ảnh tự xuống trang khi không đủ chỗ. */
+  .fr-photo-list {
+    display: block !important;
+    font-size: 0; /* bỏ khoảng trắng giữa các inline-block */
+  }
+  .fr-photo-item {
+    display: inline-block;
+    vertical-align: top;
+    width: 32.2% !important;
+    max-width: 32.2% !important;
+    margin: 0 1.7% 4px 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .fr-photo-item:nth-child(3n) {
+    margin-right: 0;
+  }
+  .fr-photo-item img {
+    display: block !important;
+    width: 100% !important;
+    height: 34mm !important;
+    object-fit: contain;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   .print-hide {
     display: none !important;
   }

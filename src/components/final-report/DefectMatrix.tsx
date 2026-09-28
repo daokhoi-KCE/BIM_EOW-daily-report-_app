@@ -72,7 +72,7 @@ export default function DefectMatrix({
   const isMarked = (t: string) => marked.has(t.trim().toUpperCase());
 
   if (turbines.length === 0) {
-    return <p className="text-[12px] text-slate-400 italic">No data / Không có dữ liệu</p>;
+    return <p className="text-[10px] text-slate-400 italic">No data / Không có dữ liệu</p>;
   }
 
   // grid[categoryId][turbineIndex] → Cell
@@ -129,12 +129,12 @@ export default function DefectMatrix({
                 style={{ borderColor: NAVY, minWidth: "52mm" }}
               >
                 <div
-                  className="text-[11.5px] font-bold uppercase tracking-wide leading-tight"
+                  className="text-[9.5px] font-bold uppercase tracking-wide leading-tight"
                   style={{ color: NAVY }}
                 >
                   Common defect
                 </div>
-                <div className="text-[9px] italic text-slate-400 leading-tight">Lỗi phổ biến</div>
+                <div className="text-[8px] italic text-slate-400 leading-tight">Lỗi phổ biến</div>
               </th>
               {turbines.map((t) => (
                 <th
@@ -147,7 +147,7 @@ export default function DefectMatrix({
                   title={t.turbine}
                 >
                   <div
-                    className="text-[11px] font-extrabold leading-tight"
+                    className="text-[9.5px] font-extrabold leading-tight"
                     style={{ color: isMarked(t.turbine) ? "white" : NAVY }}
                   >
                     {isMarked(t.turbine) ? (
@@ -165,7 +165,7 @@ export default function DefectMatrix({
                 style={{ borderColor: NAVY, background: "rgba(31,53,82,0.06)" }}
               >
                 <div
-                  className="text-[10px] font-bold uppercase leading-tight"
+                  className="text-[8.5px] font-bold uppercase leading-tight"
                   style={{ color: NAVY }}
                 >
                   Σ
@@ -186,10 +186,10 @@ export default function DefectMatrix({
                     className="border-b border-slate-300 py-1.5 px-2 align-middle sticky left-0 z-10"
                     style={{ background: ri % 2 ? "#F6F7F9" : "white" }}
                   >
-                    <div className="text-[12px] font-semibold text-slate-900 leading-tight">
+                    <div className="text-[10px] font-semibold text-slate-900 leading-tight">
                       {r.en}
                     </div>
-                    <div className="text-[9.5px] italic text-slate-500 leading-tight">{r.vi}</div>
+                    <div className="text-[8px] italic text-slate-500 leading-tight">{r.vi}</div>
                   </td>
                   {r.cells.map((c, ci) => {
                     const t = turbines[ci];
@@ -209,7 +209,7 @@ export default function DefectMatrix({
                     );
                   })}
                   <td
-                    className="border-b border-slate-300 text-center align-middle text-[11px] font-bold"
+                    className="border-b border-slate-300 text-center align-middle text-[9.5px] font-bold"
                     style={{ background: "rgba(31,53,82,0.06)", color: affected ? NG_COLOR : OK_COLOR }}
                   >
                     {affected || "·"}
@@ -223,7 +223,7 @@ export default function DefectMatrix({
                 style={{ background: "#E8EBF0", borderTop: `2px solid ${NAVY}` }}
               >
                 <div
-                  className="text-[11px] font-bold uppercase tracking-wide leading-tight"
+                  className="text-[9.5px] font-bold uppercase tracking-wide leading-tight"
                   style={{ color: NAVY }}
                 >
                   NG total / Tổng NG
@@ -232,7 +232,7 @@ export default function DefectMatrix({
               {perTurbineNg.map((n, i) => (
                 <td
                   key={turbines[i].turbine}
-                  className="text-center text-[11px] font-extrabold"
+                  className="text-center text-[9.5px] font-extrabold"
                   style={{
                     borderTop: `2px solid ${NAVY}`,
                     color: n ? NG_COLOR : OK_COLOR,
@@ -243,7 +243,7 @@ export default function DefectMatrix({
                 </td>
               ))}
               <td
-                className="text-center text-[11px] font-extrabold"
+                className="text-center text-[9.5px] font-extrabold"
                 style={{ borderTop: `2px solid ${NAVY}`, color: NAVY }}
               >
                 {totalNgCells}
@@ -253,7 +253,7 @@ export default function DefectMatrix({
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2 text-[10.5px] text-slate-600">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2 text-[9px] text-slate-600">
         <span className="font-semibold text-slate-700">Chú giải / Legend:</span>
         <span className="flex items-center gap-1.5">
           <Mark ok />

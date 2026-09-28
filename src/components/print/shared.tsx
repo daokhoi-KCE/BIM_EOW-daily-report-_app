@@ -3,6 +3,16 @@ import { NAVY } from "@/lib/theme";
 
 export const td = "text-[14px] align-top border-b border-slate-300 py-2 pr-2";
 
+/**
+ * Ô bảng cỡ nhỏ, dùng cho báo cáo tổng hợp.
+ *
+ * Bản final gộp dữ liệu của cả 22 trụ nên bảng nào cũng dài; cỡ chữ của báo
+ * cáo ngày làm số trang phình ra và khó nhìn tổng thể. Báo cáo ngày giữ
+ * nguyên `td`, vì ở đó mỗi trang chỉ có một trụ và chữ to dễ đọc tại hiện
+ * trường.
+ */
+export const tdSm = "text-[11.5px] align-top border-b border-slate-300 py-1.5 pr-2";
+
 export type Tier = "low" | "med" | "high" | "none";
 
 export function severityTier(sev: string): Tier {
@@ -58,39 +68,74 @@ export function delayColor(d: number | null) {
   return "text-emerald-700";
 }
 
-export function SectionTitle({ en, vi }: { en: string; vi: string }) {
-  return (
-    <div className="avoid-break mt-6 mb-3 rounded-md px-3.5 py-2.5" style={{ background: NAVY }}>
-      <h2 className="text-[19px] font-extrabold uppercase tracking-wide leading-tight text-white">
-        {en}
-      </h2>
-      <div className="text-[11.5px] italic text-white/70 leading-tight">{vi}</div>
-    </div>
-  );
-}
-
-export function InfoRow({ en, vi, value }: { en: string; vi: string; value: string }) {
+/** `compact`: cỡ chữ của báo cáo tổng hợp — nhỏ hơn báo cáo ngày. */
+export function SectionTitle({ en, vi, compact = false }: { en: string; vi: string; compact?: boolean }) {
   return (
     <div
-      className="avoid-break rounded-md p-2.5"
-      style={{ background: "rgba(31,53,82,0.05)", border: "1px solid rgba(31,53,82,0.15)" }}
+      className={`avoid-break rounded-md ${compact ? "mt-5 mb-2.5 px-3 py-2" : "mt-6 mb-3 px-3.5 py-2.5"}`}
+      style={{ background: NAVY }}
     >
-      <div className="text-[12px] font-bold uppercase tracking-wide leading-tight" style={{ color: NAVY }}>
+      <h2
+        className={`${compact ? "text-[16px]" : "text-[19px]"} font-extrabold uppercase tracking-wide leading-tight text-white`}
+      >
         {en}
+      </h2>
+      <div className={`${compact ? "text-[9.5px]" : "text-[11.5px]"} italic text-white/70 leading-tight`}>
+        {vi}
       </div>
-      <div className="text-[10px] italic text-slate-400 leading-tight">{vi}</div>
-      <div className="text-[15px] font-semibold text-slate-900 min-h-[19px] mt-1">{value || "—"}</div>
     </div>
   );
 }
 
-export function ThCell({ en, vi }: { en: string; vi: string }) {
+export function InfoRow({
+  en,
+  vi,
+  value,
+  compact = false,
+}: {
+  en: string;
+  vi: string;
+  value: string;
+  compact?: boolean;
+}) {
   return (
-    <th className="text-left py-2.5 px-2.5 border-b-2 align-bottom" style={{ borderColor: NAVY }}>
-      <div className="text-[12.5px] font-bold uppercase tracking-wide leading-tight" style={{ color: NAVY }}>
+    <div
+      className={`avoid-break rounded-md ${compact ? "p-2" : "p-2.5"}`}
+      style={{ background: "rgba(31,53,82,0.05)", border: "1px solid rgba(31,53,82,0.15)" }}
+    >
+      <div
+        className={`${compact ? "text-[10px]" : "text-[12px]"} font-bold uppercase tracking-wide leading-tight`}
+        style={{ color: NAVY }}
+      >
         {en}
       </div>
-      <div className="text-[9.5px] italic text-slate-400 normal-case leading-tight">{vi}</div>
+      <div className={`${compact ? "text-[8.5px]" : "text-[10px]"} italic text-slate-400 leading-tight`}>
+        {vi}
+      </div>
+      <div
+        className={`${compact ? "text-[12.5px] min-h-[16px]" : "text-[15px] min-h-[19px]"} font-semibold text-slate-900 mt-1`}
+      >
+        {value || "—"}
+      </div>
+    </div>
+  );
+}
+
+export function ThCell({ en, vi, compact = false }: { en: string; vi: string; compact?: boolean }) {
+  return (
+    <th
+      className={`text-left border-b-2 align-bottom ${compact ? "py-1.5 px-2" : "py-2.5 px-2.5"}`}
+      style={{ borderColor: NAVY }}
+    >
+      <div
+        className={`${compact ? "text-[10.5px]" : "text-[12.5px]"} font-bold uppercase tracking-wide leading-tight`}
+        style={{ color: NAVY }}
+      >
+        {en}
+      </div>
+      <div className={`${compact ? "text-[8px]" : "text-[9.5px]"} italic text-slate-400 normal-case leading-tight`}>
+        {vi}
+      </div>
     </th>
   );
 }

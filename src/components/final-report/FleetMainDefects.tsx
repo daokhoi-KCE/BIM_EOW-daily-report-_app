@@ -1,6 +1,6 @@
 import type { TurbineAggregate, DatedFinding } from "@/lib/final-report";
 import { NAVY } from "@/lib/theme";
-import { td, ThCell, severityTier, TIER } from "@/components/print/shared";
+import { tdSm as td, ThCell, severityTier, TIER } from "@/components/print/shared";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 
 /**
@@ -42,13 +42,13 @@ export default function FleetMainDefects({
       <table className="w-full border-collapse avoid-break">
         <thead>
           <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-            <ThCell en="Turbine" vi="Tuabin" />
-            <ThCell en="Progress" vi="Tiến độ" />
-            <ThCell en="Findings" vi="Phát hiện" />
-            <ThCell en="M4-5" vi="Nặng" />
-            <ThCell en="M3" vi="Trung bình" />
-            <ThCell en="M1-2" vi="Nhẹ" />
-            <ThCell en="Photos" vi="Ảnh" />
+            <ThCell en="Turbine" vi="Tuabin" compact />
+            <ThCell en="Progress" vi="Tiến độ" compact />
+            <ThCell en="Findings" vi="Phát hiện" compact />
+            <ThCell en="M4-5" vi="Nặng" compact />
+            <ThCell en="M3" vi="Trung bình" compact />
+            <ThCell en="M1-2" vi="Nhẹ" compact />
+            <ThCell en="Photos" vi="Ảnh" compact />
           </tr>
         </thead>
         <tbody>
@@ -63,7 +63,7 @@ export default function FleetMainDefects({
                 <td className={`${td} pl-2 whitespace-nowrap ${me ? "font-extrabold" : "font-semibold"}`}>
                   {t.turbine}
                   {me && (
-                    <span className="ml-1.5 text-[9.5px] font-bold uppercase tracking-wide px-1.5 py-[1px] rounded align-middle" style={{ background: NAVY, color: "white" }}>
+                    <span className="ml-1.5 text-[8px] font-bold uppercase tracking-wide px-1.5 py-[1px] rounded align-middle" style={{ background: NAVY, color: "white" }}>
                       Báo cáo này / this report
                     </span>
                   )}
@@ -82,12 +82,12 @@ export default function FleetMainDefects({
         </tbody>
       </table>
 
-      <h5 className="text-[12.5px] font-bold text-slate-700 mt-4 mb-1.5">
+      <h5 className="text-[10.5px] font-bold text-slate-700 mt-4 mb-1.5">
         Lỗi nặng của toàn dự án (M4-M5){" "}
         <span className="italic font-normal text-slate-400">/ Major defects across the site</span>
       </h5>
       {major.length === 0 ? (
-        <p className="text-[12px] italic text-slate-400 px-1">
+        <p className="text-[10px] italic text-slate-400 px-1">
           Không ghi nhận lỗi mức M4-M5 nào.{" "}
           <span className="not-italic">/ No M4-M5 defect recorded.</span>
         </p>
@@ -95,11 +95,11 @@ export default function FleetMainDefects({
         <table className="w-full border-collapse avoid-break">
           <thead>
             <tr style={{ background: "rgba(31,53,82,0.06)" }}>
-              <ThCell en="Turbine" vi="Tuabin" />
-              <ThCell en="Section" vi="Hạng mục" />
-              <ThCell en="Area" vi="Khu vực" />
-              <ThCell en="Finding" vi="Phát hiện" />
-              <ThCell en="Severity" vi="Mức độ" />
+              <ThCell en="Turbine" vi="Tuabin" compact />
+              <ThCell en="Section" vi="Hạng mục" compact />
+              <ThCell en="Area" vi="Khu vực" compact />
+              <ThCell en="Finding" vi="Phát hiện" compact />
+              <ThCell en="Severity" vi="Mức độ" compact />
             </tr>
           </thead>
           <tbody>
@@ -119,7 +119,7 @@ export default function FleetMainDefects({
                   <td className={td}>{f.desc || "—"}</td>
                   <td className={`${td} whitespace-nowrap`}>
                     <span
-                      className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded border bg-white ${tone.border} ${tone.text}`}
+                      className={`inline-block text-[9.5px] font-bold px-2 py-0.5 rounded border bg-white ${tone.border} ${tone.text}`}
                     >
                       M{f.severity || "?"} · {tone.en}
                     </span>
