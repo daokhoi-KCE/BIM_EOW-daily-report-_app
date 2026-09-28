@@ -1,7 +1,7 @@
 import type { ReportDraft, TurbineWork, Finding } from "@/lib/types";
 import { severityTier } from "@/components/print/shared";
 import { SECTIONS, classifyFinding, type ReportSection } from "@/lib/report-sections";
-import { normalizeTurbineLabel } from "@/lib/turbine-label";
+import { isTurbineLabel, normalizeTurbineLabel } from "@/lib/turbine-label";
 import { excludeBladeSurvey } from "@/lib/final-report-filter";
 
 export interface DatedTurbineWork extends TurbineWork {
@@ -122,8 +122,11 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     // báo cáo ngày. Không có bước lùi này thì 73% số finding bị bỏ rơi.
     const fallbackTurbine = r.plannedTurbines.trim() || r.actualTurbines.trim();
 
+    // Tên gõ sai ("WT08", "WTG", "WTG 0:") tạo ra trụ ma trong bảng tổng
+    // hợp, nên chỉ nhận tên đọc được; còn lại lấy tên ở đầu báo cáo ngày.
     for (const t of r.turbines) {
-      const label = t.turbine.trim() || fallbackTurbine;
+      const own = t.turbine.trim();
+      const label = (isTurbineLabel(own) ? own : "") || fallbackTurbine;
       if (!label) continue;
       getAgg(label).work.push({ ...t, date: r.date });
     }
@@ -133,7 +136,8 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     excludedBladeFindings += r.findings.length - reportFindings.length;
 
     for (const f of reportFindings) {
-      const label = f.turbine.trim() || fallbackTurbine;
+      const own = f.turbine.trim();
+      const label = (isTurbineLabel(own) ? own : "") || fallbackTurbine;
       if (!label) continue;
       const agg = getAgg(label);
       agg.findings.push({ ...f, date: r.date });

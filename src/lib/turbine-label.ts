@@ -24,3 +24,19 @@ export function normalizeTurbineLabel(raw: string | undefined): string {
   const rest = m[2].trim();
   return rest ? `WTG ${number} ${rest}` : `WTG ${number}`;
 }
+
+/**
+ * Chuỗi này có phải tên một trụ không?
+ *
+ * Cột tên trụ của finding được gõ tay và thỉnh thoảng bị lỗi: "WT08" (thiếu
+ * chữ G), "WTG" (thiếu số), "WTG 0:" (bấm nhầm phím), "T01". Nếu cứ lấy
+ * nguyên thì báo cáo tổng hợp mọc thêm những trụ không có thật, mỗi trụ một
+ * dòng trong bảng 22 trụ.
+ *
+ * Tên hợp lệ là "WTG" kèm một số — mọi cách viết hoa thường, có hay không
+ * dấu cách, gạch nối đều được. Chuỗi không đạt thì phải lấy tên trụ ghi ở
+ * đầu báo cáo ngày thay thế, chứ không bỏ finding đi.
+ */
+export function isTurbineLabel(raw: string | undefined): boolean {
+  return /^WTG\s*[-_]?\s*\d{1,3}$/i.test((raw ?? "").trim().replace(/\s+/g, " "));
+}
