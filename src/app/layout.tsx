@@ -1,16 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "BIM EOW — Báo cáo hằng ngày",
@@ -19,14 +8,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="vi"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body
-        className="min-h-full flex flex-col"
-        style={{ fontFamily: "ui-sans-serif, system-ui, sans-serif" }}
-      >
+    <html lang="vi" className="h-full antialiased">
+      {/* Bộ chữ đặt ở globals.css, không đặt inline: style inline thắng mọi
+          quy tắc CSS nên trước đây nó vô hiệu hoá luôn phần khai báo kia. */}
+      <body className="min-h-full flex flex-col">
         {children}
       </body>
     </html>

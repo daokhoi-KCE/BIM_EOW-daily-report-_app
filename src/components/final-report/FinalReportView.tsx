@@ -285,21 +285,21 @@ export default function FinalReportView({
       <div id="s1-introduction">
         <SectionTitle en="1. Introduction" vi="Giới thiệu" compact />
       </div>
-      <p className="text-[11.5px] leading-relaxed text-justify">
+      <p className="prose-doc text-[12px] leading-relaxed text-justify">
         Dự án <b>{PROJECT.siteName}</b> do <b>{PROJECT.owner}</b> làm chủ đầu tư, gồm{" "}
         {PROJECT.totalTurbines} tuabin gió <b>{PROJECT.turbineModel}</b> của {PROJECT.oem}. Khi các
         tuabin đến hạn kết thúc thời gian bảo hành, chủ đầu tư tổ chức đợt kiểm tra trực quan
         End-of-Warranty (EOW) nhằm ghi nhận đầy đủ tình trạng thiết bị trước thời điểm chuyển giao
         trách nhiệm bảo trì từ nhà sản xuất sang chủ đầu tư.
       </p>
-      <p className="text-[11.5px] leading-relaxed text-justify mt-2">
+      <p className="prose-doc text-[12px] leading-relaxed text-justify mt-2">
         Đợt kiểm tra được thực hiện tại hiện trường từ <b>{periodFrom}</b> đến{" "}
         <b>{periodTo}</b>, gồm <b>{site.totals.reports}</b> báo cáo kiểm tra hằng ngày trên{" "}
         <b>{site.totals.turbines}</b> tuabin, ghi nhận <b>{site.totals.findings}</b> phát hiện và{" "}
         <b>{site.totals.photos}</b> ảnh hiện trường. Công tác kiểm tra do{" "}
         <b>{INSPECTORS.map((p) => p.name).join(" và ")}</b> thực hiện.
       </p>
-      <p className="text-[11.5px] leading-relaxed text-justify mt-2">
+      <p className="prose-doc text-[12px] leading-relaxed text-justify mt-2">
         {siteHasMore ? (
           <>
             Bản báo cáo này dành riêng cho <b>{scopeLabel}</b> ({reportDates}), với{" "}
@@ -318,7 +318,7 @@ export default function FinalReportView({
           </>
         )}
       </p>
-      <p className="text-[9.5px] italic text-slate-500 leading-relaxed text-justify mt-2">
+      <p className="prose-doc text-[10px] italic text-slate-500 leading-relaxed text-justify mt-2">
         The End-of-Warranty visual inspection of the {PROJECT.siteName} was carried out on site
         between {periodFrom} and {periodTo}, covering {site.totals.turbines} turbines over{" "}
         {site.totals.reports} daily reports, with {site.totals.findings} findings and{" "}
@@ -437,8 +437,8 @@ export default function FinalReportView({
                 {s.title}
                 <span className="font-normal italic text-slate-400"> / {s.titleVi}</span>
               </div>
-              <div className="text-[9.5px] text-slate-700 leading-snug">{s.en}</div>
-              <div className="text-[9.5px] italic text-slate-500 leading-snug">{s.vi}</div>
+              <div className="prose-doc text-[10px] text-slate-700 leading-snug">{s.en}</div>
+              <div className="prose-doc text-[10px] italic text-slate-500 leading-snug">{s.vi}</div>
             </div>
           </div>
         ))}
@@ -522,7 +522,7 @@ export default function FinalReportView({
       {safetyCount > 0 && (
         <div className="avoid-break rounded-md border-2 border-red-600 bg-red-50 px-3 py-2.5 mt-3">
           <div className="text-[10.5px] font-bold text-red-700 mb-1">
-            ⚠ {safetyCount} ngày có vấn đề an toàn{" "}
+            {safetyCount} ngày có vấn đề an toàn{" "}
             <span className="font-normal italic">/ day(s) with safety issue(s)</span>
           </div>
           <div className="text-[10px] text-red-800 flex flex-wrap gap-x-3 gap-y-0.5">

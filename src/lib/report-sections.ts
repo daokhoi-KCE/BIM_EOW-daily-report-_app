@@ -36,8 +36,7 @@ export const SECTIONS: ReportSection[] = [
   { no: "5.17", id: "cooling-system", en: "Cooling System", vi: "Hệ làm mát" },
   { no: "5.18", id: "electrical", en: "Electrical Cabinets, Cabling and Lighting", vi: "Tủ điện, cáp và chiếu sáng" },
   { no: "5.19", id: "blades", en: "Blades and Blade Bearings", vi: "Cánh và ổ đỡ cánh" },
-  { no: "5.20", id: "safety-devices", en: "Safety Devices / Elements", vi: "Thiết bị và cấu kiện an toàn" },
-  { no: "5.21", id: "other", en: "Other Findings", vi: "Phát hiện khác" },
+  { no: "5.20", id: "other", en: "Other Findings", vi: "Phát hiện khác" },
 ];
 
 export const SECTION_BY_ID = new Map(SECTIONS.map((s) => [s.id, s]));
@@ -76,8 +75,9 @@ export function classifyFinding(areaRaw: string | undefined, descRaw?: string): 
   if (has(area, "cabinet", "electric", "junction box", "transformer", "cms", "light", "cable", "grid", "mvsg", "switch"))
     return "electrical";
   if (has(area, "blade", "pitch gear", "pitch motor", "pitch bearing", "nose cone")) return "blades";
-  if (has(area, "anchor point", "tie off", "tie-off", "guardrail", "guard rail", "eye wash", "fall arrest", "safety", "harness"))
-    return "safety-devices";
+  // Không còn mục riêng cho thiết bị an toàn: điểm neo, tay vịn, dây đai đều
+  // gắn liền với vị trí lắp chúng, nên để bộ luật bên dưới đưa về đúng cụm.
+  // Sáu phát hiện "Nacelle top — Anchor points" nhờ vậy về mục 5.11 Nacelle.
   if (has(area, "elevator", "ladder", "runner", "rung", "stair", "3s")) return "access-system";
 
   // ── Vị trí trên tháp ────────────────────────────────────────────────────
@@ -89,12 +89,18 @@ export function classifyFinding(areaRaw: string | undefined, descRaw?: string): 
   if (has(area, "door")) return "tower-base-basement";
 
   // Các đoạn tháp: chấp nhận cả "section b-a", "middle b-a", "tower b-a", "b - a".
+  //
+  // Bắt buộc khớp trọn từ. Mã đoạn tháp chỉ có một chữ cái nên nếu so chuỗi
+  // con thì "Nacelle top - Anchor points" hoá thành "top-anchor", chứa
+  // "top-a", và một phát hiện trên nóc khoang máy bị xếp vào đoạn tháp A-Top.
   const segment = area.replace(/\s*-\s*/g, "-");
-  if (has(segment, "base-d", "base -d", "base section-middle d", "middle d-base")) return "tower-base-d";
-  if (has(segment, "d-c")) return "tower-d-c";
-  if (has(segment, "c-b")) return "tower-c-b";
-  if (has(segment, "b-a")) return "tower-b-a";
-  if (has(segment, "a-top", "top-a")) return "tower-a-top";
+  const seg = (...codes: string[]) =>
+    codes.some((c) => new RegExp(`\\b${c}\\b`).test(segment));
+  if (seg("base-d", "base section-middle d", "middle d-base")) return "tower-base-d";
+  if (seg("d-c")) return "tower-d-c";
+  if (seg("c-b")) return "tower-c-b";
+  if (seg("b-a")) return "tower-b-a";
+  if (seg("a-top", "top-a")) return "tower-a-top";
   if (/\bmiddle a\b/.test(area)) return "tower-a-top";
   if (has(area, "yaw platform", "top section", "top tower")) return "top-section-yaw-platform";
   if (has(area, "base")) return "tower-base-basement";

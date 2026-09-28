@@ -29,7 +29,11 @@ export default function FindingCard({
   const tone = TIER[tier];
 
   return (
-    <div className={`avoid-break rounded-md border ${tone.border} ${tone.bg} border-l-4 overflow-hidden`}>
+    /* Nền trắng như giấy, chỉ còn vạch màu ở mép trái báo mức độ. Trước đây
+       cả khung tô nền đỏ/cam/xanh theo mức, cộng với ô diễn giải bôi vàng —
+       một trang mười phát hiện là mười mảng màu, trông như trang web chứ
+       không như báo cáo kỹ thuật. */
+    <div className={`avoid-break rounded-sm border border-slate-300 bg-white ${tone.border} border-l-4 overflow-hidden`}>
       <div className="grid grid-cols-3 gap-0 print:gap-0">
         <div className="col-span-1 p-3 border-r" style={{ borderRightColor: "rgba(0,0,0,0.08)" }}>
           <div className="mb-2">
@@ -47,7 +51,7 @@ export default function FindingCard({
               M{f.severity || "?"} · {tone.en}
             </div>
           </div>
-          <p className="text-[11.5px] leading-snug text-slate-900 rounded px-3 py-2 bg-yellow-100/70 border-l-4 border-yellow-500 mb-2 font-semibold">
+          <p className="prose-doc text-[12px] leading-snug text-slate-900 mb-2">
             {f.desc || "—"}
           </p>
           {f.photo && (
@@ -56,12 +60,8 @@ export default function FindingCard({
             </div>
           )}
           {tier === "high" && (
-            <div className="mt-2 text-[8.5px] font-bold text-red-700 leading-tight">
-              ⚠ REQUIRES
-              <br />
-              IMMEDIATE
-              <br />
-              ATTENTION
+            <div className="mt-2 text-[8.5px] font-bold uppercase tracking-wide text-red-700 leading-tight">
+              Requires immediate attention
             </div>
           )}
         </div>

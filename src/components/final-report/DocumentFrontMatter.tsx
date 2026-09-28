@@ -30,7 +30,7 @@ export default function DocumentFrontMatter({
   return (
     <section className="page-break-after">
       <DocHeading>Notice to third parties</DocHeading>
-      <p className="text-[9.5px] leading-relaxed text-slate-700 text-justify">
+      <p className="prose-doc text-[10px] leading-relaxed text-slate-700 text-justify">
         This report was prepared by the inspection team of {PROJECT.owner} and is based on visual
         inspection carried out on site, together with information provided by others, both verbal and
         written. The inspection team has assumed that the information provided is complete and correct.
@@ -41,7 +41,7 @@ export default function DocumentFrontMatter({
         this report by any party other than the intended recipient or its affiliates is at that
         party&apos;s own risk.
       </p>
-      <p className="text-[9px] italic leading-relaxed text-slate-500 text-justify mt-1.5">
+      <p className="prose-doc text-[9.5px] italic leading-relaxed text-slate-500 text-justify mt-1.5">
         Báo cáo do đội kiểm tra của {PROJECT.owner} lập, dựa trên kiểm tra trực quan tại hiện trường
         cùng thông tin do các bên liên quan cung cấp. Báo cáo chỉ ghi nhận tình trạng quan sát được tại
         thời điểm kiểm tra, không phải là cam kết về tình trạng hay hiệu suất thiết bị về sau.

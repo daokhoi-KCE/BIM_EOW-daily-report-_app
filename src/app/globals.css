@@ -3,13 +3,31 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* ── Bộ chữ ──────────────────────────────────────────────────────────
+     Báo cáo này do kỹ sư lập và gửi chủ đầu tư, nên phải trông như một tài
+     liệu kỹ thuật chứ không như một trang sản phẩm. Vì vậy dùng đúng hai
+     bộ chữ quen thuộc của tài liệu in, không dùng bộ chữ hình học hiện đại
+     (Inter, Geist và họ hàng) — chính chúng tạo cảm giác "máy làm".
+
+     Cả hai đều có sẵn trên Windows, macOS và Linux nên bản in ra PDF ở máy
+     nào cũng giống nhau, và không phải tải font qua mạng.
+
+     --font-ui   Arial cho bảng biểu, nhãn, tiêu đề: đứng vững ở cỡ 8-11px
+                 và đủ dấu tiếng Việt.
+     --font-doc  Georgia/Times có chân cho các đoạn văn xuôi. Chữ có chân
+                 trong phần diễn giải là dấu hiệu rõ nhất của một văn bản do
+                 người soạn; Georgia đứng trước vì nét dày hơn Times nên đọc
+                 tốt hơn ở cỡ nhỏ trên màn hình. */
+  --font-ui: Arial, "Liberation Sans", "Helvetica Neue", Helvetica, sans-serif;
+  --font-doc: Georgia, "Times New Roman", "Liberation Serif", Times, serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-ui);
+  --font-serif: var(--font-doc);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +40,14 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-ui);
+}
+
+/* Đoạn văn xuôi trong báo cáo: phần giới thiệu, lưu ý pháp lý, diễn giải
+   thang mức độ. Chỉ dùng cho câu chữ — bảng biểu và nhãn vẫn để Arial, vì
+   chữ có chân trong bảng số liệu dày đặc thì rối mắt. */
+.prose-doc {
+  font-family: var(--font-doc);
 }
 
 /* Lưới ảnh của báo cáo tổng hợp: ba ảnh một hàng, khung cao bằng nhau.
