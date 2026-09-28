@@ -136,8 +136,9 @@ export default function FinalReportView({
           (s, r) => s + r.findings.filter((f) => f.turbine.trim()).length,
           0,
         );
-        // Phần khảo sát cánh bị loại có chủ đích, nên trừ ra trước khi so.
-        const expected = rawFindings - data.excludedBladeFindings;
+        // Hai nhóm bị loại có chủ đích, trừ ra trước khi so.
+        const expected =
+          rawFindings - data.excludedBladeFindings - data.excludedUnknownTurbine;
         const healthy = rawFindings > 0 && expected === totals.findings && signedPhotos === rawPhotos;
         return (
           <div
@@ -148,7 +149,8 @@ export default function FinalReportView({
             <b>Chẩn đoán dữ liệu</b> (chỉ hiện trên màn hình, không in):{" "}
             {data.reports.length} báo cáo lấy được · {rawFindings} finding thô ·{" "}
             {withTurbine} finding tự khai tên trụ · {data.excludedBladeFindings} finding khảo sát
-            cánh không in · {totals.findings} finding vào báo cáo ·{" "}
+            cánh không in · {data.excludedUnknownTurbine} finding sai tên trụ không in ·{" "}
+            {totals.findings} finding vào báo cáo ·{" "}
             {signedPhotos}/{rawPhotos} ảnh ký được URL · build {BUILD_REF}
             {rawFindings === 0 && (
               <div className="font-bold mt-1">

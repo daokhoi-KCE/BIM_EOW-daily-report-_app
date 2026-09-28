@@ -57,6 +57,11 @@ export interface FinalReportData {
    * Dữ liệu vẫn còn nguyên trong CSDL và trong báo cáo hằng ngày.
    */
   excludedBladeFindings: number;
+  /**
+   * Số phát hiện bị loại vì tên trụ ghi trong đó không đọc được
+   * ("WT08", "WTG", "WTG 0:"). Cũng chỉ loại khỏi bản tổng hợp.
+   */
+  excludedUnknownTurbine: number;
   preparedBy: string[];
   oemReps: string[];
   safetyFlags: { date: string; hazard: boolean; shutdown: boolean; major: boolean }[];
@@ -69,6 +74,24 @@ export interface FinalReportData {
  * chuẩn hoá — vừa gộp đúng, vừa cho ra nhãn hiển thị thống nhất.
  */
 const turbineKey = (t: string) => normalizeTurbineLabel(t).toUpperCase();
+
+/**
+ * Tên trụ dùng cho một dòng của báo cáo tổng hợp.
+ *
+ * Bỏ trống thì lấy tên trụ ở đầu báo cáo ngày — đây là trường hợp thường
+ * gặp nhất, 789 trên 959 phát hiện không tự ghi tên trụ.
+ *
+ * Ghi tên nhưng gõ sai đến mức không đọc được ("WT08", "WTG", "WTG 0:")
+ * thì trả về chuỗi rỗng, và dòng đó không vào bản tổng hợp. Không suy đoán
+ * hộ người ghi: một tên sai có thể là trụ khác chứ không nhất thiết là trụ
+ * của báo cáo ngày hôm đó. Dữ liệu vẫn nguyên trong CSDL và vẫn in đầy đủ
+ * ở báo cáo hằng ngày.
+ */
+function resolveTurbine(own: string, fallback: string): string {
+  const raw = own.trim();
+  if (!raw) return fallback;
+  return isTurbineLabel(raw) ? raw : "";
+}
 
 function lastNonEmpty(entries: DatedTurbineWork[], field: keyof TurbineWork): string {
   for (let i = entries.length - 1; i >= 0; i--) {
@@ -107,6 +130,7 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
   const safetyFlags: FinalReportData["safetyFlags"] = [];
   let sitePhotos = 0;
   let excludedBladeFindings = 0;
+  let excludedUnknownTurbine = 0;
 
   for (const r of reports) {
     if (r.preparedBy.trim()) preparedBySet.add(r.preparedBy.trim());
@@ -122,11 +146,8 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     // báo cáo ngày. Không có bước lùi này thì 73% số finding bị bỏ rơi.
     const fallbackTurbine = r.plannedTurbines.trim() || r.actualTurbines.trim();
 
-    // Tên gõ sai ("WT08", "WTG", "WTG 0:") tạo ra trụ ma trong bảng tổng
-    // hợp, nên chỉ nhận tên đọc được; còn lại lấy tên ở đầu báo cáo ngày.
     for (const t of r.turbines) {
-      const own = t.turbine.trim();
-      const label = (isTurbineLabel(own) ? own : "") || fallbackTurbine;
+      const label = resolveTurbine(t.turbine, fallbackTurbine);
       if (!label) continue;
       getAgg(label).work.push({ ...t, date: r.date });
     }
@@ -136,9 +157,11 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     excludedBladeFindings += r.findings.length - reportFindings.length;
 
     for (const f of reportFindings) {
-      const own = f.turbine.trim();
-      const label = (isTurbineLabel(own) ? own : "") || fallbackTurbine;
-      if (!label) continue;
+      const label = resolveTurbine(f.turbine, fallbackTurbine);
+      if (!label) {
+        if (f.turbine.trim()) excludedUnknownTurbine++;
+        continue;
+      }
       const agg = getAgg(label);
       agg.findings.push({ ...f, date: r.date });
       agg.photosCount += f.photos?.length ?? 0;
@@ -226,6 +249,7 @@ export function buildFinalReportData(reportsIn: ReportDraft[]): FinalReportData 
     sections,
     totals,
     excludedBladeFindings,
+    excludedUnknownTurbine,
     preparedBy: [...preparedBySet].sort(),
     oemReps: [...oemRepSet].sort(),
     safetyFlags,
