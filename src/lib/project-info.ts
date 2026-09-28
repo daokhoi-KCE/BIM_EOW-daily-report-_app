@@ -26,6 +26,20 @@ export const PROJECT = {
 } as const;
 
 /**
+ * Đơn vị thực hiện kiểm tra.
+ *
+ * Bộ khung báo cáo lấy theo tài liệu của UL/GIM; ở đây đơn vị kiểm tra là
+ * MB WIND, còn khách hàng là chủ đầu tư BIM. Mọi câu về trách nhiệm và
+ * khuyến nghị phải đứng tên MB WIND, không đứng tên chủ đầu tư.
+ *
+ * `legalName` — CẦN XÁC NHẬN tên pháp nhân đầy đủ để in dưới phần ký.
+ */
+export const INSPECTION_COMPANY = {
+  name: "MB WIND",
+  legalName: "MB WIND",
+} as const;
+
+/**
  * Thời gian của đợt kiểm tra EOW trên toàn công trường.
  *
  * Đây là mốc cố định của cả chiến dịch, không phải khoảng ngày của những

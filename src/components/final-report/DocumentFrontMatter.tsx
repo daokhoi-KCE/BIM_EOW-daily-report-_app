@@ -1,6 +1,7 @@
 import { NAVY } from "@/lib/theme";
 import {
   PROJECT,
+  INSPECTION_COMPANY,
   INSPECTORS,
   APPROVERS,
   CLASSIFICATION_KEY,
@@ -31,9 +32,10 @@ export default function DocumentFrontMatter({
     <section className="page-break-after">
       <DocHeading>Notice to third parties</DocHeading>
       <p className="prose-doc text-[10px] leading-relaxed text-slate-700 text-justify">
-        This report was prepared by the inspection team of {PROJECT.owner} and is based on visual
-        inspection carried out on site, together with information provided by others, both verbal and
-        written. The inspection team has assumed that the information provided is complete and correct.
+        This report was prepared by {INSPECTION_COMPANY.name} for {PROJECT.owner} and is based on
+        visual inspection carried out on site, together with information provided by others, both
+        verbal and written. {INSPECTION_COMPANY.name} has assumed that the information provided is
+        complete and correct.
         While the information, data and opinions contained herein are believed to be reliable under the
         conditions and subject to the limitations set out in this report, no guarantee is given as to
         their accuracy. This report records the condition observed on the dates of inspection only and
@@ -42,9 +44,10 @@ export default function DocumentFrontMatter({
         party&apos;s own risk.
       </p>
       <p className="prose-doc text-[9.5px] italic leading-relaxed text-slate-500 text-justify mt-1.5">
-        Báo cáo do đội kiểm tra của {PROJECT.owner} lập, dựa trên kiểm tra trực quan tại hiện trường
-        cùng thông tin do các bên liên quan cung cấp. Báo cáo chỉ ghi nhận tình trạng quan sát được tại
-        thời điểm kiểm tra, không phải là cam kết về tình trạng hay hiệu suất thiết bị về sau.
+        Báo cáo do {INSPECTION_COMPANY.name} lập cho {PROJECT.owner}, dựa trên kiểm tra trực quan
+        tại hiện trường cùng thông tin do các bên liên quan cung cấp. Báo cáo chỉ ghi nhận tình trạng
+        quan sát được tại thời điểm kiểm tra, không phải là cam kết về tình trạng hay hiệu suất thiết
+        bị về sau.
       </p>
 
       <DocHeading>Key to document classification</DocHeading>
@@ -82,7 +85,7 @@ export default function DocumentFrontMatter({
               className="border px-2.5 py-1.5 text-center text-[9.5px] font-bold uppercase tracking-wide"
               style={{ borderColor: NAVY, color: NAVY, background: "rgba(31,53,82,0.06)" }}
             >
-              Inspectors
+              Inspectors — {INSPECTION_COMPANY.name}
               <span className="block text-[8px] italic font-normal normal-case text-slate-500">
                 Kỹ sư kiểm tra
               </span>

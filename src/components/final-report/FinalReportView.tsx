@@ -19,6 +19,7 @@ import DefectMatrix from "@/components/final-report/DefectMatrix";
 import FindingsMatrix from "@/components/final-report/FindingsMatrix";
 import FleetMainDefects from "@/components/final-report/FleetMainDefects";
 import TurbineSection, { turbineAnchorId } from "@/components/final-report/TurbineSection";
+import ReminderNote, { REMINDER_ANCHOR } from "@/components/final-report/ReminderNote";
 
 const ISSUE = "A";
 
@@ -279,6 +280,7 @@ export default function FinalReportView({
             </div>
           </>
         )}
+        <TocLine href={`#${REMINDER_ANCHOR}`} no="" en="Reminder" vi="Lưu ý" />
       </div>
 
       {/* ── 1. Introduction ───────────────────────────────────────────── */}
@@ -596,6 +598,9 @@ export default function FinalReportView({
           ))}
         </>
       )}
+
+      {/* ── Lưu ý cuối báo cáo ────────────────────────────────────────── */}
+      <ReminderNote issueDate={generatedAt} />
 
       <p className="text-[9px] text-slate-400 mt-8 pt-2 border-t border-slate-200">
         {docRef} · Issue {ISSUE} · {DOCUMENT_CLASSIFICATION} · Tổng hợp tự động từ {totals.reports}{" "}
