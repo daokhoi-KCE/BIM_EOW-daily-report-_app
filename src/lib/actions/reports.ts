@@ -255,6 +255,108 @@ export async function getReportDraftsByIds(ids: string[]): Promise<ReportDraft[]
   return drafts.filter((d): d is ReportDraft => d !== null);
 }
 
+/**
+ * Số dòng tối đa PostgREST trả về trong một lần gọi.
+ *
+ * Supabase chặn ở 1.000 dòng và không báo lỗi khi cắt bớt — bảng findings
+ * đang có hơn 1.000 dòng nên nếu lấy một lần sẽ mất dữ liệu một cách lặng lẽ.
+ */
+const PAGE_SIZE = 1000;
+
+async function fetchAllRows<T>(
+  build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await build(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(error.message);
+    const rows = data ?? [];
+    out.push(...rows);
+    if (rows.length < PAGE_SIZE) return out;
+  }
+}
+
+/**
+ * Toàn bộ báo cáo của dự án, chỉ phần dùng để dựng bảng tổng hợp.
+ *
+ * Bản final của từng trụ vẫn phải in phần tóm tắt và các ma trận của cả 22
+ * trụ, nên trang cần dữ liệu của mọi báo cáo chứ không chỉ báo cáo đang
+ * chọn. Ở đây cố tình không ký URL ảnh: ký gần 3.000 ảnh chỉ để đếm sẽ làm
+ * trang chậm hàng chục giây. Ảnh vẫn được lấy đúng số lượng (để thống kê),
+ * nhưng `url` bỏ trống — phần này của báo cáo không hiển thị ảnh.
+ */
+export async function getFleetOverview(): Promise<ReportDraft[]> {
+  const { supabase } = await requireUser();
+
+  const [reportRows, turbineRows, findingRows, findingPhotoRows, sitePhotoRows] = await Promise.all([
+    fetchAllRows<ReportRow>((from, to) =>
+      supabase.from("reports").select("*").order("report_date").range(from, to).returns<ReportRow[]>(),
+    ),
+    fetchAllRows<TurbineWorkRow>((from, to) =>
+      supabase.from("turbine_work").select("*").order("sort_order").range(from, to).returns<TurbineWorkRow[]>(),
+    ),
+    fetchAllRows<FindingRow>((from, to) =>
+      supabase.from("findings").select("*").order("sort_order").range(from, to).returns<FindingRow[]>(),
+    ),
+    fetchAllRows<{ id: string; finding_id: string }>((from, to) =>
+      supabase
+        .from("finding_photos")
+        .select("id, finding_id")
+        .order("id")
+        .range(from, to)
+        .returns<{ id: string; finding_id: string }[]>(),
+    ),
+    fetchAllRows<{ id: string; report_id: string }>((from, to) =>
+      supabase
+        .from("site_photos")
+        .select("id, report_id")
+        .order("id")
+        .range(from, to)
+        .returns<{ id: string; report_id: string }[]>(),
+    ),
+  ]);
+
+  const turbinesByReport = new Map<string, TurbineWorkRow[]>();
+  for (const t of turbineRows) {
+    const arr = turbinesByReport.get(t.report_id) ?? [];
+    arr.push(t);
+    turbinesByReport.set(t.report_id, arr);
+  }
+
+  const findingsByReport = new Map<string, FindingRow[]>();
+  for (const f of findingRows) {
+    const arr = findingsByReport.get(f.report_id) ?? [];
+    arr.push(f);
+    findingsByReport.set(f.report_id, arr);
+  }
+
+  // URL bỏ trống có chủ đích: chỉ cần đúng số lượng ảnh cho phần thống kê.
+  const photosByFinding = new Map<string, Photo[]>();
+  for (const p of findingPhotoRows) {
+    const arr = photosByFinding.get(p.finding_id) ?? [];
+    arr.push({ id: p.id, storagePath: "", url: "" });
+    photosByFinding.set(p.finding_id, arr);
+  }
+
+  const sitePhotosByReport = new Map<string, Photo[]>();
+  for (const p of sitePhotoRows) {
+    const arr = sitePhotosByReport.get(p.report_id) ?? [];
+    arr.push({ id: p.id, storagePath: "", url: "" });
+    sitePhotosByReport.set(p.report_id, arr);
+  }
+
+  return reportRows.map((r) =>
+    rowsToReportDraft(
+      r,
+      turbinesByReport.get(r.id) ?? [],
+      [],
+      findingsByReport.get(r.id) ?? [],
+      photosByFinding,
+      sitePhotosByReport.get(r.id) ?? [],
+    ),
+  );
+}
+
 export async function getCumulativeHint(): Promise<number> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase

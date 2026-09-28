@@ -5,6 +5,7 @@ import { SectionTitle, InfoRow } from "@/components/print/shared";
 import { formatDateDMY } from "@/lib/utils";
 import {
   PROJECT,
+  INCLUDE_FULL_FINDINGS_MATRIX,
   INSPECTION_PERIOD,
   INSPECTORS,
   STANDARDS,
@@ -16,6 +17,7 @@ import DocumentFrontMatter from "@/components/final-report/DocumentFrontMatter";
 import SectionFindings, { sectionAnchorId } from "@/components/final-report/SectionFindings";
 import DefectMatrix from "@/components/final-report/DefectMatrix";
 import FindingsMatrix from "@/components/final-report/FindingsMatrix";
+import FleetMainDefects from "@/components/final-report/FleetMainDefects";
 import TurbineSection, { turbineAnchorId } from "@/components/final-report/TurbineSection";
 
 const ISSUE = "A";
@@ -71,14 +73,39 @@ function TocLine({ href, no, en, vi, page }: { href: string; no: string; en: str
   );
 }
 
-export default function FinalReportView({ data }: { data: FinalReportData }) {
+/**
+ * Bản final.
+ *
+ * `data` là phạm vi của bản in — thường là một trụ, vì khách hàng theo dõi
+ * theo từng trụ. `fleet` là dữ liệu của cả 22 trụ: phần tóm tắt và các ma
+ * trận ở mục 4 luôn lấy từ đây, kể cả trong bản một trụ, để người đọc thấy
+ * trụ của mình đứng ở đâu so với toàn công trường. Mục 5 trở đi chỉ nói về
+ * phạm vi của `data`.
+ *
+ * Khi không truyền `fleet` (bản in cả dự án) thì hai phần trùng nhau.
+ */
+export default function FinalReportView({
+  data,
+  fleet,
+}: {
+  data: FinalReportData;
+  fleet?: FinalReportData;
+}) {
+  const site = fleet ?? data;
   const { turbines, totals, sections } = data;
   const generatedAt = new Date().toISOString().slice(0, 10);
-  const safetyCount = data.safetyFlags.length;
+  const safetyCount = site.safetyFlags.length;
   const multiTurbine = turbines.length > 1;
   const docRef = buildDocumentRef(data.dateFrom, data.dateTo, turbines.length);
   const scopeLabel = multiTurbine ? `${turbines.length} WTG` : turbines[0]?.turbine ?? "—";
-  const sectionsWithFindings = sections.filter((s) => s.findings.length > 0);
+  const sectionsWithFindings = site.sections.filter((s) => s.findings.length > 0);
+  // Trụ mà bản in này nói tới — đánh dấu trong các bảng của cả dự án.
+  const scopeTurbines = turbines.map((t) => t.turbine);
+  const siteHasMore = site.turbines.length > turbines.length;
+  const siteMulti = site.turbines.length > 1;
+  // Số phát hiện của riêng phạm vi bản in, tra theo mục 5.x — dùng cho cột
+  // cuối của bảng phân bố, để đối chiếu trụ này với cả dự án trên cùng dòng.
+  const scopeBySection = new Map(sections.map((g) => [g.section.id, g.findings.length]));
   // Thời gian kiểm tra là mốc của cả đợt, không phải khoảng ngày của những
   // báo cáo đang chọn — bản một trụ chỉ có đúng một ngày.
   const periodFrom = formatDateDMY(INSPECTION_PERIOD.from);
@@ -197,18 +224,32 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
           <TocLine href="#s3-information" no="3.1" en="Site information" vi="Thông tin công trường" />
           <TocLine href="#s3-information" no="3.2" en="Turbine information" vi="Thông tin tuabin" />
         </div>
-        <TocLine href="#s4-summary" no="4." en="Summary of the main findings" vi="Tóm tắt phát hiện chính" />
+        <TocLine
+          href="#s4-summary"
+          no="4."
+          en="Summary of the main findings — all turbines"
+          vi="Tóm tắt phát hiện chính — toàn dự án"
+        />
         <div className="pl-5">
           <TocLine href="#s4-summary" no="4.1" en="Summary" vi="Tóm tắt" />
-          {/* Ma trận chỉ có nghĩa khi so sánh nhiều trụ. */}
-          {multiTurbine && (
+          {/* Phần so sánh giữa các trụ chỉ có nghĩa khi dự án có nhiều trụ —
+              luôn in kể cả trong bản một trụ, vì đó là bối cảnh chung. */}
+          {siteMulti && (
             <>
-              <TocLine href="#defect-matrix" no="4.2" en="Defect matrix" vi="Ma trận lỗi OK/NG" />
-              <TocLine href="#findings-matrix" no="4.3" en="Findings matrix" vi="Ma trận phát hiện" />
+              <TocLine href="#main-defects" no="4.2" en="Main defects by turbine" vi="Lỗi chính theo trụ" />
+              <TocLine href="#defect-matrix" no="4.3" en="Defect matrix" vi="Ma trận lỗi OK/NG" />
+              {INCLUDE_FULL_FINDINGS_MATRIX && (
+                <TocLine href="#findings-matrix" no="4.4" en="Findings matrix" vi="Ma trận phát hiện" />
+              )}
             </>
           )}
         </div>
-        <TocLine href="#s5-main-findings" no="5." en="Main findings" vi="Chi tiết phát hiện" />
+        <TocLine
+          href="#s5-main-findings"
+          no="5."
+          en={`Main findings — ${scopeLabel}`}
+          vi="Chi tiết phát hiện"
+        />
         <div className="pl-5">
           {sections.map((g) => (
             <TocLine
@@ -251,22 +292,38 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
       </p>
       <p className="text-[13.5px] leading-relaxed text-justify mt-2">
         Đợt kiểm tra được thực hiện tại hiện trường từ <b>{periodFrom}</b> đến{" "}
-        <b>{periodTo}</b>. Báo cáo này tổng hợp <b>{totals.reports}</b> báo cáo kiểm tra hằng ngày
-        ({reportDates}), bao phủ{" "}
-        <b>{totals.turbines}</b> tuabin với tổng cộng <b>{totals.findings}</b> phát hiện và{" "}
-        <b>{totals.photos}</b> ảnh hiện trường. Toàn bộ phát hiện được sắp xếp lại theo cụm thiết bị
-        (mục 5) để tiện đối chiếu giữa các trụ, và giữ nguyên cách trình bày theo từng trụ ở mục
-        cuối. Công tác kiểm tra do{" "}
-        <b>{INSPECTORS.map((p) => p.name).join(" và ")}</b> thực hiện tại hiện trường.
+        <b>{periodTo}</b>, gồm <b>{site.totals.reports}</b> báo cáo kiểm tra hằng ngày trên{" "}
+        <b>{site.totals.turbines}</b> tuabin, ghi nhận <b>{site.totals.findings}</b> phát hiện và{" "}
+        <b>{site.totals.photos}</b> ảnh hiện trường. Công tác kiểm tra do{" "}
+        <b>{INSPECTORS.map((p) => p.name).join(" và ")}</b> thực hiện.
+      </p>
+      <p className="text-[13.5px] leading-relaxed text-justify mt-2">
+        {siteHasMore ? (
+          <>
+            Bản báo cáo này dành riêng cho <b>{scopeLabel}</b> ({reportDates}), với{" "}
+            <b>{totals.findings}</b> phát hiện và <b>{totals.photos}</b> ảnh. Mỗi tuabin có một bản
+            final riêng để tiện theo dõi. <b>Mục 4</b> giữ phần tóm tắt và các ma trận tổng hợp của
+            cả <b>{site.totals.turbines}</b> trụ, giúp đối chiếu {scopeLabel} với toàn công trường;{" "}
+            <b>mục 5</b> trình bày chi tiết từng phát hiện của {scopeLabel} kèm ảnh, sắp xếp theo
+            cụm thiết bị.
+          </>
+        ) : (
+          <>
+            Bản báo cáo này bao phủ <b>{totals.turbines}</b> tuabin ({reportDates}) với{" "}
+            <b>{totals.findings}</b> phát hiện và <b>{totals.photos}</b> ảnh. <b>Mục 4</b> tóm tắt
+            và đối chiếu giữa các trụ; <b>mục 5</b> trình bày chi tiết từng phát hiện kèm ảnh, sắp
+            xếp theo cụm thiết bị; mục cuối giữ cách trình bày theo từng trụ.
+          </>
+        )}
       </p>
       <p className="text-[11.5px] italic text-slate-500 leading-relaxed text-justify mt-2">
-        The inspection was carried out on site between {periodFrom} and {periodTo}. This report
-        consolidates {totals.reports} daily inspection reports ({reportDates}), covering{" "}
-        {totals.turbines} turbines with a
-        total of {totals.findings} findings and {totals.photos} site photographs, recorded during the
-        End-of-Warranty visual inspection of the {PROJECT.siteName}. Findings are regrouped by
-        component and location in Section 5 to allow comparison across turbines; the per-turbine view
-        is retained in the final section.
+        The End-of-Warranty visual inspection of the {PROJECT.siteName} was carried out on site
+        between {periodFrom} and {periodTo}, covering {site.totals.turbines} turbines over{" "}
+        {site.totals.reports} daily reports, with {site.totals.findings} findings and{" "}
+        {site.totals.photos} site photographs.{" "}
+        {siteHasMore
+          ? `This volume covers ${scopeLabel} (${totals.findings} findings, ${totals.photos} photographs); one volume is issued per turbine. Section 4 carries the site-wide summary and matrices for all ${site.totals.turbines} turbines so that ${scopeLabel} can be read in context, and Section 5 details every finding of ${scopeLabel} with photographs, regrouped by component and location.`
+          : `Section 4 summarises and compares the turbines, Section 5 details every finding with photographs, regrouped by component and location, and the final section retains the per-turbine view.`}
       </p>
 
       {/* ── 2. Reference documents ────────────────────────────────────── */}
@@ -298,9 +355,10 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         <InfoRow en="Location" vi="Địa điểm" value={PROJECT.location} />
         <InfoRow en="Inspection type" vi="Loại kiểm tra" value="EOW visual" />
         <InfoRow en="Inspection period" vi="Thời gian kiểm tra" value={`${periodFrom} → ${periodTo}`} />
-        <InfoRow en="Daily reports" vi="Số báo cáo ngày" value={String(totals.reports)} />
+        <InfoRow en="Daily reports" vi="Số báo cáo ngày" value={String(site.totals.reports)} />
         <InfoRow en="Inspectors" vi="Kỹ sư kiểm tra" value={INSPECTORS.map((p) => p.name).join(", ")} />
         <InfoRow en="Issued" vi="Ngày phát hành" value={generatedAt} />
+        <InfoRow en="Report scope" vi="Phạm vi bản này" value={`${scopeLabel} — ${reportDates}`} />
       </div>
       <h4 className="text-[13px] font-bold text-slate-700 mb-1.5">
         3.2 Turbine information <span className="italic font-normal text-slate-400">/ Thông tin tuabin</span>
@@ -308,7 +366,7 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
       <div className="grid grid-cols-4 gap-3.5 avoid-break">
         <InfoRow en="OEM" vi="Nhà sản xuất" value={PROJECT.oem} />
         <InfoRow en="Model" vi="Model" value={PROJECT.turbineModel} />
-        <InfoRow en="Turbines in scope" vi="Số trụ khảo sát" value={String(totals.turbines)} />
+        <InfoRow en="Turbines surveyed" vi="Số trụ đã khảo sát" value={String(site.totals.turbines)} />
         <InfoRow
           en="Fleet size"
           vi="Tổng số trụ dự án"
@@ -318,31 +376,34 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
 
       {/* ── 4. Summary ────────────────────────────────────────────────── */}
       <div id="s4-summary">
-        <SectionTitle en="4. Summary of the main findings" vi="Tóm tắt phát hiện chính" />
+        <SectionTitle
+          en="4. Summary of the main findings — all turbines"
+          vi="Tóm tắt phát hiện chính — toàn dự án"
+        />
       </div>
       <h4 className="text-[13px] font-bold text-slate-700 mb-2">
-        4.1 Summary <span className="italic font-normal text-slate-400">/ Tóm tắt</span>
+        4.1 Summary <span className="italic font-normal text-slate-400">/ Tóm tắt — số liệu của cả dự án</span>
       </h4>
       <div className="grid grid-cols-4 gap-2.5 avoid-break">
-        <StatCard label="Turbines" labelVi="Tuabin" value={totals.turbines} />
+        <StatCard label="Turbines" labelVi="Tuabin" value={site.totals.turbines} />
         <StatCard
           label="Completed"
           labelVi="Đã xong"
-          value={`${totals.turbinesCompleted}/${PROJECT.totalTurbines}`}
+          value={`${site.totals.turbinesCompleted}/${PROJECT.totalTurbines}`}
           tone="emerald"
         />
-        <StatCard label="Findings" labelVi="Phát hiện" value={totals.findings} />
+        <StatCard label="Findings" labelVi="Phát hiện" value={site.totals.findings} />
         <StatCard
           label="Critical"
           labelVi="Nghiêm trọng"
-          value={totals.critical}
-          tone={totals.critical > 0 ? "red" : undefined}
+          value={site.totals.critical}
+          tone={site.totals.critical > 0 ? "red" : undefined}
         />
       </div>
       <div className="grid grid-cols-4 gap-2.5 avoid-break mt-2.5">
-        <StatCard label="Medium" labelVi="Trung bình" value={totals.medium} tone={totals.medium > 0 ? "amber" : undefined} />
-        <StatCard label="Low" labelVi="Thấp" value={totals.low} tone="emerald" />
-        <StatCard label="Photos" labelVi="Ảnh" value={totals.photos} />
+        <StatCard label="Medium" labelVi="Trung bình" value={site.totals.medium} tone={site.totals.medium > 0 ? "amber" : undefined} />
+        <StatCard label="Low" labelVi="Thấp" value={site.totals.low} tone="emerald" />
+        <StatCard label="Photos" labelVi="Ảnh" value={site.totals.photos} />
         <StatCard
           label="Safety flags"
           labelVi="Sự cố an toàn"
@@ -350,6 +411,13 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
           tone={safetyCount > 0 ? "red" : "emerald"}
         />
       </div>
+      {siteHasMore && (
+        <p className="text-[11.5px] text-slate-500 mt-2 px-0.5">
+          Số liệu trên là của toàn bộ <b>{site.totals.turbines}</b> trụ. Riêng <b>{scopeLabel}</b>:{" "}
+          <b>{totals.findings}</b> phát hiện ({totals.critical} nặng · {totals.medium} trung bình ·{" "}
+          {totals.low} nhẹ), <b>{totals.photos}</b> ảnh — chi tiết ở mục 5.
+        </p>
+      )}
 
       <h4 className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5">
         Severity scale <span className="italic font-normal text-slate-400">/ Thang mức độ</span>
@@ -390,15 +458,21 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
                 {h}
               </th>
             ))}
+            {siteHasMore && (
+              <th
+                className="text-right py-1.5 px-2 border-b-2 text-[11.5px] font-bold uppercase whitespace-nowrap"
+                style={{ borderColor: NAVY, color: NAVY, background: "rgba(31,53,82,0.05)" }}
+              >
+                {scopeLabel}
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {sectionsWithFindings.map((g) => (
             <tr key={g.section.id}>
               <td className="border-b border-slate-200 py-1 px-2">
-                <a href={`#${sectionAnchorId(g.section.id)}`} className="hover:underline">
-                  {g.section.no} {g.section.en}
-                </a>
+                {g.section.no} {g.section.en}
               </td>
               <td className="border-b border-slate-200 py-1 px-2 text-right font-semibold tabular-nums">
                 {g.findings.length}
@@ -412,16 +486,31 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
               <td className="border-b border-slate-200 py-1 px-2 text-right tabular-nums text-slate-500">
                 {g.low || ""}
               </td>
+              {siteHasMore && (
+                <td
+                  className="border-b border-slate-200 py-1 px-2 text-right tabular-nums font-semibold"
+                  style={{ background: "rgba(31,53,82,0.05)" }}
+                >
+                  <a href={`#${sectionAnchorId(g.section.id)}`} className="hover:underline">
+                    {scopeBySection.get(g.section.id) || "·"}
+                  </a>
+                </td>
+              )}
             </tr>
           ))}
           <tr style={{ background: "rgba(31,53,82,0.06)" }}>
             <td className="py-1.5 px-2 font-bold" style={{ color: NAVY }}>
               Total / Tổng cộng
             </td>
-            <td className="py-1.5 px-2 text-right font-extrabold tabular-nums">{totals.findings}</td>
-            <td className="py-1.5 px-2 text-right font-extrabold tabular-nums text-red-700">{totals.critical}</td>
-            <td className="py-1.5 px-2 text-right font-extrabold tabular-nums text-amber-700">{totals.medium}</td>
-            <td className="py-1.5 px-2 text-right font-extrabold tabular-nums text-slate-500">{totals.low}</td>
+            <td className="py-1.5 px-2 text-right font-extrabold tabular-nums">{site.totals.findings}</td>
+            <td className="py-1.5 px-2 text-right font-extrabold tabular-nums text-red-700">{site.totals.critical}</td>
+            <td className="py-1.5 px-2 text-right font-extrabold tabular-nums text-amber-700">{site.totals.medium}</td>
+            <td className="py-1.5 px-2 text-right font-extrabold tabular-nums text-slate-500">{site.totals.low}</td>
+            {siteHasMore && (
+              <td className="py-1.5 px-2 text-right font-extrabold tabular-nums" style={{ color: NAVY }}>
+                {totals.findings}
+              </td>
+            )}
           </tr>
         </tbody>
       </table>
@@ -433,7 +522,7 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
             <span className="font-normal italic">/ day(s) with safety issue(s)</span>
           </div>
           <div className="text-[12px] text-red-800 flex flex-wrap gap-x-3 gap-y-0.5">
-            {data.safetyFlags.map((s) => (
+            {site.safetyFlags.map((s) => (
               <span key={s.date}>
                 {s.date}
                 {s.hazard && " · nguy hiểm"}
@@ -445,25 +534,40 @@ export default function FinalReportView({ data }: { data: FinalReportData }) {
         </div>
       )}
 
-      {multiTurbine && (
+      {siteMulti && (
         <>
+          <h4 id="main-defects" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+            4.2 Main defects by turbine{" "}
+            <span className="italic font-normal text-slate-400">/ Lỗi chính theo từng trụ</span>
+          </h4>
+          <FleetMainDefects turbines={site.turbines} highlight={scopeTurbines} />
+
           <h4 id="defect-matrix" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
-            4.2 Defect matrix{" "}
+            4.3 Defect matrix{" "}
             <span className="italic font-normal text-slate-400">/ Ma trận lỗi — OK/NG theo trụ</span>
           </h4>
-          <DefectMatrix turbines={turbines} />
+          <DefectMatrix turbines={site.turbines} highlight={scopeTurbines} />
 
-          <h4 id="findings-matrix" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
-            4.3 Findings matrix{" "}
-            <span className="italic font-normal text-slate-400">/ Ma trận phát hiện</span>
-          </h4>
-          <FindingsMatrix turbines={turbines} />
+          {INCLUDE_FULL_FINDINGS_MATRIX && (
+            <>
+              <h4 id="findings-matrix" className="text-[13px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+                4.4 Findings matrix{" "}
+                <span className="italic font-normal text-slate-400">
+                  / Ma trận phát hiện — toàn bộ các trụ
+                </span>
+              </h4>
+              <FindingsMatrix turbines={site.turbines} highlight={scopeTurbines} />
+            </>
+          )}
         </>
       )}
 
-      {/* ── 5. Main findings ──────────────────────────────────────────── */}
+      {/* ── 5. Main findings — phạm vi bản in ─────────────────────────── */}
       <div id="s5-main-findings">
-        <SectionTitle en="5. Main findings" vi="Chi tiết phát hiện theo hạng mục" />
+        <SectionTitle
+          en={`5. Main findings — ${scopeLabel}`}
+          vi="Chi tiết phát hiện theo hạng mục"
+        />
       </div>
       {sections.map((g) => (
         <SectionFindings key={g.section.id} group={g} multiTurbine={multiTurbine} />

@@ -2,7 +2,15 @@ import type { TurbineAggregate } from "@/lib/final-report";
 import { NAVY } from "@/lib/theme";
 import { ThCell, td, severityTier, TIER } from "@/components/print/shared";
 
-export default function FindingsMatrix({ turbines }: { turbines: TurbineAggregate[] }) {
+export default function FindingsMatrix({
+  turbines,
+  highlight = [],
+}: {
+  turbines: TurbineAggregate[];
+  /** Trụ mà bản final đang nói tới — đánh dấu để dễ tìm giữa 22 nhóm. */
+  highlight?: string[];
+}) {
+  const marked = new Set(highlight.map((t) => t.trim().toUpperCase()));
   const withFindings = turbines.filter((t) => t.findings.length > 0);
 
   if (withFindings.length === 0) {
@@ -23,10 +31,24 @@ export default function FindingsMatrix({ turbines }: { turbines: TurbineAggregat
         return (
           <tbody key={t.turbine}>
             <tr className="avoid-break">
-              <td colSpan={4} className="pt-3 pb-1.5 px-2" style={{ borderBottom: `2px solid ${NAVY}` }}>
+              <td
+                colSpan={4}
+                className="pt-3 pb-1.5 px-2"
+                style={{
+                  borderBottom: `2px solid ${NAVY}`,
+                  background: marked.has(t.turbine.trim().toUpperCase())
+                    ? "rgba(31,53,82,0.10)"
+                    : undefined,
+                }}
+              >
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-[14.5px] font-extrabold uppercase" style={{ color: NAVY }}>
                     {t.turbine}
+                    {marked.has(t.turbine.trim().toUpperCase()) && (
+                      <span className="ml-2 text-[9.5px] font-bold normal-case tracking-wide px-1.5 py-[1px] rounded align-middle" style={{ background: NAVY, color: "white" }}>
+                        Báo cáo này / this report
+                      </span>
+                    )}
                   </span>
                   <span className="text-[11px] text-slate-500">
                     {t.findings.length} phát hiện

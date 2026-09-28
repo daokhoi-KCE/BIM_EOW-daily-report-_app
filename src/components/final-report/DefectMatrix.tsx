@@ -57,7 +57,20 @@ interface Cell {
   maxSeverity: number;
 }
 
-export default function DefectMatrix({ turbines }: { turbines: TurbineAggregate[] }) {
+/**
+ * `highlight`: trụ mà bản final đang nói tới. Ma trận có tới 22 cột nên nếu
+ * không đánh dấu thì người đọc phải dò từng cột mới thấy trụ của mình.
+ */
+export default function DefectMatrix({
+  turbines,
+  highlight = [],
+}: {
+  turbines: TurbineAggregate[];
+  highlight?: string[];
+}) {
+  const marked = new Set(highlight.map((t) => t.trim().toUpperCase()));
+  const isMarked = (t: string) => marked.has(t.trim().toUpperCase());
+
   if (turbines.length === 0) {
     return <p className="text-[12px] text-slate-400 italic">No data / Không có dữ liệu</p>;
   }
@@ -127,14 +140,23 @@ export default function DefectMatrix({ turbines }: { turbines: TurbineAggregate[
                 <th
                   key={t.turbine}
                   className="py-2 px-0.5 border-b-2 text-center align-bottom"
-                  style={{ borderColor: NAVY }}
+                  style={{
+                    borderColor: NAVY,
+                    background: isMarked(t.turbine) ? "rgba(31,53,82,0.14)" : undefined,
+                  }}
                   title={t.turbine}
                 >
                   <div
                     className="text-[11px] font-extrabold leading-tight"
-                    style={{ color: NAVY }}
+                    style={{ color: isMarked(t.turbine) ? "white" : NAVY }}
                   >
-                    {shortLabel(t.turbine)}
+                    {isMarked(t.turbine) ? (
+                      <span className="inline-block px-1 rounded" style={{ background: NAVY }}>
+                        {shortLabel(t.turbine)}
+                      </span>
+                    ) : (
+                      shortLabel(t.turbine)
+                    )}
                   </div>
                 </th>
               ))}
@@ -179,6 +201,7 @@ export default function DefectMatrix({ turbines }: { turbines: TurbineAggregate[
                       <td
                         key={t.turbine}
                         className="border-b border-slate-300 text-center align-middle p-0"
+                        style={{ background: isMarked(t.turbine) ? "rgba(31,53,82,0.10)" : undefined }}
                         title={`${t.turbine} — ${r.en}: ${detail}`}
                       >
                         <Mark ok={!ng} />
@@ -210,7 +233,11 @@ export default function DefectMatrix({ turbines }: { turbines: TurbineAggregate[
                 <td
                   key={turbines[i].turbine}
                   className="text-center text-[11px] font-extrabold"
-                  style={{ borderTop: `2px solid ${NAVY}`, color: n ? NG_COLOR : OK_COLOR }}
+                  style={{
+                    borderTop: `2px solid ${NAVY}`,
+                    color: n ? NG_COLOR : OK_COLOR,
+                    background: isMarked(turbines[i].turbine) ? "rgba(31,53,82,0.10)" : undefined,
+                  }}
                 >
                   {n || 0}
                 </td>

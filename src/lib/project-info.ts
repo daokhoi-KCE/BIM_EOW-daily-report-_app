@@ -37,6 +37,17 @@ export const INSPECTION_PERIOD = {
   to: "2026-09-15",
 } as const;
 
+/**
+ * Có in mục 4.4 "Findings matrix" — bảng liệt kê toàn bộ phát hiện của cả
+ * 22 trụ — vào bản final của từng trụ hay không.
+ *
+ * Bảng này khoảng 990 dòng, chiếm gần 70% dung lượng trang và chừng 30
+ * trang in, và lặp lại y hệt trong cả 22 bản. Mục 4.2 (lỗi chính theo trụ)
+ * và 4.3 (ma trận OK/NG) đã cho cùng bức tranh tổng thể trong hai trang.
+ * Đổi thành false là bỏ mục 4.4 khỏi mọi bản final, không cần sửa gì khác.
+ */
+export const INCLUDE_FULL_FINDINGS_MATRIX = true;
+
 /** Bảng DOCUMENT CONTRIBUTORS. */
 export const INSPECTORS = [
   { name: "Đào Duy Khôi", role: "Inspector", roleVi: "Kỹ sư kiểm tra" },

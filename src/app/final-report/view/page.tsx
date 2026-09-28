@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PrintToolbar from "@/components/print/PrintToolbar";
 import FinalReportView from "@/components/final-report/FinalReportView";
-import { getReportDraftsByIds, getReportHeader } from "@/lib/actions/reports";
+import { getFleetOverview, getReportDraftsByIds, getReportHeader } from "@/lib/actions/reports";
 import { buildFinalReportData } from "@/lib/final-report";
 import { buildExportName, EXPORT_DOC_NAME } from "@/lib/project-info";
 import { normalizeTurbineLabel } from "@/lib/turbine-label";
@@ -38,15 +38,21 @@ export default async function FinalReportViewPage(props: PageProps<"/final-repor
   const ids = idsFrom(sp.ids);
   if (ids.length === 0) notFound();
 
-  const reports = await getReportDraftsByIds(ids);
+  // Bản final của một trụ vẫn phải mang theo phần tổng hợp của cả dự án, nên
+  // ngoài báo cáo đang chọn (có ảnh) còn cần dữ liệu tóm tắt của mọi báo cáo.
+  const [reports, fleetReports] = await Promise.all([
+    getReportDraftsByIds(ids),
+    getFleetOverview(),
+  ]);
   if (reports.length === 0) notFound();
 
   const data = buildFinalReportData(reports);
+  const fleet = buildFinalReportData(fleetReports);
 
   return (
     <div className="min-h-screen bg-slate-200 print:bg-white">
       <PrintToolbar backHref="/final-report" />
-      <FinalReportView data={data} />
+      <FinalReportView data={data} fleet={fleet} />
     </div>
   );
 }
