@@ -1,16 +1,21 @@
 #!/usr/bin/env node
 /**
- * Xoá 472 file ảnh của các finding kiểm tra cánh đã bị xoá khỏi DB ngày 25/09/2026.
+ * Xoá các file ảnh còn sót lại trong Storage sau khi finding đã bị xoá khỏi DB.
  *
- * Danh sách đường dẫn được đọc trực tiếp từ bảng sao lưu
- * `finding_photos_blade_deleted_20260925`, nên script luôn khớp với dữ liệu thật,
- * không nhúng cứng đường dẫn nào.
+ * Supabase chặn xoá file thẳng từ SQL, nên phần này phải chạy bằng tay.
+ *
+ * Danh sách đường dẫn được đọc trực tiếp từ bảng sao lưu, nên script luôn
+ * khớp với dữ liệu thật, không nhúng cứng đường dẫn nào. Hai bảng đang có:
+ *
+ *   finding_photos_blade_deleted_20260925      472 ảnh — khảo sát cánh
+ *   finding_photos_bad_turbine_deleted_20260928  5 ảnh — sai tên trụ
  *
  * Cách chạy (cần service_role key, KHÔNG dùng anon key):
  *
  *   export SUPABASE_SERVICE_ROLE_KEY='<dán key ở đây>'
- *   node xoa_anh_canh.mjs           # chạy thử, chỉ liệt kê, không xoá
- *   node xoa_anh_canh.mjs --xoa     # xoá thật
+ *   node xoa_anh_canh.mjs                                  # chạy thử bảng mặc định
+ *   node xoa_anh_canh.mjs --xoa                            # xoá thật
+ *   node xoa_anh_canh.mjs --bang=finding_photos_bad_turbine_deleted_20260928 --xoa
  *
  * Lấy service_role key: Supabase Dashboard > Project Settings > API Keys.
  * Đây là key toàn quyền — đừng commit vào git, đừng dán vào chat.
@@ -18,7 +23,9 @@
 
 const URL_DU_AN = 'https://mjxkmbbwdjrvphmqloes.supabase.co';
 const BUCKET = 'evidence-photos';
-const BANG_SAO_LUU = 'finding_photos_blade_deleted_20260925';
+const BANG_MAC_DINH = 'finding_photos_blade_deleted_20260925';
+const BANG_SAO_LUU =
+  process.argv.find((a) => a.startsWith('--bang='))?.slice('--bang='.length) || BANG_MAC_DINH;
 const LO = 200; // số file mỗi lần gọi API
 
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -51,7 +58,7 @@ async function xoaLo(duongDan) {
 }
 
 const duongDan = await layDanhSach();
-console.log(`Tìm thấy ${duongDan.length} đường dẫn ảnh trong bảng sao lưu.`);
+console.log(`Bảng ${BANG_SAO_LUU}: tìm thấy ${duongDan.length} đường dẫn ảnh.`);
 
 if (!XOA_THAT) {
   console.log('\n--- CHẠY THỬ, chưa xoá gì ---');
