@@ -38,15 +38,18 @@ export const INSPECTION_PERIOD = {
 } as const;
 
 /**
- * Có in mục 4.4 "Findings matrix" — bảng liệt kê toàn bộ phát hiện của cả
- * 22 trụ — vào bản final của từng trụ hay không.
+ * Có in bảng "Findings matrix" — liệt kê toàn bộ phát hiện của cả 22 trụ —
+ * vào bản final hay không. Đang tắt.
  *
  * Bảng này khoảng 990 dòng, chiếm gần 70% dung lượng trang và chừng 30
  * trang in, và lặp lại y hệt trong cả 22 bản. Mục 4.2 (lỗi chính theo trụ)
- * và 4.3 (ma trận OK/NG) đã cho cùng bức tranh tổng thể trong hai trang.
- * Đổi thành false là bỏ mục 4.4 khỏi mọi bản final, không cần sửa gì khác.
+ * và 4.3 (ma trận OK/NG) đã cho cùng bức tranh tổng thể trong hai trang,
+ * còn chi tiết từng phát hiện của trụ đang xem nằm ở mục 5.
+ *
+ * Đổi thành true là bật lại, không cần sửa gì khác; khi đó bảng trở lại
+ * làm mục 4.4.
  */
-export const INCLUDE_FULL_FINDINGS_MATRIX = true;
+export const INCLUDE_FULL_FINDINGS_MATRIX: boolean = false;
 
 /** Bảng DOCUMENT CONTRIBUTORS. */
 export const INSPECTORS = [
