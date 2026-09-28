@@ -27,7 +27,7 @@ export default function SectionFindings({
 
   return (
     <section id={sectionAnchorId(section.id)} className="mt-7 scroll-mt-16">
-      <div className="avoid-break rounded-md px-3.5 py-2.5" style={{ background: NAVY }}>
+      <div className="section-head avoid-break rounded-md px-3.5 py-2.5" style={{ background: NAVY }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <h3 className="text-[14.5px] font-extrabold uppercase tracking-wide leading-tight text-white">
             {section.no} {section.en}

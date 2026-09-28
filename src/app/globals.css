@@ -62,6 +62,24 @@ body {
 }
 
 @media print {
+  /* ── Một phát hiện = một khối, không bị cắt ngang trang ──────────────
+     Phần diễn giải và ảnh của cùng một phát hiện phải nằm trên cùng một
+     trang. `break-inside` phải đặt cả trên khung ngoài lẫn lưới hai cột
+     bên trong: Chrome ngắt trang theo khối con, nên nếu chỉ chặn khung
+     ngoài thì cột ảnh vẫn tự tách ra trang sau. */
+  .finding-card,
+  .finding-card > div,
+  .finding-card .fr-photo-list {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Tiêu đề hạng mục 5.x không được đứng một mình ở cuối trang. */
+  .section-head {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
   /* WebKit bỏ qua break-inside:avoid trên con của grid/flex, nên khi in
      chuyển lưới ảnh sang inline-block: vẫn ba ảnh một hàng, nhưng mỗi khung
      ảnh tự xuống trang khi không đủ chỗ. */
@@ -86,6 +104,8 @@ body {
     width: 100% !important;
     height: 34mm !important;
     object-fit: contain;
+    /* Chỗ thừa hai bên ảnh phải là màu giấy, không phải mảng xám. */
+    background: #fff !important;
     break-inside: avoid;
     page-break-inside: avoid;
   }

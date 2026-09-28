@@ -33,7 +33,10 @@ export default function FindingCard({
        cả khung tô nền đỏ/cam/xanh theo mức, cộng với ô diễn giải bôi vàng —
        một trang mười phát hiện là mười mảng màu, trông như trang web chứ
        không như báo cáo kỹ thuật. */
-    <div className={`avoid-break rounded-sm border border-slate-300 bg-white ${tone.border} border-l-4 overflow-hidden`}>
+    /* `overflow-hidden` đã bỏ: nó tạo một ngữ cảnh định dạng riêng khiến
+       Chrome bỏ qua break-inside khi in, và phát hiện bị cắt đôi giữa hai
+       trang. Bo góc mất một chút, đổi lại khối luôn nằm trọn một trang. */
+    <div className={`finding-card avoid-break rounded-sm border border-slate-300 bg-white ${tone.border} border-l-4`}>
       <div className="grid grid-cols-3 gap-0 print:gap-0">
         <div className="col-span-1 p-3 border-r" style={{ borderRightColor: "rgba(0,0,0,0.08)" }}>
           <div className="mb-2">
@@ -83,7 +86,12 @@ export default function FindingCard({
                     <img
                       src={p.url}
                       alt="evidence"
-                      className="w-full rounded block bg-slate-100"
+                      /* Nền trắng bằng màu giấy: ảnh nằm trong khung cao cố
+                         định nên ảnh đứng hay ảnh ngang đều thừa ra hai bên;
+                         trước đây chỗ thừa tô xám, in ra thành những mảng xám
+                         lạc lõng giữa trang giấy trắng. Viền mảnh thay cho
+                         mảng xám để vẫn thấy rõ mép ảnh. */
+                      className="w-full rounded-sm block bg-white border border-slate-200"
                       style={{ height: PHOTO_BOX_HEIGHT, objectFit: "contain" }}
                     />
                   </div>
