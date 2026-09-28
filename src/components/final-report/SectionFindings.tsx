@@ -28,7 +28,7 @@ export default function SectionFindings({
   const [first, ...rest] = findings;
 
   return (
-    <section id={sectionAnchorId(section.id)} className="mt-7 scroll-mt-16">
+    <section id={sectionAnchorId(section.id)} className="mt-5 scroll-mt-16">
       {/* Khối mở đầu hạng mục: dải tiêu đề, dòng thống kê và phát hiện đầu
           tiên phải nằm cùng một trang khi in.
 
@@ -39,7 +39,7 @@ export default function SectionFindings({
           dưới một cái tiêu đề trơ trọi. Gom cả ba vào một khối không được
           cắt thì trình duyệt buộc phải dời cả cụm sang trang sau. */}
       <div className="section-open">
-        <div className="section-head rounded-md px-3.5 py-2.5" style={{ background: NAVY }}>
+        <div className="section-head rounded-md px-3 py-1.5" style={{ background: NAVY }}>
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <h3 className="text-[14.5px] font-extrabold uppercase tracking-wide leading-tight text-white">
               {section.no} {section.en}
@@ -58,7 +58,7 @@ export default function SectionFindings({
           </p>
         ) : (
           <>
-            <div className="flex items-center gap-2 flex-wrap mt-2 mb-3 px-1">
+            <div className="flex items-center gap-2 flex-wrap mt-1.5 mb-2 px-1">
               <Count n={group.critical} label="critical" color="#B91C1C" />
               <Count n={group.medium} label="medium" color="#B45309" />
               <Count n={group.low} label="low" color="#047857" />
@@ -75,7 +75,7 @@ export default function SectionFindings({
       </div>
 
       {rest.length > 0 && (
-        <div className="space-y-4 mt-4">
+        <div className="space-y-3 mt-3">
           {rest.map((f, i) => (
             <FindingCard key={`${f.id}-${i}`} f={f} showTurbine={multiTurbine} />
           ))}

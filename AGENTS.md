@@ -26,3 +26,24 @@ Vì vậy:
   kích thước màn hình.
 - Khi cân nhắc cỡ chữ hay cỡ ảnh, lấy **màn hình máy tính và trang A4** làm
   chuẩn, đừng viện lý do "dễ đọc trên điện thoại".
+
+## Sửa bố cục bản final thì phải chạy `npm run kiem-tra-in`
+
+Lỗi ngắt trang không thấy được trên màn hình — chỉ lộ ra khi in. Đã hai lần
+lọt lưới: phát hiện bị cắt đôi giữa hai trang, rồi dải tiêu đề hạng mục
+đứng trơ trọi trên nửa trang trắng.
+
+`scripts/kiem-tra-ban-in.tsx` dựng mục 5 từ chính các component thật, in ra
+PDF bằng Chromium rồi đọc ngược file PDF. Nó chạy bốn kịch bản (ít ảnh,
+nhiều ảnh, hạng mục ngắn, hạng mục dài) để dải tiêu đề rơi vào đủ mọi vị
+trí trên trang, và kiểm ba điều:
+
+1. Không phát hiện nào bị cắt ngang trang.
+2. Không tiêu đề hạng mục nào lìa khỏi phát hiện đầu tiên của nó.
+3. Khoảng trắng cuối trang phải nhỏ hơn khối đầu của trang kế — nếu trống
+   còn nhiều hơn cả khối phải dời thì có thứ nhét vừa mà vẫn bị đẩy đi.
+
+Điều 3 tự hiệu chỉnh theo nội dung, không dùng ngưỡng cố định tuỳ tiện.
+
+Thoát mã khác 0 khi có lỗi, dùng được trong CI. Cần `pymupdf` (`pip install
+pymupdf`) và Chromium; đường dẫn Chromium đổi qua biến `CHROME_PATH`.

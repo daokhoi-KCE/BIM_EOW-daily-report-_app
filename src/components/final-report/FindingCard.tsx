@@ -38,7 +38,7 @@ export default function FindingCard({
        trang. Bo góc mất một chút, đổi lại khối luôn nằm trọn một trang. */
     <div className={`finding-card avoid-break rounded-sm border border-slate-300 bg-white ${tone.border} border-l-4`}>
       <div className="grid grid-cols-3 gap-0 print:gap-0">
-        <div className="col-span-1 p-3 border-r" style={{ borderRightColor: "rgba(0,0,0,0.08)" }}>
+        <div className="col-span-1 p-2.5 border-r" style={{ borderRightColor: "rgba(0,0,0,0.08)" }}>
           <div className="mb-2">
             {showTurbine && f.turbine && (
               <div className="text-[9.5px] font-bold uppercase tracking-wide text-slate-500 mb-0.5">
@@ -69,7 +69,7 @@ export default function FindingCard({
           )}
         </div>
 
-        <div className="col-span-2 p-3">
+        <div className="col-span-2 p-2.5">
           {f.photos && f.photos.length > 0 ? (
             /* Lưới ảnh nhỏ, 3 ảnh một hàng: một phát hiện thường có 2-5 ảnh,
                để cỡ lớn thì mỗi ảnh chiếm gần một trang và người đọc phải lật

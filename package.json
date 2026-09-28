@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "kiem-tra-in": "tsx scripts/kiem-tra-ban-in.tsx"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
