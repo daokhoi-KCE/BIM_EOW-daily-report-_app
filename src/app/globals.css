@@ -74,7 +74,13 @@ body {
     page-break-inside: avoid !important;
   }
 
-  /* Tiêu đề hạng mục 5.x không được đứng một mình ở cuối trang. */
+  /* Mở đầu hạng mục 5.x: dải tiêu đề + dòng thống kê + phát hiện đầu tiên
+     là một khối liền. Nếu không đủ chỗ ở cuối trang thì cả cụm xuống trang
+     sau, thay vì để tiêu đề trơ trọi trên nửa trang trắng. */
+  .section-open {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
   .section-head {
     break-after: avoid;
     page-break-after: avoid;
