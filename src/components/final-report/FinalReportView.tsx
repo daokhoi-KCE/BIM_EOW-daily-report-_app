@@ -285,47 +285,54 @@ export default function FinalReportView({
       <div id="s1-introduction">
         <SectionTitle en="1. Introduction" vi="Giới thiệu" compact />
       </div>
+      {/* Tiếng Anh đứng trước, tiếng Việt là bản tóm lược in nhỏ bên dưới —
+          giống trang lưu ý pháp lý ở đầu tài liệu, và giống bộ khung báo cáo
+          kiểm định gốc. Báo cáo này còn gửi cho nhà sản xuất. */}
       <p className="prose-doc text-[12px] leading-relaxed text-justify">
-        Dự án <b>{PROJECT.siteName}</b> do <b>{PROJECT.owner}</b> làm chủ đầu tư, gồm{" "}
-        {PROJECT.totalTurbines} tuabin gió <b>{PROJECT.turbineModel}</b> của {PROJECT.oem}. Khi các
-        tuabin đến hạn kết thúc thời gian bảo hành, chủ đầu tư tổ chức đợt kiểm tra trực quan
-        End-of-Warranty (EOW) nhằm ghi nhận đầy đủ tình trạng thiết bị trước thời điểm chuyển giao
-        trách nhiệm bảo trì từ nhà sản xuất sang chủ đầu tư.
+        The <b>{PROJECT.siteName}</b>, owned by <b>{PROJECT.owner}</b>, comprises{" "}
+        {PROJECT.totalTurbines} <b>{PROJECT.turbineModel}</b> wind turbines supplied by{" "}
+        {PROJECT.oem}. As the turbines reach the end of their warranty period, the owner has
+        commissioned an End-of-Warranty (EOW) visual inspection to record the condition of the
+        equipment in full before responsibility for maintenance passes from the manufacturer to the
+        owner.
       </p>
       <p className="prose-doc text-[12px] leading-relaxed text-justify mt-2">
-        Đợt kiểm tra được thực hiện tại hiện trường từ <b>{periodFrom}</b> đến{" "}
-        <b>{periodTo}</b>, gồm <b>{site.totals.reports}</b> báo cáo kiểm tra hằng ngày trên{" "}
-        <b>{site.totals.turbines}</b> tuabin, ghi nhận <b>{site.totals.findings}</b> phát hiện và{" "}
-        <b>{site.totals.photos}</b> ảnh hiện trường. Công tác kiểm tra do{" "}
-        <b>{INSPECTORS.map((p) => p.name).join(" và ")}</b> thực hiện.
+        The inspection was carried out on site between <b>{periodFrom}</b> and <b>{periodTo}</b>,
+        producing <b>{site.totals.reports}</b> daily inspection reports across{" "}
+        <b>{site.totals.turbines}</b> turbines, in which <b>{site.totals.findings}</b> findings and{" "}
+        <b>{site.totals.photos}</b> site photographs were recorded. The inspection was performed by{" "}
+        <b>{INSPECTORS.map((p) => p.name).join(" and ")}</b>.
       </p>
       <p className="prose-doc text-[12px] leading-relaxed text-justify mt-2">
         {siteHasMore ? (
           <>
-            Bản báo cáo này dành riêng cho <b>{scopeLabel}</b> ({reportDates}), với{" "}
-            <b>{totals.findings}</b> phát hiện và <b>{totals.photos}</b> ảnh. Mỗi tuabin có một bản
-            final riêng để tiện theo dõi. <b>Mục 4</b> giữ phần tóm tắt và các ma trận tổng hợp của
-            cả <b>{site.totals.turbines}</b> trụ, giúp đối chiếu {scopeLabel} với toàn công trường;{" "}
-            <b>mục 5</b> trình bày chi tiết từng phát hiện của {scopeLabel} kèm ảnh, sắp xếp theo
-            cụm thiết bị.
+            This volume covers <b>{scopeLabel}</b> ({reportDates}), with <b>{totals.findings}</b>{" "}
+            findings and <b>{totals.photos}</b> photographs. One volume is issued for each turbine so
+            that each can be followed on its own. <b>Section 4</b> carries the site-wide summary and
+            the matrices for all <b>{site.totals.turbines}</b> turbines, so that {scopeLabel} can be
+            read against the site as a whole; <b>Section 5</b> details every finding of {scopeLabel}{" "}
+            with its photographs, regrouped by component and location.
           </>
         ) : (
           <>
-            Bản báo cáo này bao phủ <b>{totals.turbines}</b> tuabin ({reportDates}) với{" "}
-            <b>{totals.findings}</b> phát hiện và <b>{totals.photos}</b> ảnh. <b>Mục 4</b> tóm tắt
-            và đối chiếu giữa các trụ; <b>mục 5</b> trình bày chi tiết từng phát hiện kèm ảnh, sắp
-            xếp theo cụm thiết bị; mục cuối giữ cách trình bày theo từng trụ.
+            This volume covers <b>{totals.turbines}</b> turbines ({reportDates}), with{" "}
+            <b>{totals.findings}</b> findings and <b>{totals.photos}</b> photographs.{" "}
+            <b>Section 4</b> summarises and compares the turbines; <b>Section 5</b> details every
+            finding with its photographs, regrouped by component and location; the final section
+            retains the per-turbine view.
           </>
         )}
       </p>
       <p className="prose-doc text-[10px] italic text-slate-500 leading-relaxed text-justify mt-2">
-        The End-of-Warranty visual inspection of the {PROJECT.siteName} was carried out on site
-        between {periodFrom} and {periodTo}, covering {site.totals.turbines} turbines over{" "}
-        {site.totals.reports} daily reports, with {site.totals.findings} findings and{" "}
-        {site.totals.photos} site photographs.{" "}
+        Đợt kiểm tra trực quan hết hạn bảo hành (EOW) tại {PROJECT.siteName} — chủ đầu tư{" "}
+        {PROJECT.owner}, {PROJECT.totalTurbines} tuabin {PROJECT.turbineModel} của {PROJECT.oem} —
+        được thực hiện tại hiện trường từ {periodFrom} đến {periodTo}, gồm {site.totals.reports} báo
+        cáo kiểm tra hằng ngày trên {site.totals.turbines} tuabin, ghi nhận {site.totals.findings}{" "}
+        phát hiện và {site.totals.photos} ảnh. Công tác kiểm tra do{" "}
+        {INSPECTORS.map((p) => p.name).join(" và ")} thực hiện.{" "}
         {siteHasMore
-          ? `This volume covers ${scopeLabel} (${totals.findings} findings, ${totals.photos} photographs); one volume is issued per turbine. Section 4 carries the site-wide summary and matrices for all ${site.totals.turbines} turbines so that ${scopeLabel} can be read in context, and Section 5 details every finding of ${scopeLabel} with photographs, regrouped by component and location.`
-          : `Section 4 summarises and compares the turbines, Section 5 details every finding with photographs, regrouped by component and location, and the final section retains the per-turbine view.`}
+          ? `Bản này dành riêng cho ${scopeLabel} (${reportDates}) với ${totals.findings} phát hiện và ${totals.photos} ảnh; mỗi tuabin có một bản final riêng. Mục 4 là phần tổng hợp của cả ${site.totals.turbines} trụ để đối chiếu, mục 5 là chi tiết từng phát hiện của ${scopeLabel} kèm ảnh, sắp xếp theo cụm thiết bị.`
+          : `Bản này bao phủ ${totals.turbines} tuabin (${reportDates}) với ${totals.findings} phát hiện và ${totals.photos} ảnh. Mục 4 tóm tắt và đối chiếu giữa các trụ, mục 5 là chi tiết từng phát hiện kèm ảnh, mục cuối giữ cách trình bày theo từng trụ.`}
       </p>
 
       {/* ── 2. Reference documents ────────────────────────────────────── */}
