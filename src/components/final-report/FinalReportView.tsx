@@ -15,11 +15,13 @@ import {
 } from "@/lib/project-info";
 import DocumentFrontMatter from "@/components/final-report/DocumentFrontMatter";
 import SectionFindings, { sectionAnchorId } from "@/components/final-report/SectionFindings";
+import { SITE_PHOTOS_SECTION } from "@/lib/report-sections";
 import DefectMatrix from "@/components/final-report/DefectMatrix";
 import FindingsMatrix from "@/components/final-report/FindingsMatrix";
 import FleetMainDefects from "@/components/final-report/FleetMainDefects";
 import TurbineSection, { turbineAnchorId } from "@/components/final-report/TurbineSection";
 import ReminderNote, { REMINDER_ANCHOR } from "@/components/final-report/ReminderNote";
+import SitePhotosSection, { SITE_PHOTOS_ANCHOR } from "@/components/final-report/SitePhotosSection";
 
 const ISSUE = "A";
 
@@ -107,6 +109,9 @@ export default function FinalReportView({
   // Số phát hiện của riêng phạm vi bản in, tra theo mục 5.x — dùng cho cột
   // cuối của bảng phân bố, để đối chiếu trụ này với cả dự án trên cùng dòng.
   const scopeBySection = new Map(sections.map((g) => [g.section.id, g.findings.length]));
+  // Mục "Phát hiện khác" là lưới an toàn, hiện luôn rỗng — không in ra cho
+  // đỡ rối. Nếu sau này có finding không xếp được vào cụm nào thì nó hiện.
+  const printedSections = sections.filter((g) => g.section.id !== "other" || g.findings.length > 0);
   // Thời gian kiểm tra là mốc của cả đợt, không phải khoảng ngày của những
   // báo cáo đang chọn — bản một trụ chỉ có đúng một ngày.
   const periodFrom = formatDateDMY(INSPECTION_PERIOD.from);
@@ -254,7 +259,7 @@ export default function FinalReportView({
           vi="Chi tiết phát hiện"
         />
         <div className="pl-5">
-          {sections.map((g) => (
+          {printedSections.map((g) => (
             <TocLine
               key={g.section.id}
               href={`#${sectionAnchorId(g.section.id)}`}
@@ -263,6 +268,13 @@ export default function FinalReportView({
               page={String(g.findings.length)}
             />
           ))}
+          <TocLine
+            href={`#${SITE_PHOTOS_ANCHOR}`}
+            no={SITE_PHOTOS_SECTION.no}
+            en={SITE_PHOTOS_SECTION.en}
+            vi={SITE_PHOTOS_SECTION.vi}
+            page={String(data.reports.reduce((s, r) => s + (r.photos?.length ?? 0), 0))}
+          />
         </div>
         {multiTurbine && (
           <>
@@ -583,9 +595,10 @@ export default function FinalReportView({
           compact
         />
       </div>
-      {sections.map((g) => (
+      {printedSections.map((g) => (
         <SectionFindings key={g.section.id} group={g} multiTurbine={multiTurbine} />
       ))}
+      <SitePhotosSection reports={data.reports} />
 
       {/* ── 6. Turbine detail ─────────────────────────────────────────── */}
       {multiTurbine && (

@@ -36,8 +36,26 @@ export const SECTIONS: ReportSection[] = [
   { no: "5.17", id: "cooling-system", en: "Cooling System", vi: "Hệ làm mát" },
   { no: "5.18", id: "electrical", en: "Electrical Cabinets, Cabling and Lighting", vi: "Tủ điện, cáp và chiếu sáng" },
   { no: "5.19", id: "blades", en: "Blades and Blade Bearings", vi: "Cánh và ổ đỡ cánh" },
-  { no: "5.20", id: "other", en: "Other Findings", vi: "Phát hiện khác" },
+  // Lưới an toàn cho finding không xếp được vào cụm nào. Hiện không có
+  // finding nào rơi vào đây, nên mục này không in ra; đánh số 5.21 để 5.20
+  // dành cho phần ảnh hiện trường. Nếu sau này có finding lạ, mục 5.21 sẽ
+  // xuất hiện — thà thừa một mục còn hơn để finding biến mất lặng lẽ.
+  { no: "5.21", id: "other", en: "Other Findings", vi: "Phát hiện khác" },
 ];
+
+/**
+ * Mục 5.20 — ảnh chụp chung ở hiện trường, không gắn với phát hiện nào.
+ *
+ * Không nằm trong SECTIONS vì đây không phải một cụm thiết bị: nó không
+ * nhận finding, không vào bảng phân bố theo hạng mục, và được dựng bằng
+ * component riêng.
+ */
+export const SITE_PHOTOS_SECTION: ReportSection = {
+  no: "5.20",
+  id: "site-photos",
+  en: "Site Photographs",
+  vi: "Hình ảnh hiện trường",
+};
 
 export const SECTION_BY_ID = new Map(SECTIONS.map((s) => [s.id, s]));
 
