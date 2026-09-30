@@ -4,6 +4,7 @@ import { tdSm as td, ThCell, severityTier, TIER } from "@/components/print/share
 import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 import { sortFindingsByArea } from "@/lib/finding-order";
+import { canonicalArea } from "@/lib/area-label";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
@@ -139,7 +140,7 @@ export default function TurbineSection({
                     <tr key={`${f.id}-${i}`} className="avoid-break">
                       <td className={`${td} pl-2 whitespace-nowrap`}>{f.date}</td>
                       <td className={`${td} whitespace-nowrap`}>{section?.no ?? "—"}</td>
-                      <td className={td}>{f.area || "—"}</td>
+                      <td className={td}>{canonicalArea(f.area).label || "—"}</td>
                       <td className={td}>{f.desc || "—"}</td>
                       <td className={`${td} font-bold whitespace-nowrap ${tone.text}`}>
                         M{f.severity || "?"}

@@ -2,6 +2,7 @@ import type { TurbineAggregate, DatedFinding } from "@/lib/final-report";
 import { NAVY } from "@/lib/theme";
 import { tdSm as td, ThCell, severityTier, TIER } from "@/components/print/shared";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
+import { canonicalArea } from "@/lib/area-label";
 
 /**
  * Tóm tắt lỗi chính của toàn bộ dự án, in trong bản final của từng trụ.
@@ -115,7 +116,7 @@ export default function FleetMainDefects({
                   <td className={`${td} whitespace-nowrap`}>
                     {section ? `${section.no} ${section.en}` : "—"}
                   </td>
-                  <td className={td}>{f.area || "—"}</td>
+                  <td className={td}>{canonicalArea(f.area).label || "—"}</td>
                   <td className={td}>{f.desc || "—"}</td>
                   <td className={`${td} whitespace-nowrap`}>
                     <span

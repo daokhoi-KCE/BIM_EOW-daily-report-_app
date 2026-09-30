@@ -1,5 +1,6 @@
 import type { ReportDraft } from "./types";
 import { sortFindingsByArea } from "./finding-order";
+import { canonicalArea } from "./area-label";
 
 /** Xuất text song ngữ để copy gửi Zalo/email */
 export function buildText(rep: ReportDraft): string {
@@ -26,7 +27,7 @@ export function buildText(rep: ReportDraft): string {
     L.push(`2. PHÁT HIỆN / FINDINGS`);
     sortFindingsByArea(rep.findings).forEach((f) => {
       L.push(
-        `- [M${f.severity || "?"}] ${f.turbine || "?"} ${f.area || ""}: ${f.desc || ""}${f.photo ? ` (${f.photo})` : ""}${f.photos?.length ? ` [${f.photos.length} ảnh đính kèm/attached]` : ""}`,
+        `- [M${f.severity || "?"}] ${f.turbine || "?"} ${canonicalArea(f.area).label}: ${f.desc || ""}${f.photo ? ` (${f.photo})` : ""}${f.photos?.length ? ` [${f.photos.length} ảnh đính kèm/attached]` : ""}`,
       );
     });
   }
