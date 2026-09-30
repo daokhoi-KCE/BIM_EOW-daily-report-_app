@@ -1,7 +1,7 @@
 import type { TurbineAggregate } from "@/lib/final-report";
 import { NAVY } from "@/lib/theme";
 import { ThCell, tdSm as td, severityTier, TIER } from "@/components/print/shared";
-import { canonicalArea } from "@/lib/area-label";
+import { displayArea } from "@/lib/area-label";
 
 export default function FindingsMatrix({
   turbines,
@@ -72,7 +72,7 @@ export default function FindingsMatrix({
               return (
                 <tr key={`${f.id}-${i}`} className={`avoid-break ${tier === "high" ? "bg-red-50" : ""}`}>
                   <td className={`${td} pl-2 font-semibold whitespace-nowrap`}>{f.date}</td>
-                  <td className={td}>{canonicalArea(f.area).label || "—"}</td>
+                  <td className={td}>{displayArea(f.area) || "—"}</td>
                   <td className={td}>
                     {f.desc || "—"}
                     {f.photo && (

@@ -7,6 +7,13 @@
  * A-B", "Section C-D"). In nguyên như vậy thì cùng một chỗ trên trụ hiện ra
  * năm sáu tên khác nhau, và sắp xếp thì chúng nằm rải rác khắp bảng.
  *
+ * QUAN TRỌNG — chỉ dùng để **sắp xếp và gom nhóm**, không dùng để in.
+ * Việc quy về một tên làm rơi chữ: "Nacelle platform" thành "Nacelle",
+ * "Middle A - Top section" thành "Tower A–Top". Đo trên dữ liệu thật là
+ * 282/950 phát hiện bị rơi ít nhất một từ. Với một báo cáo kiểm định thì
+ * mất chữ là mất thông tin, nên phần in ra dùng `displayArea` — giữ nguyên
+ * đúng chữ đội hiện trường đã ghi.
+ *
  * Hàm này tách tên khu vực thành hai phần:
  *
  *   zone    vị trí trên trụ, quy về một tên duy nhất
@@ -126,4 +133,20 @@ export function canonicalArea(raw: string | undefined): AreaParts {
   if (/^(yaw|platform|yaw\s+platform|section|tower)$/i.test(detail)) detail = "";
 
   return { zone, rank: RANK.get(zone) ?? UNKNOWN_RANK, detail, label: detail ? `${zone} — ${detail}` : zone };
+}
+
+/**
+ * Tên khu vực để in ra: giữ nguyên chữ của người ghi.
+ *
+ * Chỉ dọn hình thức, không bỏ chữ nào — tab (dấu tách giữa vị trí và cụm
+ * thiết bị) thành gạch ngang, gom các khoảng trắng thừa, cắt hai đầu.
+ *
+ * Quét báo cáo hằng ngày ghi sao thì bản final in vậy. Việc gộp "Middle"
+ * với "Section" chỉ nằm ở thứ tự sắp xếp, do `canonicalArea` lo.
+ */
+export function displayArea(raw: string | undefined): string {
+  return (raw ?? "")
+    .replace(/\t/g, " — ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

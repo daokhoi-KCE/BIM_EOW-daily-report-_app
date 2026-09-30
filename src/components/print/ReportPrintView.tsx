@@ -3,7 +3,7 @@ import type { ReportDraft } from "@/lib/types";
 import { NAVY, AMBER } from "@/lib/theme";
 import { td, severityTier, TIER, SectionTitle, InfoRow, ThCell, SafetyBox } from "@/components/print/shared";
 import { sortFindingsByArea } from "@/lib/finding-order";
-import { canonicalArea } from "@/lib/area-label";
+import { displayArea } from "@/lib/area-label";
 
 export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
   const turbines = rep.turbines.filter((t) => t.turbine);
@@ -153,7 +153,7 @@ export default function ReportPrintView({ rep }: { rep: ReportDraft }) {
                     <div className="col-span-1 p-4 border-r print:border-r bg-white" style={{ borderRightColor: `var(--tone-border, ${t.border})` }}>
                       <div className="mb-3">
                         <div className="text-[20px] font-bold text-slate-900 mb-2 tracking-tight">
-                          #{i + 1} — {canonicalArea(f.area).label || "?"}
+                          #{i + 1} — {displayArea(f.area) || "?"}
                         </div>
                         <div
                           className={`inline-block text-[12px] font-semibold px-2 py-1 rounded-sm ${t.border} ${t.text} bg-opacity-10`}

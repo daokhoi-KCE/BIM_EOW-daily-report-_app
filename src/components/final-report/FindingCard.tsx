@@ -1,6 +1,6 @@
 import type { DatedFinding } from "@/lib/final-report";
 import { severityTier, TIER } from "@/components/print/shared";
-import { canonicalArea } from "@/lib/area-label";
+import { displayArea } from "@/lib/area-label";
 
 /**
  * Chiều cao khung ảnh trong mục phát hiện.
@@ -47,7 +47,7 @@ export default function FindingCard({
               </div>
             )}
             <div className="text-[12.5px] font-extrabold text-slate-900 mb-1">
-              {f.date} — {canonicalArea(f.area).label || "?"}
+              {f.date} — {displayArea(f.area) || "?"}
             </div>
             <div
               className={`inline-block text-[9.5px] font-bold px-2.5 py-1 rounded border bg-white ${tone.border} ${tone.text}`}
