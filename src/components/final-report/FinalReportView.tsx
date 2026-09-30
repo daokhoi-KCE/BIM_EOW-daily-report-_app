@@ -6,6 +6,8 @@ import { formatDateDMY } from "@/lib/utils";
 import {
   PROJECT,
   INCLUDE_FULL_FINDINGS_MATRIX,
+  LARGE_PHOTO_TURBINES,
+  PHOTO_SIZES,
   INSPECTION_PERIOD,
   INSPECTORS,
   STANDARDS,
@@ -114,6 +116,14 @@ export default function FinalReportView({
   // dòng "không ghi nhận phát hiện nào" — vừa dài vừa không thêm thông tin.
   // Hạng mục đã kiểm tra mà không có lỗi vẫn thấy được ở ma trận OK/NG 4.3.
   const printedSections = sections.filter((g) => g.findings.length > 0);
+
+  // Cỡ ảnh mục 5, theo trụ mà bản in này nói tới. Bản gộp nhiều trụ chỉ
+  // dùng cỡ lớn khi mọi trụ trong đó đều thuộc danh sách — một bản in phải
+  // có cỡ ảnh thống nhất từ đầu đến cuối, không to nhỏ lẫn lộn giữa chừng.
+  const photoSize =
+    turbines.length > 0 && turbines.every((t) => LARGE_PHOTO_TURBINES.includes(t.turbine))
+      ? PHOTO_SIZES.large
+      : PHOTO_SIZES.default;
   // Thời gian kiểm tra là mốc của cả đợt, không phải khoảng ngày của những
   // báo cáo đang chọn — bản một trụ chỉ có đúng một ngày.
   const periodFrom = formatDateDMY(INSPECTION_PERIOD.from);
@@ -606,7 +616,7 @@ export default function FinalReportView({
         />
       </div>
       {printedSections.map((g) => (
-        <SectionFindings key={g.section.id} group={g} multiTurbine={multiTurbine} />
+        <SectionFindings key={g.section.id} group={g} multiTurbine={multiTurbine} photoSize={photoSize} />
       ))}
       <SitePhotosSection reports={data.reports} />
 

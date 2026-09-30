@@ -18,9 +18,12 @@ function Count({ n, label, color }: { n: number; label: string; color: string })
 export default function SectionFindings({
   group,
   multiTurbine,
+  photoSize,
 }: {
   group: SectionGroup;
   multiTurbine: boolean;
+  /** Cỡ ảnh của cả bản in; để trống thì FindingCard dùng cỡ thường. */
+  photoSize?: { cols: number; height: string };
 }) {
   const { section, findings } = group;
   // Hạng mục không có phát hiện thì không in ra — một dải tiêu đề kèm dòng
@@ -66,13 +69,13 @@ export default function SectionFindings({
             </span>
           )}
         </div>
-        <FindingCard f={first} showTurbine={multiTurbine} />
+        <FindingCard f={first} showTurbine={multiTurbine} photoSize={photoSize} />
       </div>
 
       {rest.length > 0 && (
         <div className="space-y-3 mt-3">
           {rest.map((f, i) => (
-            <FindingCard key={`${f.id}-${i}`} f={f} showTurbine={multiTurbine} />
+            <FindingCard key={`${f.id}-${i}`} f={f} showTurbine={multiTurbine} photoSize={photoSize} />
           ))}
         </div>
       )}

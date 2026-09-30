@@ -26,6 +26,33 @@ export const PROJECT = {
 } as const;
 
 /**
+ * Cỡ ảnh trong mục phát hiện của bản final.
+ *
+ * `default` — 3 ảnh một hàng, khung cao 34mm. Đủ để nhìn tổng quát cả phát
+ * hiện trong một cái liếc, đây là cỡ dùng cho hầu hết các trụ.
+ *
+ * `large` — 2 ảnh một hàng, khung cao 46mm. Ít cột hơn mới là điều làm ảnh
+ * to lên thật: khung rộng khoảng 59mm thay vì 39mm, nên ảnh ngang cũng to
+ * theo. Chỉ nâng chiều cao mà giữ 3 cột thì ảnh ngang không đổi một chút
+ * nào, chỉ thừa thêm khoảng trắng trên dưới.
+ */
+export const PHOTO_SIZES = {
+  default: { cols: 3, height: "34mm" },
+  large: { cols: 2, height: "46mm" },
+} as const;
+
+/**
+ * Các trụ in ảnh cỡ lớn. Bản final của trụ nào có tên trong danh sách này
+ * thì mục 5 dùng cỡ `large`.
+ *
+ * Bản gộp nhiều trụ chỉ dùng cỡ lớn khi mọi trụ trong đó đều có tên ở đây —
+ * một bản in phải có cỡ ảnh thống nhất từ đầu đến cuối.
+ *
+ * Tên viết theo dạng đã chuẩn hoá "WTG NN". Thêm bớt trụ ở ngay dòng này.
+ */
+export const LARGE_PHOTO_TURBINES: readonly string[] = ["WTG 01", "WTG 02", "WTG 03"];
+
+/**
  * Đơn vị thực hiện kiểm tra.
  *
  * Bộ khung báo cáo lấy theo tài liệu của UL/GIM; ở đây đơn vị kiểm tra là

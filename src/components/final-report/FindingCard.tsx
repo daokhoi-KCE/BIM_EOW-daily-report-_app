@@ -1,16 +1,7 @@
 import type { DatedFinding } from "@/lib/final-report";
 import { severityTier, TIER } from "@/components/print/shared";
 import { displayArea } from "@/lib/area-label";
-
-/**
- * Chiều cao khung ảnh trong mục phát hiện.
- *
- * Đặt bằng mm vì đích đến là bản in A4: ba ảnh một hàng, cao 34mm, nên một
- * phát hiện có 3 ảnh chiếm khoảng một phần tư chiều cao trang thay vì cả
- * trang như trước. Đây là con số duy nhất cần sửa nếu muốn ảnh to hay nhỏ
- * hơn; quy tắc khi in nằm ở `.fr-photo-item` trong globals.css.
- */
-const PHOTO_BOX_HEIGHT = "34mm";
+import { PHOTO_SIZES } from "@/lib/project-info";
 
 /**
  * Một phát hiện: cột trái là diễn giải, cột phải là ảnh chứng cứ.
@@ -22,9 +13,12 @@ const PHOTO_BOX_HEIGHT = "34mm";
 export default function FindingCard({
   f,
   showTurbine = false,
+  photoSize = PHOTO_SIZES.default,
 }: {
   f: DatedFinding & { turbine?: string };
   showTurbine?: boolean;
+  /** Cỡ ảnh của cả bản in, do FinalReportView quyết định theo trụ. */
+  photoSize?: { cols: number; height: string };
 }) {
   const tier = severityTier(f.severity);
   const tone = TIER[tier];
@@ -76,7 +70,12 @@ export default function FindingCard({
                để cỡ lớn thì mỗi ảnh chiếm gần một trang và người đọc phải lật
                mới thấy hết. Ảnh dùng object-contain trong khung cao cố định
                nên không bị cắt xén — vẫn là ảnh chứng cứ, chỉ nhỏ lại. */
-            <div className="fr-photo-list">
+            /* Số cột đặt qua tên lớp vì khi in phải đổi cả bề rộng ô và
+               ô nào kết thúc hàng; chiều cao đặt qua biến CSS. */
+            <div
+              className={`fr-photo-list cols-${photoSize.cols}`}
+              style={{ ["--fr-photo-h" as string]: photoSize.height }}
+            >
               {f.photos.map((p) =>
                 // URL rỗng nghĩa là ảnh có trong CSDL nhưng ký URL hỏng. Nếu
                 // vẫn dựng thẻ <img> thì nó hiện ra khoảng trắng và người đọc
@@ -93,14 +92,14 @@ export default function FindingCard({
                          lạc lõng giữa trang giấy trắng. Viền mảnh thay cho
                          mảng xám để vẫn thấy rõ mép ảnh. */
                       className="w-full rounded-sm block bg-white border border-slate-200"
-                      style={{ height: PHOTO_BOX_HEIGHT, objectFit: "contain" }}
+                      style={{ height: photoSize.height, objectFit: "contain" }}
                     />
                   </div>
                 ) : (
                   <div
                     key={p.id}
                     className="fr-photo-item avoid-break rounded border border-dashed border-red-300 bg-red-50 text-center px-1 flex flex-col justify-center"
-                    style={{ height: PHOTO_BOX_HEIGHT }}
+                    style={{ height: photoSize.height }}
                   >
                     <div className="text-[9.5px] font-bold text-red-700">Không tải được ảnh</div>
                     <div className="text-[8.5px] text-red-500 italic">Photo failed to load</div>

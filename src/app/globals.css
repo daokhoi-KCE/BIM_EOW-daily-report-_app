@@ -57,8 +57,13 @@ body {
    vẫn to như cũ. */
 .fr-photo-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
+}
+.fr-photo-list.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.fr-photo-list.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media print {
@@ -96,19 +101,32 @@ body {
   .fr-photo-item {
     display: inline-block;
     vertical-align: top;
-    width: 32.2% !important;
-    max-width: 32.2% !important;
-    margin: 0 1.7% 4px 0;
     break-inside: avoid;
     page-break-inside: avoid;
   }
-  .fr-photo-item:nth-child(3n) {
+  /* Bề rộng cộng khoảng cách phải vừa đúng 100%, nếu không ô cuối hàng rơi
+     xuống hàng dưới và lưới vỡ. Ô kết thúc hàng bỏ khoảng cách bên phải. */
+  .cols-3 .fr-photo-item {
+    width: 32.2% !important;
+    max-width: 32.2% !important;
+    margin: 0 1.7% 4px 0;
+  }
+  .cols-3 .fr-photo-item:nth-child(3n) {
+    margin-right: 0;
+  }
+  .cols-2 .fr-photo-item {
+    width: 49% !important;
+    max-width: 49% !important;
+    margin: 0 2% 4px 0;
+  }
+  .cols-2 .fr-photo-item:nth-child(2n) {
     margin-right: 0;
   }
   .fr-photo-item img {
     display: block !important;
     width: 100% !important;
-    height: 34mm !important;
+    /* Chiều cao do component đặt qua biến, mặc định là cỡ thường. */
+    height: var(--fr-photo-h, 34mm) !important;
     object-fit: contain;
     /* Chỗ thừa hai bên ảnh phải là màu giấy, không phải mảng xám. */
     background: #fff !important;

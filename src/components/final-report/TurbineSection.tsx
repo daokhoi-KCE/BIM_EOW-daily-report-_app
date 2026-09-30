@@ -21,9 +21,11 @@ export function turbineAnchorId(turbine: string) {
 export default function TurbineSection({
   t,
   compact = false,
+  photoSize,
 }: {
   t: TurbineAggregate;
   compact?: boolean;
+  photoSize?: { cols: number; height: string };
 }) {
   const pctOk = t.latestPct !== null && t.latestPct >= 100;
 
@@ -154,7 +156,7 @@ export default function TurbineSection({
           ) : (
             <div className="space-y-4">
               {sortFindingsByArea(t.findings).map((f, i) => (
-                <FindingCard key={`${f.id}-${i}`} f={f} />
+                <FindingCard key={`${f.id}-${i}`} f={f} photoSize={photoSize} />
               ))}
             </div>
           )}
