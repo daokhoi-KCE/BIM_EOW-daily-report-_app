@@ -26,28 +26,6 @@ export const PROJECT = {
 } as const;
 
 /**
- * Địa chỉ gốc của app, dùng để in link mở thư mục ảnh của từng báo cáo.
- *
- * Bản final là file PDF rời khỏi app, nên link phải là địa chỉ đầy đủ thì
- * người đọc mới mở được. Vercel đặt sẵn VERCEL_PROJECT_PRODUCTION_URL khi
- * build; đặt NEXT_PUBLIC_APP_URL để ghi đè nếu dùng tên miền riêng.
- *
- * Không biết địa chỉ thì in đường dẫn tương đối — vẫn chỉ đúng chỗ cần tìm
- * trong app, chỉ là phải tự gõ tên miền.
- */
-export const APP_BASE_URL = (
-  process.env.NEXT_PUBLIC_APP_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "")
-).replace(/\/+$/, "");
-
-/** Link tới trang báo cáo ngày — nơi xem được toàn bộ ảnh của báo cáo đó. */
-export function reportPhotoFolderUrl(reportId: string): string {
-  return `${APP_BASE_URL}/reports/${reportId}`;
-}
-
-/**
  * Đơn vị thực hiện kiểm tra.
  *
  * Bộ khung báo cáo lấy theo tài liệu của UL/GIM; ở đây đơn vị kiểm tra là
