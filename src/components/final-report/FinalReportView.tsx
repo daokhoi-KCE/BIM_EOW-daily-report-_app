@@ -109,9 +109,11 @@ export default function FinalReportView({
   // Số phát hiện của riêng phạm vi bản in, tra theo mục 5.x — dùng cho cột
   // cuối của bảng phân bố, để đối chiếu trụ này với cả dự án trên cùng dòng.
   const scopeBySection = new Map(sections.map((g) => [g.section.id, g.findings.length]));
-  // Mục "Phát hiện khác" là lưới an toàn, hiện luôn rỗng — không in ra cho
-  // đỡ rối. Nếu sau này có finding không xếp được vào cụm nào thì nó hiện.
-  const printedSections = sections.filter((g) => g.section.id !== "other" || g.findings.length > 0);
+  // Chỉ in hạng mục thật sự có phát hiện. Bản một trụ chỉ động tới vài cụm
+  // thiết bị, nên trước đây mười mấy hạng mục chỉ có mỗi dải tiêu đề và một
+  // dòng "không ghi nhận phát hiện nào" — vừa dài vừa không thêm thông tin.
+  // Hạng mục đã kiểm tra mà không có lỗi vẫn thấy được ở ma trận OK/NG 4.3.
+  const printedSections = sections.filter((g) => g.findings.length > 0);
   // Thời gian kiểm tra là mốc của cả đợt, không phải khoảng ngày của những
   // báo cáo đang chọn — bản một trụ chỉ có đúng một ngày.
   const periodFrom = formatDateDMY(INSPECTION_PERIOD.from);
@@ -516,9 +518,17 @@ export default function FinalReportView({
                   className="border-b border-slate-200 py-1 px-2 text-right tabular-nums font-semibold"
                   style={{ background: "rgba(31,53,82,0.05)" }}
                 >
-                  <a href={`#${sectionAnchorId(g.section.id)}`} className="hover:underline">
-                    {scopeBySection.get(g.section.id) || "·"}
-                  </a>
+                  {/* Chỉ liên kết khi bản in này thật sự có mục đó. Bảng
+                      thống kê là của cả dự án, nên nhiều hạng mục có phát
+                      hiện ở trụ khác mà không có ở trụ này — trỏ tới đó là
+                      một liên kết chết. */}
+                  {scopeBySection.get(g.section.id) ? (
+                    <a href={`#${sectionAnchorId(g.section.id)}`} className="hover:underline">
+                      {scopeBySection.get(g.section.id)}
+                    </a>
+                  ) : (
+                    <span className="text-slate-400">·</span>
+                  )}
                 </td>
               )}
             </tr>

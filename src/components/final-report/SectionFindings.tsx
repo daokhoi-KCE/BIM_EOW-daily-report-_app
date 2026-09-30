@@ -23,7 +23,11 @@ export default function SectionFindings({
   multiTurbine: boolean;
 }) {
   const { section, findings } = group;
-  const empty = findings.length === 0;
+  // Hạng mục không có phát hiện thì không in ra — một dải tiêu đề kèm dòng
+  // "không ghi nhận phát hiện nào" chẳng nói thêm điều gì, trong khi bản
+  // một trụ có tới mười mấy hạng mục như vậy. Thông tin "đã kiểm tra, không
+  // có lỗi" đã nằm ở ma trận OK/NG mục 4.3.
+  if (findings.length === 0) return null;
   // Phát hiện đầu tiên đi cùng khối tiêu đề; số còn lại xếp bình thường.
   const [first, ...rest] = findings;
 
@@ -51,27 +55,18 @@ export default function SectionFindings({
           <div className="text-[9.5px] italic text-white/70 leading-tight">{section.vi}</div>
         </div>
 
-        {empty ? (
-          <p className="text-[10px] italic text-slate-400 mt-2 px-1">
-            No findings recorded in this section.{" "}
-            <span className="not-italic">/ Không ghi nhận phát hiện nào ở hạng mục này.</span>
-          </p>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 flex-wrap mt-1.5 mb-2 px-1">
-              <Count n={group.critical} label="critical" color="#B91C1C" />
-              <Count n={group.medium} label="medium" color="#B45309" />
-              <Count n={group.low} label="low" color="#047857" />
-              <span className="text-[9.5px] text-slate-500">{group.photos} ảnh / photos</span>
-              {multiTurbine && group.turbines.length > 0 && (
-                <span className="text-[9.5px] text-slate-500">
-                  · {group.turbines.length} trụ: {group.turbines.join(", ")}
-                </span>
-              )}
-            </div>
-            <FindingCard f={first} showTurbine={multiTurbine} />
-          </>
-        )}
+        <div className="flex items-center gap-2 flex-wrap mt-1.5 mb-2 px-1">
+          <Count n={group.critical} label="critical" color="#B91C1C" />
+          <Count n={group.medium} label="medium" color="#B45309" />
+          <Count n={group.low} label="low" color="#047857" />
+          <span className="text-[9.5px] text-slate-500">{group.photos} ảnh / photos</span>
+          {multiTurbine && group.turbines.length > 0 && (
+            <span className="text-[9.5px] text-slate-500">
+              · {group.turbines.length} trụ: {group.turbines.join(", ")}
+            </span>
+          )}
+        </div>
+        <FindingCard f={first} showTurbine={multiTurbine} />
       </div>
 
       {rest.length > 0 && (
