@@ -2,18 +2,18 @@
 /**
  * KHÔNG DÙNG ĐƯỢC CHO DỰ ÁN NÀY — dùng doi-chieu-dau-anh.mjs thay thế.
  *
- * Script này so chính nội dung ảnh bằng vân tay (dHash). Chạy thật trên
- * toàn bộ dữ liệu thì khớp được 0/2864 ảnh. Lý do: ảnh trong app KHÔNG phải
- * bản thu nhỏ của ảnh trong thư mục — hai bên là hai lần bấm máy khác nhau
- * cho cùng một chỗ, nên nội dung ảnh khác hẳn và so kiểu gì cũng trượt.
+ * Script này so chính nội dung ảnh bằng vân tay (dHash) trên toàn bộ kho, và
+ * khớp được 0/2864 ảnh. Lúc đó tôi kết luận hai bộ ảnh là hai lần bấm máy
+ * khác nhau. KẾT LUẬN ĐÓ SAI: đo lại trong doi-chieu-dau-anh.mjs cho thấy
+ * khoảng cách vân tay của các cặp đúng là giữa 0, phân vị 90 là 2 — hai bên
+ * đúng là cùng một tấm, chỉ khác cỡ. Vì sao lần chạy đó khớp 0 thì chưa truy
+ * ra.
  *
- * Chỗ hai bên thật sự gặp nhau là DẤU TIMEMARK đóng trên ảnh (số trụ WTG,
- * vị trí, ngày, giờ:phút). doi-chieu-dau-anh.mjs đọc dấu đó bằng OCR rồi
- * ghép theo trụ + ngày + giờ:phút. Đã kiểm trên ảnh thật: đọc đúng cả kiểu
- * dấu gọn lẫn kiểu bảng.
+ * Cách dùng thật là doi-chieu-dau-anh.mjs: đọc dấu Timemark để thu phạm vi
+ * về đúng một phút (thường 2-5 tấm), rồi mới so vân tay TRONG nhúm đó. Chỉ
+ * cần xếp hạng, không cần ngưỡng tuyệt đối trên cả kho như file này.
  *
- * Giữ lại file này để tham khảo, phòng khi về sau cần so hai bộ ảnh thật sự
- * là bản sao của nhau.
+ * Giữ lại file này để tham khảo.
  *
  * Đối chiếu ảnh trong thư mục của bạn với ảnh đã tải lên app, rồi điền tên
  * file vào ô "Photo ref" của từng phát hiện.

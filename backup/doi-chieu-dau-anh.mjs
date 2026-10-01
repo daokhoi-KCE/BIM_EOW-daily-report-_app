@@ -7,9 +7,12 @@
  *
  * Mỗi bước một mình đều hỏng, ghép lại mới chạy.
  *
- * So nội dung ảnh một mình: chạy trên cả kho thì khớp 0/2864. App nén ảnh
- * xuống 1000px chất lượng 0.62, nên vân tay lệch đi đủ để mọi ngưỡng tuyệt
- * đối đều trượt.
+ * So nội dung ảnh một mình: chạy trên cả kho thì khớp 0/2864 — bản trước làm
+ * vậy và trượt sạch. Đo lại trên trụ 16 cho thấy KHÔNG phải vì app nén ảnh
+ * làm lệch vân tay như tôi đoán lúc đó: khoảng cách của các cặp đúng là giữa
+ * 0, phân vị 90 là 2, tức hai bên đúng là cùng một tấm. Lý do thật của lần
+ * khớp 0 đó chưa truy ra, và cũng không cần nữa — cách dưới đây không phụ
+ * thuộc vào một ngưỡng tuyệt đối nên không dính lại vết xe đó.
  *
  * Đọc dấu một mình: dấu chỉ in tới PHÚT, không có giây, mà một phút thường
  * có mấy tấm chụp liên tiếp. Bản trước gán cả chùm cho phát hiện, thành ra
@@ -25,6 +28,11 @@
  *
  * Bước 2 không cần ngưỡng tuyệt đối — chỉ cần xếp hạng xem trong 3 tấm thì
  * tấm nào giống nhất. Đó là lý do nó chạy được trong khi so cả kho thì không.
+ *
+ * Cặp nào lệch quá xa so với phần còn lại thì bị loại, vì đó là ảnh app có
+ * bản gốc không nằm trong thư mục và thuật toán buộc phải vơ lấy tấm đỡ khác
+ * nhất trong nhúm. Ngưỡng loại tính theo chính phân bố đo được của đợt chạy
+ * (phân vị 75 cộng 8 bit, tối thiểu 8), không đặt một con số tuỳ tiện.
  *
  * Script in ra khoảng cách vân tay của các cặp đã chọn. Gần 0 nghĩa là hai
  * bên đúng là cùng một tấm, chỉ khác cỡ. Nếu khoảng cách lớn thì hai bên là
@@ -444,6 +452,25 @@ for (const [k, apps] of appTheoKhoa) {
   }
 }
 
+// Loại các cặp quá xa so với phần còn lại.
+//
+// Khi hai bên đúng là cùng một tấm, khoảng cách gần như bằng 0 — đo trên trụ
+// 16: giữa 0, phân vị 90 là 2. Một cặp lệch tới 26 bit thì không thể là cùng
+// một tấm; đó là ảnh app có bản gốc KHÔNG nằm trong thư mục, và thuật toán
+// buộc phải vơ lấy tấm đỡ khác nhất trong nhúm.
+//
+// Ngưỡng tính theo chính phân bố đo được, không đặt một con số tuỳ tiện: lấy
+// phân vị 75 cộng 8 bit, và không bao giờ thấp hơn 8. Cách này tự co giãn
+// theo chất lượng ảnh của từng đợt.
+let cat = Infinity, soLoai = 0;
+if (khoangCachDaChon.length >= 10) {
+  const sx = [...khoangCachDaChon].sort((a, b) => a - b);
+  cat = Math.max(8, sx[Math.floor(0.75 * sx.length)] + 8);
+  for (const [tep, g] of [...ganCho]) {
+    if (g.d > cat) { ganCho.delete(tep); soLoai++; }
+  }
+}
+
 // Gom lại theo phát hiện. Tên ảnh ghi theo đúng thứ tự created_at — app xếp
 // ảnh cũng theo thứ tự đó, nên tên thứ n ứng với tấm thứ n.
 const theoPh = new Map();
@@ -470,7 +497,7 @@ for (const [finding_id, anhs] of theoPh) {
   const chuaDoc = doc.filter((x) => !x.d.ngay).length;
   const thieu = anhs.length - ganDuoc.length;
   if (chuaDoc) { lyDo.push('khong-doc-duoc-dau'); ghiChu.push(`${chuaDoc} ảnh không đọc được dấu`); }
-  if (thieu > chuaDoc) { lyDo.push('thieu-anh-goc'); ghiChu.push(`${thieu - chuaDoc} ảnh không có bản gốc cùng phút`); }
+  if (thieu > chuaDoc) { lyDo.push('thieu-anh-goc'); ghiChu.push(`${thieu - chuaDoc} ảnh không tìm được bản gốc`); }
   const mongManh = ganDuoc.filter((x) => x.gan.cach < 4 && x.gan.soUngVien > 1).length;
   if (mongManh) { lyDo.push('cach-biet-mong'); ghiChu.push(`${mongManh} ảnh có tấm khác gần tương đương`); }
 
@@ -507,6 +534,7 @@ if (khoangCachDaChon.length) {
   const sx = [...khoangCachDaChon].sort((a, b) => a - b);
   const vi = (q) => sx[Math.min(sx.length - 1, Math.floor(q * sx.length))];
   console.log(`\n  Khoảng cách vân tay cặp đã chọn: giữa ${vi(0.5)}, phân vị 90 ${vi(0.9)}, lớn nhất ${sx[sx.length - 1]} (0 = cùng một tấm, 64 = khác hẳn)`);
+  if (soLoai) console.log(`  Đã loại ${soLoai} cặp lệch quá ${cat} bit — ảnh đó không có bản gốc trong thư mục.`);
   if (vi(0.5) > 12) {
     console.log('  ⚠ Khoảng cách lớn — hai bên có thể không phải cùng một tấm ảnh.');
     console.log('    Đừng áp dụng, gửi dòng này cho tôi xem lại.');
