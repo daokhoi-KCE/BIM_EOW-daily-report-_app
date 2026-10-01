@@ -2,7 +2,11 @@ import type { ReportDraft } from "@/lib/types";
 import { NAVY } from "@/lib/theme";
 import { td, ThCell } from "@/components/print/shared";
 import { SITE_PHOTOS_SECTION } from "@/lib/report-sections";
-import { PHOTO_LIBRARY_ROOT } from "@/lib/project-info";
+import {
+  PHOTO_LIBRARY_ROOT,
+  PHOTO_LIBRARY_COUNTS,
+  PHOTO_LIBRARY_COUNT_DATE,
+} from "@/lib/project-info";
 import { normalizeTurbineLabel } from "@/lib/turbine-label";
 import { formatDateDMY } from "@/lib/utils";
 
@@ -42,12 +46,14 @@ export default function SitePhotosSection({
         date: r.date,
         turbine,
         count: r.photos?.length ?? 0,
+        kho: PHOTO_LIBRARY_COUNTS[turbine] ?? 0,
         me: danhDau.has(turbine.toUpperCase()),
       };
     })
     // Xếp theo tên trụ, không theo ngày: người đọc tra theo số trụ.
     .sort((a, b) => a.turbine.localeCompare(b.turbine, undefined, { numeric: true }));
   const total = rows.reduce((s, r) => s + r.count, 0);
+  const totalKho = rows.reduce((s, r) => s + r.kho, 0);
 
   return (
     <section id={SITE_PHOTOS_ANCHOR} className="mt-5 scroll-mt-16">
@@ -70,8 +76,9 @@ export default function SitePhotosSection({
           Photographs recorded on site that are not attached to a particular finding — general
           condition of the site, access routes and work in progress — for all{" "}
           {rows.length} turbines of the campaign. Evidence for each individual finding is reproduced
-          in sections 5.1 to 5.19 above. The full resolution originals are held in the inspection
-          photograph library, one folder per turbine:
+          in sections 5.1 to 5.19 above. The full resolution originals — {totalKho.toLocaleString("en")}{" "}
+          photographs in all — are held in the inspection photograph library, one folder per
+          turbine:
         </p>
         <p className="text-[10px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded-sm px-2 py-1 mt-1.5 break-all">
           {PHOTO_LIBRARY_ROOT}
@@ -79,8 +86,18 @@ export default function SitePhotosSection({
         <p className="prose-doc text-[9.5px] italic text-slate-500 leading-relaxed text-justify mt-1.5">
           Ảnh chụp chung tại hiện trường của cả {rows.length} trụ, không gắn với phát hiện cụ thể:
           hiện trạng công trường, lối tiếp cận, quá trình thi công. Ảnh chứng cứ của từng phát hiện
-          đã in đầy đủ ở mục 5.1-5.19. Ảnh gốc độ phân giải đầy đủ lưu trong thư mục trên, mỗi trụ
-          một thư mục con.
+          đã in đầy đủ ở mục 5.1-5.19. Ảnh gốc độ phân giải đầy đủ — {totalKho.toLocaleString("en")}{" "}
+          tấm — lưu trong thư mục trên, mỗi trụ một thư mục con.
+        </p>
+        <p className="prose-doc text-[9px] italic text-slate-400 leading-snug text-justify mt-1">
+          Cột <b>Ảnh lưu trữ</b> là số file đếm trong thư mục ngày{" "}
+          {formatDateDMY(PHOTO_LIBRARY_COUNT_DATE)}. Cột <b>Trong báo cáo</b> là số ảnh hiện trường
+          đã đưa vào ứng dụng; ảnh chứng cứ của từng phát hiện không nằm trong cột này.{" "}
+          <span className="not-italic">
+            On file: files counted in the library on {formatDateDMY(PHOTO_LIBRARY_COUNT_DATE)}. In
+            report: site photographs carried in the application, excluding the evidence photographs
+            reproduced against each finding.
+          </span>
         </p>
 
         {rows.length === 0 ? (
@@ -94,7 +111,8 @@ export default function SitePhotosSection({
               <tr style={{ background: "rgba(31,53,82,0.06)" }}>
                 <ThCell en="Turbine" vi="Tuabin" compact />
                 <ThCell en="Date" vi="Ngày" compact />
-                <ThCell en="Photographs" vi="Số ảnh" compact />
+                <ThCell en="On file" vi="Ảnh lưu trữ" compact />
+                <ThCell en="In report" vi="Trong báo cáo" compact />
                 <ThCell en="Folder" vi="Thư mục ảnh" compact />
               </tr>
             </thead>
@@ -117,7 +135,10 @@ export default function SitePhotosSection({
                     )}
                   </td>
                   <td className={`${td} whitespace-nowrap`}>{formatDateDMY(r.date)}</td>
-                  <td className={`${td} tabular-nums`}>{r.count || "—"}</td>
+                  <td className={`${td} tabular-nums font-semibold`}>
+                    {r.kho ? r.kho.toLocaleString("en") : "—"}
+                  </td>
+                  <td className={`${td} tabular-nums text-slate-500`}>{r.count || "—"}</td>
                   {/* Chỉ in tên thư mục con; đường dẫn gốc đã nêu ở trên, lặp
                       lại 22 lần thì bảng dài ra mà không thêm thông tin gì. */}
                   <td className={`${td} font-mono text-[10px] text-slate-600 break-all`}>
@@ -129,7 +150,12 @@ export default function SitePhotosSection({
                 <td className="py-1.5 px-2 font-bold text-[11px]" style={{ color: NAVY }} colSpan={2}>
                   Total / Tổng cộng — {rows.length} turbines
                 </td>
-                <td className="py-1.5 px-2 font-extrabold tabular-nums text-[11px]">{total}</td>
+                <td className="py-1.5 px-2 font-extrabold tabular-nums text-[11px]">
+                  {totalKho.toLocaleString("en")}
+                </td>
+                <td className="py-1.5 px-2 font-bold tabular-nums text-[11px] text-slate-500">
+                  {total.toLocaleString("en")}
+                </td>
                 <td />
               </tr>
             </tbody>

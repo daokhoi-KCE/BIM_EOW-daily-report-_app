@@ -37,6 +37,27 @@ export const PROJECT = {
 export const PHOTO_LIBRARY_ROOT = "D:\\JCT\\KCE\\Project\\BIM - GE inspection\\Pictures_Sorted";
 
 /**
+ * Số ảnh trong thư mục ảnh gốc, đếm trên máy đội kiểm tra ngày 01/10/2026.
+ *
+ * Đây là số đếm tại một thời điểm, không phải số đọc trực tiếp: báo cáo
+ * chạy trên máy chủ, không với tới ổ D của máy trạm. Thêm ảnh vào thư mục
+ * thì phải đếm lại và sửa ở đây:
+ *
+ *   Get-ChildItem "<thư mục>" -Directory | ForEach-Object {
+ *     "{0,-10} {1}" -f $_.Name,
+ *     (Get-ChildItem $_.FullName -Recurse -File -Include *.jpg,*.jpeg,*.png).Count }
+ */
+export const PHOTO_LIBRARY_COUNT_DATE = "2026-10-01";
+export const PHOTO_LIBRARY_COUNTS: Readonly<Record<string, number>> = {
+  "WTG 01": 323, "WTG 02": 303, "WTG 03": 302, "WTG 04": 298,
+  "WTG 05": 256, "WTG 06": 222, "WTG 07": 253, "WTG 08": 300,
+  "WTG 09": 346, "WTG 10": 425, "WTG 11": 499, "WTG 12": 402,
+  "WTG 13": 429, "WTG 14": 456, "WTG 15": 489, "WTG 16": 543,
+  "WTG 17": 509, "WTG 18": 446, "WTG 19": 334, "WTG 20": 490,
+  "WTG 21": 335, "WTG 22": 435,
+};
+
+/**
  * Cỡ ảnh trong mục phát hiện của bản final.
  *
  * `default` — 3 ảnh một hàng, khung cao 34mm. Đủ để nhìn tổng quát cả phát
