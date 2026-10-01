@@ -26,11 +26,23 @@
  *   # 3. xem file doi-chieu-anh.csv, thấy ổn thì ghi
  *   node doi-chieu-anh.mjs --thu-muc="D:\\Anh WTG" --ap-dung
  *
+ * THU HẸP PHẠM VI TRƯỚC KHI SO ẢNH
+ *
+ * Không so mọi ảnh với mọi ảnh. Trước hết lọc theo số trụ lấy từ đường dẫn
+ * thư mục của bạn ("WTG 18/...", "WTG-05/..."), sau đó ưu tiên các ảnh cùng
+ * vị trí trên trụ (tên thư mục con so với khu vực của phát hiện, đã gộp
+ * "Middle" với "Section" làm một).
+ *
+ * Số trụ đã kéo theo ngày giờ: cả dự án có 22 báo cáo cho 22 trụ, mỗi trụ
+ * đúng một ngày — nên cùng trụ nghĩa là cùng ngày. Đó là lý do không cần
+ * đọc dấu ngày giờ in trên ảnh.
+ *
  * Phát hiện khảo sát cánh (khu vực có "Blade ID" kèm số sê-ri) được bỏ qua.
  *
  * Tuỳ chọn thêm:
  *   --nguong=10   khoảng cách tối đa coi là khớp (0 = giống hệt, 64 = khác hẳn)
  *   --cach=6      chênh lệch tối thiểu giữa ảnh khớp nhất và ảnh nhì
+ *   --bo-loc-tru  tắt việc lọc theo trụ (dùng khi thư mục không chia theo trụ)
  */
 
 import fs from 'node:fs';
@@ -46,6 +58,7 @@ const thuMucGoc = lay('thu-muc', '');
 const NGUONG = Number(lay('nguong', '10'));
 const CACH = Number(lay('cach', '6'));
 const apDung = doiSo.includes('--ap-dung');
+const boLocTru = doiSo.includes('--bo-loc-tru');
 
 if (!thuMucGoc) {
   console.error('Thiếu --thu-muc="<đường dẫn thư mục ảnh của bạn>". Xem hướng dẫn ở đầu file.');
@@ -117,6 +130,36 @@ function docCsv(tep) {
 
 const laCanh = (kv) => /blade/i.test(kv) && /\d{6}/.test(kv);
 
+/** Số trụ lấy từ chuỗi bất kỳ: "WTG 18", "WTG-05", "wtg18" → "18", "05". */
+function soTru(s) {
+  const m = String(s).toUpperCase().match(/WTG[\s\-_]*0*(\d{1,2})\b/);
+  return m ? m[1].padStart(2, '0') : '';
+}
+
+/**
+ * Vị trí trên trụ, quy về một tên — bản rút gọn của src/lib/area-label.ts.
+ * Dùng để so tên thư mục con của bạn với khu vực ghi trong phát hiện, nên
+ * "Middle B-A", "Section B - A" và "Tower B-A" đều về một mối.
+ */
+function viTri(s) {
+  const t = String(s).toLowerCase().replace(/[\t_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (/\b(nacelle\s*top|top\s*nacelle)\b/.test(t)) return 'nacelle-top';
+  if (/\bnace/.test(t)) return 'nacelle';
+  if (/\bhub\b/.test(t)) return 'hub';
+  if (/\bblade/.test(t)) return 'blades';
+  if (/\byaw\b|yaw\s*platf/.test(t)) return 'top-yaw';
+  if (/\btoo\s*section\b/.test(t)) return 'top-yaw';
+  if (/\bbasement\b|\bdoor\b/.test(t)) return 'base';
+  if (/\b(hardstand|foundation|outside|outer|external|exterior)\b/.test(t)) return 'ngoai';
+  const moc = [];
+  for (const m of t.matchAll(/\b(base|top|[a-d])\b/g)) if (!moc.includes(m[1])) moc.push(m[1]);
+  if (moc.length === 0) return '';
+  const thuTu = ['base', 'd', 'c', 'b', 'a', 'top'];
+  if (moc.length === 1) return moc[0] === 'base' ? 'base' : moc[0] === 'top' ? 'top-yaw' : `doan-${moc[0]}`;
+  const i = moc.map((m) => thuTu.indexOf(m)).sort((x, y) => x - y);
+  return `doan-${thuTu[i[0]]}-${thuTu[i[i.length - 1]]}`;
+}
+
 // ── Gom danh mục ảnh app từ các file danh-muc.csv ────────────────────────
 const muc = [];
 for (const tru of fs.readdirSync(THU_MUC_APP, { withFileTypes: true }).filter((d) => d.isDirectory())) {
@@ -134,9 +177,25 @@ if (muc.length === 0) {
   process.exit(1);
 }
 
-const tepGoc = quetThuMuc(thuMucGoc);
-console.log(`Ảnh trong app  : ${muc.length}`);
-console.log(`Ảnh thư mục bạn: ${tepGoc.length}`);
+const tepGoc = quetThuMuc(thuMucGoc).map((tep) => {
+  const tuongDoi = path.relative(thuMucGoc, tep).replace(/\\/g, '/');
+  // Vị trí đọc từ các thư mục cha, không đọc từ tên file — tên file thường
+  // lặp lại tên thư mục nên đọc cả hai cũng không thêm thông tin gì.
+  const thuMucCha = tuongDoi.split('/').slice(0, -1).join(' ');
+  return { tep, tuongDoi, tru: soTru(tuongDoi), vt: viTri(thuMucCha) };
+});
+
+const truApp = new Set(muc.map((m) => soTru(m.tru)).filter(Boolean));
+const truGoc = new Set(tepGoc.map((g) => g.tru).filter(Boolean));
+const chung = [...truApp].filter((t) => truGoc.has(t));
+console.log(`Ảnh trong app  : ${muc.length}  (${truApp.size} trụ)`);
+console.log(`Ảnh thư mục bạn: ${tepGoc.length}  (${truGoc.size} trụ nhận ra từ đường dẫn)`);
+if (!boLocTru && chung.length === 0) {
+  console.error('\nKhông đọc được số trụ nào từ đường dẫn thư mục của bạn.');
+  console.error('Chạy lại kèm  --bo-loc-tru  để so toàn bộ, hoặc kiểm tra lại cấu trúc thư mục.');
+  process.exit(1);
+}
+if (!boLocTru) console.log(`Trụ khớp nhau  : ${chung.length}/${truApp.size}`);
 console.log('\nĐang tính vân tay ảnh…');
 
 async function vanTayHangLoat(ds, nhan, lay) {
@@ -154,35 +213,66 @@ const vGoc = await vanTayHangLoat(tepGoc, 'ảnh của bạn ', (t) => t);
 
 // ── Tìm ảnh gốc gần nhất cho từng ảnh app ───────────────────────────────
 const oCsv = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/[\r\n]+/g, ' ')}"`;
-const ketQua = [];
-for (const a of vApp) {
+/** Tìm ảnh gần nhất trong một nhóm ứng viên, kèm khoảng cách tới ảnh nhì. */
+function ganNhat(v, ds) {
   let nhat = null, nhi = Infinity;
-  for (const g of vGoc) {
-    const d = khoangCach(a.v, g.v);
+  for (const g of ds) {
+    const d = khoangCach(v, g.v);
     if (!nhat || d < nhat.d) { nhi = nhat ? nhat.d : nhi; nhat = { g, d }; }
     else if (d < nhi) nhi = d;
   }
-  const cach = nhat ? nhi - nhat.d : 0;
-  const trangThai = !nhat || nhat.d > NGUONG ? 'khong tim thay'
-    : cach < CACH ? 'can kiem tra' : 'chac chan';
+  return nhat ? { g: nhat.g.muc, d: nhat.d, cach: nhi - nhat.d } : null;
+}
+
+// Gom ảnh của bạn theo trụ, rồi theo vị trí — để so trong phạm vi hẹp trước.
+const theoTru = new Map();
+for (const g of vGoc) {
+  const k = boLocTru ? '*' : g.muc.tru || '?';
+  if (!theoTru.has(k)) theoTru.set(k, []);
+  theoTru.get(k).push(g);
+}
+
+const ketQua = [];
+for (const a of vApp) {
+  const tru = boLocTru ? '*' : soTru(a.muc.tru);
+  const cungTru = theoTru.get(tru) ?? [];
+  const vtApp = viTri(a.muc.khu_vuc);
+  const cungViTri = vtApp ? cungTru.filter((g) => g.muc.vt === vtApp) : [];
+
+  // Hẹp trước, rộng sau: cùng trụ + cùng vị trí → cùng trụ → toàn bộ.
+  let kq = ganNhat(a.v, cungViTri), pham_vi = 'cùng trụ + vị trí';
+  if (!kq || kq.d > NGUONG) {
+    const r = ganNhat(a.v, cungTru);
+    if (r && (!kq || r.d < kq.d)) { kq = r; pham_vi = 'cùng trụ'; }
+  }
+  if ((!kq || kq.d > NGUONG) && cungTru.length === 0) {
+    const r = ganNhat(a.v, vGoc);
+    if (r) { kq = r; pham_vi = 'toàn bộ thư mục'; }
+  }
+
+  const trangThai = !kq || kq.d > NGUONG ? 'khong tim thay'
+    : kq.cach < CACH ? 'can kiem tra' : 'chac chan';
   ketQua.push({
-    ...a.muc,
-    tep_goc: nhat && nhat.d <= NGUONG ? path.relative(thuMucGoc, nhat.g.muc).replace(/\\/g, '/') : '',
-    khoang_cach: nhat ? nhat.d : '', cach_anh_nhi: nhat ? cach : '', trang_thai: trangThai,
+    ...a.muc, pham_vi: kq ? pham_vi : '',
+    tep_goc: kq && kq.d <= NGUONG ? kq.g.tuongDoi : '',
+    khoang_cach: kq ? kq.d : '', cach_anh_nhi: kq ? kq.cach : '', trang_thai: trangThai,
   });
 }
 
 const dem = (t) => ketQua.filter((r) => r.trang_thai === t).length;
+const demPV = (p) => ketQua.filter((r) => r.pham_vi === p && r.trang_thai !== 'khong tim thay').length;
 console.log(`\nchắc chắn      : ${dem('chac chan')}`);
 console.log(`cần kiểm tra   : ${dem('can kiem tra')}   (có ảnh khác gần tương đương)`);
 console.log(`không tìm thấy : ${dem('khong tim thay')}`);
+console.log(`\n  khớp trong phạm vi cùng trụ + vị trí: ${demPV('cùng trụ + vị trí')}`);
+console.log(`  phải mở rộng ra cả trụ             : ${demPV('cùng trụ')}`);
 
 const CSV = 'doi-chieu-anh.csv';
 fs.writeFileSync(CSV, '\uFEFF' + [
-  'trang_thai,khoang_cach,cach_anh_nhi,ngay,tru,khu_vuc,muc_do,dien_giai,tep_goc,finding_id,tep_app',
+  'trang_thai,pham_vi,khoang_cach,cach_anh_nhi,ngay,tru,khu_vuc,muc_do,dien_giai,tep_goc,finding_id,tep_app',
   ...ketQua.sort((a, b) => String(a.tru).localeCompare(String(b.tru)) || String(a.tep).localeCompare(String(b.tep)))
-    .map((r) => [r.trang_thai, r.khoang_cach, r.cach_anh_nhi, r.ngay, r.tru, r.khu_vuc, r.muc_do,
-                 r.dien_giai, r.tep_goc, r.finding_id, r.tep].map(oCsv).join(',')),
+    .map((r) => [r.trang_thai, r.pham_vi, r.khoang_cach, r.cach_anh_nhi, r.ngay, r.tru, r.khu_vuc,
+                 r.muc_do, r.dien_giai, r.tep_goc, r.finding_id, r.tep].map(oCsv).join(',')),
 ].join('\n'));
 console.log(`\nĐã ghi ${CSV} — mở bằng Excel để xem trước khi áp dụng.`);
 
