@@ -34,16 +34,24 @@
  *
  * CÁCH CHẠY
  *
- *   npm install jimp tesseract.js @tesseract.js-data/eng
- *   set SUPABASE_SERVICE_ROLE_KEY=<khoá>        (PowerShell: $env:SUPABASE_...)
+ * Trong PowerShell gõ TỪNG DÒNG một, Enter sau mỗi dòng — dán cả khối thì
+ * PowerShell nối chúng lại thành một lệnh rồi báo lỗi.
+ *
+ *   npm install jimp tesseract.js "@tesseract.js-data/eng"
+ *
+ * Nháy quanh "@tesseract..." là bắt buộc: dấu @ đầu đối số bị PowerShell hiểu
+ * là toán tử splatting. Đường dẫn có dấu cách hay dấu ngoặc thì bọc nháy cả
+ * đối số — "--thu-muc=D:\..." — chứ đừng chỉ bọc riêng đường dẫn.
+ *
+ *   $env:SUPABASE_SERVICE_ROLE_KEY="<khoá>"
  *
  *   # ảnh app phải có sẵn trong ./anh — nếu chưa:  node tai-anh-theo-tru.mjs --tat-ca
  *
  *   # bước 1+2: đọc dấu rồi đối chiếu, CHƯA ghi gì vào cơ sở dữ liệu
- *   node doi-chieu-dau-anh.mjs --thu-muc="D:\JCT\KCE\Project\BIM - GE inspection\Pictures_Sorted"
+ *   node doi-chieu-dau-anh.mjs "--thu-muc=D:\JCT\KCE\Project\BIM - GE inspection\Pictures_Sorted"
  *
  *   # xem doi-chieu-dau.csv, thấy ổn thì ghi
- *   node doi-chieu-dau-anh.mjs --thu-muc="..." --ap-dung
+ *   node doi-chieu-dau-anh.mjs "--thu-muc=..." --ap-dung
  *
  * Đọc dấu khoảng 11.000 ảnh mất chừng 20-40 phút. Kết quả đọc được ghi vào
  * dau-anh.cache.csv nên lần chạy sau không phải đọc lại — bấm Ctrl+C giữa

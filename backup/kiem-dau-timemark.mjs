@@ -9,11 +9,14 @@
  *
  * CÁCH CHẠY
  *
+ * Đường dẫn có dấu cách hay dấu ngoặc thì bọc nháy CẢ đối số, đừng chỉ bọc
+ * riêng đường dẫn — PowerShell mới hiểu đúng.
+ *
  *   # xem thử đọc ra gì
- *   node kiem-dau-timemark.mjs --anh="D:\...\IMG_0123.jpg"
+ *   node kiem-dau-timemark.mjs "--anh=D:\...\WTG16_HUB (1).jpg"
  *
  *   # so với giá trị đã biết — sai thì thoát mã khác 0, dùng được trong CI
- *   node kiem-dau-timemark.mjs --anh="...\a.jpg" --mong-doi="2026-09-11 08:29 WTG16"
+ *   node kiem-dau-timemark.mjs "--anh=...\a.jpg" "--mong-doi=2026-09-11 08:29 WTG16"
  *
  *   # chạy hàng loạt: mỗi dòng của file là  <đường dẫn>|<mong đợi>
  *   node kiem-dau-timemark.mjs --danh-sach=mau-dau.txt
