@@ -74,6 +74,8 @@
  *                    sai phút mà không biết. Chỉ dùng khi chạy thử.
  *   --chi-doc        chỉ đọc dấu rồi dừng, không đối chiếu
  *   --doc-lai        bỏ cache, đọc lại từ đầu
+ *   --thu-lai-loi    chỉ đọc lại các ảnh lần trước không ra dấu, giữ nguyên
+ *                    các ảnh đã đọc được — dùng sau khi nâng cách đọc
  */
 
 import fs from 'node:fs';
@@ -97,6 +99,7 @@ const nhanh = doiSo.includes('--nhanh');
 const apDung = doiSo.includes('--ap-dung');
 const chiDoc = doiSo.includes('--chi-doc');
 const docLai = doiSo.includes('--doc-lai');
+const thuLaiLoi = doiSo.includes('--thu-lai-loi');
 
 // Hạ mức ưu tiên để máy còn dùng được việc khác trong lúc đọc dấu.
 try { os.setPriority(os.constants.priority.PRIORITY_BELOW_NORMAL); } catch { /* hệ nào không cho thì thôi */ }
@@ -228,16 +231,24 @@ if (!docLai && fs.existsSync(CACHE)) {
   for (const d of dong) {
     if (!d.trim()) continue;
     const [tep, ngay, gio, tru, muc, lech, tho] = tachDong(d);
+    if (thuLaiLoi && !ngay) continue; // bỏ ra để đọc lại
     cache.set(tep, { ngay, gio, tru, muc, lech, tho });
   }
   console.log(`Đã có sẵn dấu của ${cache.size} ảnh trong ${CACHE}`);
+  if (thuLaiLoi) console.log('  (các ảnh lần trước không ra dấu sẽ được đọc lại)');
 }
 
 const canDoc = [...mucApp.map((m) => m.tep), ...tepGoc.map((g) => g.tep)].filter((t) => !cache.has(t));
 if (canDoc.length) {
   console.log(`\nĐang đọc dấu trên ${canDoc.length} ảnh bằng ${LUONG} luồng — việc này lâu, cứ để chạy.`);
-  const ghi = fs.createWriteStream(CACHE, { flags: cache.size ? 'a' : 'w' });
-  if (!cache.size) ghi.write('\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho\n');
+  // Đọc lại các ảnh hỏng thì phải ghi lại cả file, nếu không các dòng hỏng
+  // cũ vẫn nằm đó và lần sau đọc trúng chúng trước.
+  const noiThem = cache.size > 0 && !thuLaiLoi;
+  const ghi = fs.createWriteStream(CACHE, { flags: noiThem ? 'a' : 'w' });
+  if (!noiThem) {
+    ghi.write('\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho\n');
+    for (const [t, k] of cache) ghi.write([t, k.ngay, k.gio, k.tru, k.muc, k.lech, k.tho].map(oCsv).join(',') + '\n');
+  }
 
   let i = 0, xong = 0, docDuoc = 0;
   const batDau = Date.now();
@@ -281,8 +292,18 @@ if (chiDoc) {
   process.exit(0);
 }
 
-// ── Ghép theo khoá: trụ + ngày + giờ:phút ───────────────────────────────
-// Trụ ưu tiên lấy từ dấu; dấu không đọc ra thì lấy từ đường dẫn thư mục.
+// ── Ghép theo PHÁT HIỆN, không ghép từng ảnh một ────────────────────────
+//
+// Thử ghép 1 ảnh app ↔ 1 ảnh gốc thì hỏng: dấu chỉ in tới phút, mà một
+// phút thường có mấy tấm chụp liên tiếp cùng một lỗi. Chạy thử trụ 16 thì
+// 92/105 ảnh đọc được rơi vào cảnh "nhiều ảnh cùng một phút", ép chọn một
+// tấm trong đó là đoán bừa.
+//
+// Mà cũng không cần ghép 1-1. Cái cần điền vào báo cáo là TÊN ẢNH GỐC của
+// một phát hiện, nên gom theo phát hiện: lấy các phút đọc được từ ảnh app
+// của nó, rồi liệt kê mọi ảnh gốc cùng trụ + ngày + phút đó. Mấy tấm cùng
+// một phút cùng một chỗ gần như chắc chắn là cùng một lỗi — liệt kê cả
+// chùm vừa đúng hơn vừa có ích hơn cho khách khi đi tìm ảnh.
 const khoa = (tru, ngay, gio) => `${tru}|${ngay}|${gio}`;
 
 const gocTheoKhoa = new Map();
@@ -296,56 +317,130 @@ for (const g of tepGoc) {
   gocTheoKhoa.get(k).push({ ...g, muc: d.muc });
 }
 
-/** Chữ thường, bỏ dấu câu — để so vị trí trên dấu với khu vực của phát hiện. */
-const gon = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-/** Số từ chung giữa hai chuỗi — dùng tách các ảnh trùng khoá. */
-function tuChung(a, b) {
-  const A = new Set(gon(a).split(' ').filter((w) => w.length > 2));
-  return gon(b).split(' ').filter((w) => w.length > 2 && A.has(w)).length;
+/**
+ * Vị trí trên trụ, quy về một tên — bản rút gọn của src/lib/area-label.ts.
+ * Dùng để loại các ảnh cùng phút nhưng khác chỗ, nên "Middle B-A",
+ * "Section B - A" và "Tower B-A" đều phải về một mối.
+ */
+function viTri(s) {
+  const t = String(s).toLowerCase().replace(/[\t_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (/\b(nacelle\s*top|top\s*nacelle)\b/.test(t)) return 'nacelle-top';
+  if (/\bnace/.test(t)) return 'nacelle';
+  if (/\bhub\b/.test(t)) return 'hub';
+  if (/\bblade/.test(t)) return 'blades';
+  if (/\byaw\b/.test(t)) return 'top-yaw';
+  if (/\bbasement\b|\bdoor\b/.test(t)) return 'base';
+  if (/\b(hardstand|foundation|outside|outer|external|exterior)\b/.test(t)) return 'ngoai';
+  const moc = [];
+  for (const m of t.matchAll(/\b(base|top|[a-d])\b/g)) if (!moc.includes(m[1])) moc.push(m[1]);
+  if (moc.length === 0) return '';
+  const thuTu = ['base', 'd', 'c', 'b', 'a', 'top'];
+  if (moc.length === 1) return moc[0] === 'base' ? 'base' : moc[0] === 'top' ? 'top-yaw' : `doan-${moc[0]}`;
+  const k = moc.map((m) => thuTu.indexOf(m)).sort((x, y) => x - y);
+  return `doan-${thuTu[k[0]]}-${thuTu[k[k.length - 1]]}`;
+}
+
+// Gom ảnh app theo phát hiện.
+const theoPh = new Map();
+for (const m of mucApp) {
+  if (!theoPh.has(m.finding_id)) theoPh.set(m.finding_id, []);
+  theoPh.get(m.finding_id).push(m);
 }
 
 const ketQua = [];
-for (const m of mucApp) {
-  const d = dauCua(m.tep);
-  const tru = d.tru || soTru(m.tru);
-  const base = { ...m, ngay_dau: d.ngay, gio_dau: d.gio, tru_dau: tru, muc_dau: d.muc };
+for (const [finding_id, anhs] of theoPh) {
+  const m0 = anhs[0];
+  const tru = soTru(m0.tru);
+  const doc = anhs.map((m) => ({ m, d: dauCua(m.tep) }));
+  const phut = [...new Set(doc.filter((x) => x.d.ngay).map((x) => khoa(x.d.tru || tru, x.d.ngay, x.d.gio)))];
+  const soLech = doc.filter((x) => !x.d.ngay && x.d.lech).length;
+  const base = {
+    finding_id, tru: m0.tru, ngay_bc: m0.ngay_bc, khu_vuc: m0.khu_vuc,
+    muc_do: m0.muc_do, dien_giai: m0.dien_giai,
+    so_anh_app: anhs.length, doc_duoc: doc.filter((x) => x.d.ngay).length,
+    phut_app: phut.map((k) => k.split('|')[2]).sort().join(' '),
+    ngay_dau: [...new Set(doc.filter((x) => x.d.ngay).map((x) => x.d.ngay))].join(' '),
+  };
 
-  if (!d.ngay) {
-    ketQua.push({ ...base, tep_goc: '', ung_vien: d.lech || '',
-                  trang_thai: d.lech ? 'hai luot lech nhau' : 'khong doc duoc dau' });
+  if (phut.length === 0) {
+    ketQua.push({ ...base, ten_anh_goc: '', so_anh_goc: 0, trang_thai: 'khong doc duoc dau',
+                  ghi_chu: soLech ? `${soLech} ảnh hai lượt đọc lệch nhau` : '' });
     continue;
   }
-  const ds = gocTheoKhoa.get(khoa(tru, d.ngay, d.gio)) ?? [];
-  if (ds.length === 0) { ketQua.push({ ...base, tep_goc: '', ung_vien: '', trang_thai: 'khong tim thay' }); continue; }
-  if (ds.length === 1) { ketQua.push({ ...base, tep_goc: ds[0].tuongDoi, ung_vien: '', trang_thai: 'chac chan' }); continue; }
 
-  // Trùng khoá: dấu chỉ in tới phút nên nhiều tấm cùng một phút. Thử tách
-  // bằng vị trí ghi trên dấu; vẫn hoà thì để bạn tự chọn.
-  const diem = ds.map((g) => ({ g, n: tuChung(g.muc || '', `${m.khu_vuc} ${d.muc}`) })).sort((a, b) => b.n - a.n);
-  const nhat = diem[0], nhi = diem[1];
-  if (nhat.n > 0 && nhat.n > nhi.n) {
-    ketQua.push({ ...base, tep_goc: nhat.g.tuongDoi, ung_vien: ds.map((g) => g.tuongDoi).join(' | '), trang_thai: 'chac chan' });
-  } else {
-    ketQua.push({ ...base, tep_goc: '', ung_vien: ds.map((g) => g.tuongDoi).join(' | '), trang_thai: 'can kiem tra' });
+  // Mọi ảnh gốc rơi vào đúng các phút đó.
+  const ungVien = [];
+  const phutTrong = [];
+  for (const k of phut) {
+    const ds = gocTheoKhoa.get(k) ?? [];
+    if (ds.length === 0) phutTrong.push(k.split('|')[2]);
+    for (const g of ds) if (!ungVien.some((u) => u.tep === g.tep)) ungVien.push(g);
+  }
+  if (ungVien.length === 0) {
+    ketQua.push({ ...base, ten_anh_goc: '', so_anh_goc: 0, trang_thai: 'khong tim thay', ghi_chu: '' });
+    continue;
+  }
+
+  // Loại ảnh cùng phút nhưng khác chỗ — chỉ loại khi cả hai bên đều đọc ra vị trí.
+  const vtPh = viTri(`${m0.khu_vuc} ${doc.map((x) => x.d.muc).join(' ')}`);
+  let chon = ungVien, lechViTri = 0;
+  if (vtPh) {
+    const hop = ungVien.filter((g) => {
+      const v = viTri(`${g.muc} ${g.tuongDoi}`);
+      return !v || v === vtPh;
+    });
+    lechViTri = ungVien.length - hop.length;
+    if (hop.length) chon = hop;
+  }
+
+  const ghiChu = [];
+  if (phutTrong.length) ghiChu.push(`không có ảnh gốc ở phút ${phutTrong.join(', ')}`);
+  if (lechViTri && chon !== ungVien) ghiChu.push(`bỏ ${lechViTri} ảnh khác vị trí`);
+  if (lechViTri && chon === ungVien) ghiChu.push('vị trí không khớp, giữ nguyên cả chùm');
+  if (soLech) ghiChu.push(`${soLech} ảnh app hai lượt đọc lệch nhau`);
+  if (base.doc_duoc < anhs.length) ghiChu.push(`chỉ đọc được dấu ${base.doc_duoc}/${anhs.length} ảnh app`);
+
+  ketQua.push({
+    ...base, so_anh_goc: chon.length,
+    ten_anh_goc: chon.map((g) => g.tuongDoi).join(' | '),
+    trang_thai: phutTrong.length || (lechViTri && chon === ungVien) ? 'can kiem tra' : 'chac chan',
+    ghi_chu: ghiChu.join('; '),
+  });
+}
+
+// Một ảnh gốc bị nhiều phát hiện cùng nhận thì không chắc nữa — hai lỗi
+// chụp cùng một phút ở cùng một chỗ, phải xem lại bằng mắt.
+const nhanBoi = new Map();
+for (const r of ketQua) {
+  if (!r.ten_anh_goc) continue;
+  for (const t of r.ten_anh_goc.split(' | ')) nhanBoi.set(t, (nhanBoi.get(t) ?? 0) + 1);
+}
+for (const r of ketQua) {
+  if (r.trang_thai !== 'chac chan') continue;
+  const chung = r.ten_anh_goc.split(' | ').filter((t) => nhanBoi.get(t) > 1).length;
+  if (chung) {
+    r.trang_thai = 'can kiem tra';
+    r.ghi_chu = [r.ghi_chu, `${chung} ảnh cũng thuộc phát hiện khác`].filter(Boolean).join('; ');
   }
 }
 
 const dem = (t) => ketQua.filter((r) => r.trang_thai === t).length;
-console.log(`\nchắc chắn         : ${dem('chac chan')}`);
-console.log(`cần kiểm tra      : ${dem('can kiem tra')}   (nhiều ảnh cùng một phút)`);
-console.log(`không tìm thấy    : ${dem('khong tim thay')}   (không có ảnh nào cùng trụ+ngày+phút)`);
-console.log(`không đọc được dấu: ${dem('khong doc duoc dau')}`);
-console.log(`hai lượt lệch nhau : ${dem('hai luot lech nhau')}   (đọc ra chữ nhưng hai lượt khác nhau, không dám nhận)`);
+const anhCua = (t) => ketQua.filter((r) => r.trang_thai === t).reduce((n, r) => n + r.so_anh_goc, 0);
+console.log(`\nTheo PHÁT HIỆN (${ketQua.length} phát hiện, ${mucApp.length} ảnh app):`);
+console.log(`  chắc chắn         : ${dem('chac chan')}   → ${anhCua('chac chan')} tên ảnh gốc`);
+console.log(`  cần kiểm tra      : ${dem('can kiem tra')}   → ${anhCua('can kiem tra')} tên ảnh gốc, xem cột ghi_chu`);
+console.log(`  không tìm thấy    : ${dem('khong tim thay')}   (không có ảnh gốc nào cùng trụ+ngày+phút)`);
+console.log(`  không đọc được dấu: ${dem('khong doc duoc dau')}   (không ảnh app nào của phát hiện đọc được dấu)`);
 
-const lech = ketQua.filter((r) => r.ngay_dau && r.ngay_bc && r.ngay_dau !== r.ngay_bc).length;
-if (lech) console.log(`\n  ${lech} ảnh có ngày trên dấu khác ngày của báo cáo — xem cột ngay_dau trong CSV.`);
+const lech = ketQua.filter((r) => r.ngay_dau && r.ngay_bc && !r.ngay_dau.includes(r.ngay_bc)).length;
+if (lech) console.log(`\n  ${lech} phát hiện có ngày trên dấu khác ngày của báo cáo — xem cột ngay_dau trong CSV.`);
 
 fs.writeFileSync(CSV_RA, '\uFEFF' + [
-  'trang_thai,tru,ngay_bc,ngay_dau,gio_dau,khu_vuc,muc_dau,muc_do,dien_giai,tep_goc,ung_vien,finding_id,tep_app',
+  'trang_thai,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_app,doc_duoc,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
   ...ketQua
-    .sort((a, b) => String(a.tru).localeCompare(String(b.tru)) || String(a.tep).localeCompare(String(b.tep)))
-    .map((r) => [r.trang_thai, r.tru, r.ngay_bc, r.ngay_dau, r.gio_dau, r.khu_vuc, r.muc_dau, r.muc_do,
-                 r.dien_giai, r.tep_goc, r.ung_vien, r.finding_id, r.tep].map(oCsv).join(',')),
+    .sort((a, b) => String(a.tru).localeCompare(String(b.tru)) || String(a.phut_app).localeCompare(String(b.phut_app)))
+    .map((r) => [r.trang_thai, r.ghi_chu, r.tru, r.ngay_bc, r.ngay_dau, r.phut_app, r.khu_vuc, r.muc_do,
+                 r.so_anh_app, r.doc_duoc, r.so_anh_goc, r.ten_anh_goc, r.dien_giai, r.finding_id].map(oCsv).join(',')),
 ].join('\n'));
 console.log(`\nĐã ghi ${CSV_RA} — mở bằng Excel để xem trước khi áp dụng.`);
 
@@ -355,20 +450,18 @@ if (!apDung) {
 }
 
 // ── Ghi photo_ref ───────────────────────────────────────────────────────
-const theoFinding = new Map();
-for (const r of ketQua) {
-  if (r.trang_thai !== 'chac chan' || !r.tep_goc) continue;
-  if (!theoFinding.has(r.finding_id)) theoFinding.set(r.finding_id, []);
-  theoFinding.get(r.finding_id).push(r.tep_goc);
-}
-console.log(`\nSẽ điền Photo ref cho ${theoFinding.size} phát hiện…`);
-let xong = 0, hong = 0;
-for (const [id, teps] of theoFinding) {
-  const res = await fetch(`${URL_DU_AN}/rest/v1/findings?id=eq.${id}`, {
-    method: 'PATCH', headers, body: JSON.stringify({ photo_ref: [...new Set(teps)].join(', ') }),
+// Chỉ ghi các phát hiện ghép chắc chắn. Loại "cần kiểm tra" để lại trong
+// CSV cho bạn xem bằng mắt rồi quyết định.
+const seGhi = ketQua.filter((r) => r.trang_thai === 'chac chan' && r.ten_anh_goc);
+console.log(`\nSẽ điền Photo ref cho ${seGhi.length} phát hiện…`);
+let xongGhi = 0, hongGhi = 0;
+for (const r of seGhi) {
+  const ten = [...new Set(r.ten_anh_goc.split(' | '))].join(', ');
+  const res = await fetch(`${URL_DU_AN}/rest/v1/findings?id=eq.${r.finding_id}`, {
+    method: 'PATCH', headers, body: JSON.stringify({ photo_ref: ten }),
   });
-  if (res.ok) { if (++xong % 25 === 0) process.stdout.write(`\r  đã ghi ${xong}/${theoFinding.size}`); }
-  else { hong++; console.error(`\n  hỏng ${id}: ${res.status} ${await res.text()}`); }
+  if (res.ok) { if (++xongGhi % 25 === 0) process.stdout.write(`\r  đã ghi ${xongGhi}/${seGhi.length}`); }
+  else { hongGhi++; console.error(`\n  hỏng ${r.finding_id}: ${res.status} ${await res.text()}`); }
 }
-console.log(`\r  đã ghi ${xong}/${theoFinding.size}${hong ? ` · ${hong} lỗi` : ''}`);
+console.log(`\r  đã ghi ${xongGhi}/${seGhi.length}${hongGhi ? ` · ${hongGhi} lỗi` : ''}`);
 console.log('\nXong. Mở lại báo cáo trong app để kiểm tra cột Photo ở mục 6.');

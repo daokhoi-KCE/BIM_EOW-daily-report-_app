@@ -22,6 +22,14 @@
  * Số trụ và vị trí không bắt buộc khớp giữa hai lượt: số trụ còn lấy được
  * từ đường dẫn thư mục, còn vị trí chỉ dùng để tách các tấm trùng phút.
  *
+ * ẢNH APP KHÓ ĐỌC HƠN ẢNH GỐC
+ *
+ * App nén ảnh xuống 1000px chất lượng 0.62 trước khi tải lên, nên dấu nhoè
+ * hơn hẳn bản gốc — chạy thử trụ 16 thì ảnh gốc đọc được 525/543 còn ảnh
+ * app chỉ 105/157. Nên với ảnh khó, sau khi thử hết các ngưỡng mà vẫn chưa
+ * có hai lượt đồng ý, script kéo giãn dải sáng (normalize) rồi thử lại từ
+ * đầu — cùng dấu nhưng tương phản mạnh hơn.
+ *
  * Đã kiểm trên ảnh thật của dự án với cả hai kiểu dấu — kiểu gọn (ảnh trong
  * app) và kiểu bảng (ảnh gốc trong máy) — xem kiem-dau-timemark.mjs.
  *
@@ -33,7 +41,10 @@ import { createRequire } from 'node:module';
 
 export const DAI_DAU = { x: 0, y: 0.58, w: 0.62, h: 0.42 };
 export const DAI_DAY = { x: 0, y: 0.55, w: 1.0, h: 0.45 };
-export const NGUONG_SANG = [225, 200, 245];
+// Thử lần lượt tới khi có hai lượt ra cùng ngày giờ. Ảnh gốc thường xong
+// sau hai lượt đầu; ảnh app bị nén xuống 1000px chất lượng 0.62 nên chữ
+// nhoè, phải thử thêm mới có hai lượt đồng ý.
+export const NGUONG_SANG = [225, 200, 245, 210, 180, 235];
 /** Cỡ ngang tối đa của dải sau khi phóng. 1600 đọc đúng mà nhẹ hơn 1800. */
 export const CAO_MAC_DINH = 1600;
 
@@ -120,22 +131,26 @@ export async function docDau(Jimp, worker, tep, { cao = CAO_MAC_DINH, nhanh = fa
     base.resize({ w: Math.min(cao, base.bitmap.width * 3) });
 
     const luot = [];
-    for (const muc of NGUONG_SANG) {
-      const { data } = await worker.recognize(await locSang(base.clone(), muc).getBuffer('image/png'));
-      const txt = data.text.replace(/\s+/g, ' ').trim();
-      const ng = tachNgayGio(txt);
-      if (!ng) continue;
-      const kq = { ...ng, tru: tachTru(txt), muc: tachMuc(txt), tho: txt.slice(0, 200), lech: '' };
-      if (nhanh) return kq;
+    // Vòng 1 ảnh nguyên trạng, vòng 2 kéo giãn dải sáng cho ảnh nhoè.
+    for (const manh of [false, true]) {
+      const nen = manh ? base.clone().normalize() : base;
+      for (const muc of NGUONG_SANG) {
+        const { data } = await worker.recognize(await locSang(nen.clone(), muc).getBuffer('image/png'));
+        const txt = data.text.replace(/\s+/g, ' ').trim();
+        const ng = tachNgayGio(txt);
+        if (!ng) continue;
+        const kq = { ...ng, tru: tachTru(txt), muc: tachMuc(txt), tho: txt.slice(0, 200), lech: '' };
+        if (nhanh) return kq;
 
-      // Nhận khi có lượt trước ra đúng ngày và giờ:phút này.
-      const truoc = luot.find((p) => p.ngay === kq.ngay && p.gio === kq.gio);
-      if (truoc) {
-        return { ...truoc,
-                 tru: truoc.tru || kq.tru,
-                 muc: truoc.muc.length >= kq.muc.length ? truoc.muc : kq.muc };
+        // Nhận khi có lượt trước ra đúng ngày và giờ:phút này.
+        const truoc = luot.find((q) => q.ngay === kq.ngay && q.gio === kq.gio);
+        if (truoc) {
+          return { ...truoc,
+                   tru: truoc.tru || kq.tru,
+                   muc: truoc.muc.length >= kq.muc.length ? truoc.muc : kq.muc };
+        }
+        luot.push(kq);
       }
-      luot.push(kq);
     }
     if (luot.length) {
       // Đọc ra chữ nhưng các lượt không thống nhất — không nhận, ghi lại để dò.
