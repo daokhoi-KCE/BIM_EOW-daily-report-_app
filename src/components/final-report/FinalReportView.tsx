@@ -285,7 +285,7 @@ export default function FinalReportView({
             no={SITE_PHOTOS_SECTION.no}
             en={SITE_PHOTOS_SECTION.en}
             vi={SITE_PHOTOS_SECTION.vi}
-            page={String(data.reports.reduce((s, r) => s + (r.photos?.length ?? 0), 0))}
+            page={String(site.reports.reduce((s, r) => s + (r.photos?.length ?? 0), 0))}
           />
         </div>
         {multiTurbine && (
@@ -618,7 +618,8 @@ export default function FinalReportView({
       {printedSections.map((g) => (
         <SectionFindings key={g.section.id} group={g} multiTurbine={multiTurbine} photoSize={photoSize} />
       ))}
-      <SitePhotosSection reports={data.reports} />
+      {/* Cả 22 trụ, kể cả trong bản final của một trụ. */}
+      <SitePhotosSection reports={site.reports} scope={scopeTurbines} />
 
       {/* ── 6. Turbine detail ─────────────────────────────────────────── */}
       {multiTurbine && (

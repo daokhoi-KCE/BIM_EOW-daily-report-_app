@@ -26,6 +26,17 @@ export const PROJECT = {
 } as const;
 
 /**
+ * Thư mục ảnh gốc trên máy đội kiểm tra.
+ *
+ * Mục 5.20 in đường dẫn này kèm tên trụ, để người đọc báo cáo biết tìm ảnh
+ * đầy đủ ở đâu. Ảnh trong app là bản đã nén để đưa vào báo cáo; bản gốc
+ * nằm trong thư mục này.
+ *
+ * Dùng dấu gạch chéo ngược vì đích đến là máy Windows.
+ */
+export const PHOTO_LIBRARY_ROOT = "D:\\JCT\\KCE\\Project\\BIM - GE inspection\\Pictures_Sorted";
+
+/**
  * Cỡ ảnh trong mục phát hiện của bản final.
  *
  * `default` — 3 ảnh một hàng, khung cao 34mm. Đủ để nhìn tổng quát cả phát
