@@ -63,10 +63,37 @@ if (!tatCa && truMuon.length === 0) {
   process.exit(1);
 }
 
+/**
+ * Gọi mạng có thử lại, 1/2/4/8 giây.
+ *
+ * Trước đây một lần gọi hỏng là cả lượt tải chết, và trên Windows thì Node
+ * còn chết hẳn với "UV_HANDLE_CLOSING" chứ không chỉ báo lỗi. Hai thứ đáng
+ * thử lại:
+ *
+ *   - fetch bị cắt ngang hoặc máy chủ trả 5xx;
+ *   - 401 kèm mã PGRST303 "JWT issued at future" — khoá vẫn đúng, chỉ là
+ *     đồng hồ lúc cấp khoá lệch so với máy chủ đang kiểm. Chờ một lát là hết.
+ */
+async function goi(url, tuyChon = {}, lan = 4) {
+  let loiCuoi;
+  for (let i = 0; i <= lan; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 1000 * 2 ** (i - 1)));
+    try {
+      const res = await fetch(url, tuyChon);
+      if (res.ok || (res.status < 500 && res.status !== 401)) return res;
+      const chu = await res.clone().text();
+      if (res.status === 401 && !chu.includes('PGRST303')) return res; // khoá sai thật
+      loiCuoi = new Error(`${res.status} ${chu}`);
+    } catch (e) { loiCuoi = e; }
+    if (i < lan) process.stdout.write(`\r  mạng trục trặc, thử lại lần ${i + 1}…   `);
+  }
+  throw loiCuoi;
+}
+
 async function docHet(bang, cot, loc = '') {
   const ra = [];
   for (let tu = 0; ; tu += TRANG) {
-    const res = await fetch(`${URL_DU_AN}/rest/v1/${bang}?select=${cot}${loc}&limit=${TRANG}&offset=${tu}`, { headers });
+    const res = await goi(`${URL_DU_AN}/rest/v1/${bang}?select=${cot}${loc}&limit=${TRANG}&offset=${tu}`, { headers });
     if (!res.ok) throw new Error(`Không đọc được ${bang}: ${res.status} ${await res.text()}`);
     const rows = await res.json();
     ra.push(...rows);
