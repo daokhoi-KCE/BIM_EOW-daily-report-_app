@@ -5,7 +5,7 @@ import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 import { sortFindingsByArea } from "@/lib/finding-order";
 import { displayArea } from "@/lib/area-label";
-import { parsePhotoRef } from "@/lib/photo-ref";
+import { groupPhotoNames, parsePhotoRef } from "@/lib/photo-ref";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
@@ -149,7 +149,9 @@ export default function TurbineSection({
                         M{f.severity || "?"}
                       </td>
                       {/* Tên file ảnh trong thư mục gốc. Chưa đối chiếu được
-                          thì in số lượng, để ô không bị trống trơn. */}
+                          thì in số lượng, để ô không bị trống trơn. Một phát
+                          hiện hay nhận cả chùm ảnh chụp liên tiếp, nên các
+                          tên đánh số liền nhau gộp lại thành một dải. */}
                       <td className={`${td} text-[10px]`}>
                         {(() => {
                           const { names } = parsePhotoRef(f.photo);
@@ -158,9 +160,12 @@ export default function TurbineSection({
                             return <span className="tabular-nums text-slate-400">{soAnh} ảnh</span>;
                           return (
                             <>
-                              {names.map((ten, k) => (
+                              {groupPhotoNames(names).map((g, k) => (
                                 <span key={k} className="block font-mono break-all leading-tight">
-                                  {ten}
+                                  {g.label}
+                                  {g.count > 1 && (
+                                    <span className="not-italic text-slate-500"> ({g.count} ảnh)</span>
+                                  )}
                                 </span>
                               ))}
                               {/* Số tên khác số ảnh nghĩa là còn ảnh chưa đối

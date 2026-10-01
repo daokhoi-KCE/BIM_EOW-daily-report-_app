@@ -164,10 +164,31 @@ if (!KEY) {
 }
 const headers = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' };
 const TRANG = 1000;
+
+/**
+ * Gọi mạng có thử lại. Lần chạy trước đứt giữa chừng ngay ở bước đọc cơ sở
+ * dữ liệu — Node trên Windows chết hẳn với "UV_HANDLE_CLOSING" khi fetch
+ * bị cắt ngang. Thử lại 1/2/4/8 giây như các script khác trong dự án.
+ */
+async function goi(url, tuyChon = {}, lan = 4) {
+  let loiCuoi;
+  for (let i = 0; i <= lan; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 1000 * 2 ** (i - 1)));
+    try {
+      const res = await fetch(url, tuyChon);
+      // 5xx là lỗi phía máy chủ, thử lại có ích; 4xx thì thử lại cũng thế.
+      if (res.ok || res.status < 500) return res;
+      loiCuoi = new Error(`${res.status} ${await res.text()}`);
+    } catch (e) { loiCuoi = e; }
+    if (i < lan) process.stdout.write(`\r  mạng trục trặc, thử lại lần ${i + 1}…   `);
+  }
+  throw loiCuoi;
+}
+
 async function docHet(bang, cot) {
   const ra = [];
   for (let tu = 0; ; tu += TRANG) {
-    const res = await fetch(`${URL_DU_AN}/rest/v1/${bang}?select=${cot}&limit=${TRANG}&offset=${tu}`, { headers });
+    const res = await goi(`${URL_DU_AN}/rest/v1/${bang}?select=${cot}&limit=${TRANG}&offset=${tu}`, { headers });
     if (!res.ok) throw new Error(`Không đọc được ${bang}: ${res.status} ${await res.text()}`);
     const rows = await res.json();
     ra.push(...rows);
@@ -219,7 +240,8 @@ for (const r of baoCao) {
     }
   }
 }
-if (thieuTep) console.log(`  ${thieuTep} ảnh có trong CSDL nhưng chưa tải về — chạy  node tai-anh-theo-tru.mjs --tat-ca`);
+if (thieuTep) console.log(`  ${thieuTep} ảnh (tính cả 22 trụ) có trong CSDL nhưng chưa tải về` +
+                          ` — chạy  node tai-anh-theo-tru.mjs --tat-ca  để ghép được đủ`);
 
 const tepGoc = quetThuMuc(thuMucGoc)
   .map((tep) => ({ tep, tuongDoi: path.relative(thuMucGoc, tep).replace(/\\/g, '/') }))
@@ -278,8 +300,8 @@ if (canDoc.length) {
       }
     }
   }));
-  await Promise.all(luong.map((w) => w.terminate()));
-  ghi.end();
+  for (const w of luong) { try { await w.terminate(); } catch { /* đóng được tới đâu hay tới đó */ } }
+  await new Promise((r) => ghi.end(r)); // chờ ghi xong hẳn, đừng để mất dòng cuối
   console.log(`\r  ${xong}/${canDoc.length} · đọc được dấu ${docDuoc}${' '.repeat(30)}`);
 }
 
@@ -474,7 +496,7 @@ console.log(`\nSẽ điền Photo ref cho ${seGhi.length} phát hiện…`);
 let xongGhi = 0, hongGhi = 0;
 for (const r of seGhi) {
   const ten = [...new Set(r.ten_anh_goc.split(' | '))].join(', ');
-  const res = await fetch(`${URL_DU_AN}/rest/v1/findings?id=eq.${r.finding_id}`, {
+  const res = await goi(`${URL_DU_AN}/rest/v1/findings?id=eq.${r.finding_id}`, {
     method: 'PATCH', headers, body: JSON.stringify({ photo_ref: ten }),
   });
   if (res.ok) { if (++xongGhi % 25 === 0) process.stdout.write(`\r  đã ghi ${xongGhi}/${seGhi.length}`); }
