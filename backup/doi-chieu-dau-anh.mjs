@@ -53,19 +53,33 @@
  *   # xem doi-chieu-dau.csv, thấy ổn thì ghi
  *   node doi-chieu-dau-anh.mjs "--thu-muc=..." --ap-dung
  *
- * Đọc dấu khoảng 11.000 ảnh mất chừng 20-40 phút. Kết quả đọc được ghi vào
- * dau-anh.cache.csv nên lần chạy sau không phải đọc lại — bấm Ctrl+C giữa
- * chừng cũng không mất công.
+ * CHẠY NHẸ MÁY
+ *
+ * Đọc dấu là việc nặng và kéo dài hàng giờ. Mặc định script chỉ chạy MỘT
+ * luồng và tự hạ mức ưu tiên tiến trình xuống thấp, để máy còn dùng được
+ * việc khác và không nóng tới mức tự khởi động lại. Máy khoẻ thì tăng
+ * --luong, nhưng tăng rồi mà máy treo hay tự tắt thì hạ lại.
+ *
+ * Làm từng đợt cũng được: --tru=16,17,18 chỉ đọc mấy trụ đó rồi dừng. Chạy
+ * vài trụ, nghỉ cho máy nguội, rồi chạy tiếp vài trụ khác.
+ *
+ * Kết quả đọc được ghi dần vào dau-anh.cache.csv, nên Ctrl+C giữa chừng hay
+ * máy tắt ngang đều không mất công — chạy lại là đọc tiếp chỗ dở.
  *
  * Tuỳ chọn:
- *   --luong=4     số luồng OCR chạy song song
- *   --chi-doc     chỉ đọc dấu rồi dừng, không đối chiếu
- *   --doc-lai     bỏ cache, đọc lại từ đầu
+ *   --luong=1        số luồng OCR chạy song song
+ *   --tru=16,17      chỉ xử lý mấy trụ này
+ *   --cao=1600       cỡ phóng dải dấu; nhỏ hơn thì nhanh hơn nhưng dễ đọc sai
+ *   --nhanh          bỏ lượt đọc đối chứng — nhanh gấp đôi, đổi lại có thể
+ *                    sai phút mà không biết. Chỉ dùng khi chạy thử.
+ *   --chi-doc        chỉ đọc dấu rồi dừng, không đối chiếu
+ *   --doc-lai        bỏ cache, đọc lại từ đầu
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { docDau, duongDanNgonNgu } from './dau-timemark.mjs';
+import { docDau, duongDanNgonNgu, CAO_MAC_DINH } from './dau-timemark.mjs';
 
 const URL_DU_AN = 'https://mjxkmbbwdjrvphmqloes.supabase.co';
 const THU_MUC_APP = 'anh';
@@ -76,10 +90,16 @@ const DUOI_ANH = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
 const doiSo = process.argv.slice(2);
 const lay = (ten, mac) => doiSo.find((a) => a.startsWith(`--${ten}=`))?.slice(ten.length + 3) ?? mac;
 const thuMucGoc = lay('thu-muc', '');
-const LUONG = Math.max(1, Number(lay('luong', '4')));
+const LUONG = Math.max(1, Number(lay('luong', '1')));
+const CAO = Math.max(600, Number(lay('cao', String(CAO_MAC_DINH))));
+const chiTru = new Set(lay('tru', '').split(',').map((t) => t.trim().padStart(2, '0')).filter((t) => t !== '00'));
+const nhanh = doiSo.includes('--nhanh');
 const apDung = doiSo.includes('--ap-dung');
 const chiDoc = doiSo.includes('--chi-doc');
 const docLai = doiSo.includes('--doc-lai');
+
+// Hạ mức ưu tiên để máy còn dùng được việc khác trong lúc đọc dấu.
+try { os.setPriority(os.constants.priority.PRIORITY_BELOW_NORMAL); } catch { /* hệ nào không cho thì thôi */ }
 
 if (!thuMucGoc) {
   console.error('Thiếu --thu-muc="<đường dẫn thư mục ảnh của bạn>". Xem hướng dẫn ở đầu file.');
@@ -186,6 +206,7 @@ for (const r of baoCao) {
       const ten = `${String(stt).padStart(3, '0')} - ${sach(f.area) || 'khong ro khu vuc'} - M${f.severity ?? '?'}${duoi}`;
       const tep = path.join(thuMuc, ten);
       if (!fs.existsSync(tep)) { thieuTep++; continue; }
+      if (chiTru.size && !chiTru.has(soTru(tru))) continue;
       mucApp.push({ tep, finding_id: f.id, tru, ngay_bc: r.report_date, khu_vuc: f.area ?? '',
                     dien_giai: f.description ?? '', muc_do: f.severity ?? '' });
     }
@@ -193,9 +214,10 @@ for (const r of baoCao) {
 }
 if (thieuTep) console.log(`  ${thieuTep} ảnh có trong CSDL nhưng chưa tải về — chạy  node tai-anh-theo-tru.mjs --tat-ca`);
 
-const tepGoc = quetThuMuc(thuMucGoc).map((tep) => ({
-  tep, tuongDoi: path.relative(thuMucGoc, tep).replace(/\\/g, '/'),
-}));
+const tepGoc = quetThuMuc(thuMucGoc)
+  .map((tep) => ({ tep, tuongDoi: path.relative(thuMucGoc, tep).replace(/\\/g, '/') }))
+  .filter((g) => !chiTru.size || chiTru.has(soTru(g.tuongDoi)));
+if (chiTru.size) console.log(`Chỉ xử lý trụ: ${[...chiTru].sort().join(', ')}`);
 console.log(`Ảnh trong app  : ${mucApp.length}`);
 console.log(`Ảnh thư mục bạn: ${tepGoc.length}`);
 
@@ -205,8 +227,8 @@ if (!docLai && fs.existsSync(CACHE)) {
   const dong = fs.readFileSync(CACHE, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/).slice(1);
   for (const d of dong) {
     if (!d.trim()) continue;
-    const [tep, ngay, gio, tru, muc, tho] = tachDong(d);
-    cache.set(tep, { ngay, gio, tru, muc, tho });
+    const [tep, ngay, gio, tru, muc, lech, tho] = tachDong(d);
+    cache.set(tep, { ngay, gio, tru, muc, lech, tho });
   }
   console.log(`Đã có sẵn dấu của ${cache.size} ảnh trong ${CACHE}`);
 }
@@ -215,7 +237,7 @@ const canDoc = [...mucApp.map((m) => m.tep), ...tepGoc.map((g) => g.tep)].filter
 if (canDoc.length) {
   console.log(`\nĐang đọc dấu trên ${canDoc.length} ảnh bằng ${LUONG} luồng — việc này lâu, cứ để chạy.`);
   const ghi = fs.createWriteStream(CACHE, { flags: cache.size ? 'a' : 'w' });
-  if (!cache.size) ghi.write('\uFEFF' + 'tep,ngay,gio,tru,muc,tho\n');
+  if (!cache.size) ghi.write('\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho\n');
 
   let i = 0, xong = 0, docDuoc = 0;
   const batDau = Date.now();
@@ -229,10 +251,10 @@ if (canDoc.length) {
       if (k >= canDoc.length) return;
       const tep = canDoc[k];
       let kq;
-      try { kq = await docDau(Jimp, worker, tep); }
-      catch { kq = { ngay: '', gio: '', tru: '', muc: '', tho: '' }; }
+      try { kq = await docDau(Jimp, worker, tep, { cao: CAO, nhanh }); }
+      catch { kq = { ngay: '', gio: '', tru: '', muc: '', lech: '', tho: '' }; }
       cache.set(tep, kq);
-      ghi.write([tep, kq.ngay, kq.gio, kq.tru, kq.muc, kq.tho].map(oCsv).join(',') + '\n');
+      ghi.write([tep, kq.ngay, kq.gio, kq.tru, kq.muc, kq.lech, kq.tho].map(oCsv).join(',') + '\n');
       if (kq.ngay) docDuoc++;
       if (++xong % 20 === 0) {
         const giay = (Date.now() - batDau) / 1000;
@@ -246,10 +268,13 @@ if (canDoc.length) {
   console.log(`\r  ${xong}/${canDoc.length} · đọc được dấu ${docDuoc}${' '.repeat(30)}`);
 }
 
-const dauCua = (tep) => cache.get(tep) ?? { ngay: '', gio: '', tru: '', muc: '', tho: '' };
+const dauCua = (tep) => cache.get(tep) ?? { ngay: '', gio: '', tru: '', muc: '', lech: '', tho: '' };
 const coDau = (ds, lay) => ds.filter((x) => dauCua(lay(x)).ngay).length;
+const demLech = (ds, lay) => ds.filter((x) => dauCua(lay(x)).lech).length;
 console.log(`\nĐọc được dấu — ảnh app: ${coDau(mucApp, (m) => m.tep)}/${mucApp.length}` +
             ` · ảnh của bạn: ${coDau(tepGoc, (g) => g.tep)}/${tepGoc.length}`);
+const tongLech = demLech(mucApp, (m) => m.tep) + demLech(tepGoc, (g) => g.tep);
+if (tongLech) console.log(`  ${tongLech} ảnh hai lượt đọc lệch nhau nên bỏ qua — xem cột lech trong ${CACHE}`);
 
 if (chiDoc) {
   console.log(`\nĐã ghi ${CACHE}. Bỏ --chi-doc để đối chiếu.`);
@@ -285,7 +310,11 @@ for (const m of mucApp) {
   const tru = d.tru || soTru(m.tru);
   const base = { ...m, ngay_dau: d.ngay, gio_dau: d.gio, tru_dau: tru, muc_dau: d.muc };
 
-  if (!d.ngay) { ketQua.push({ ...base, tep_goc: '', ung_vien: '', trang_thai: 'khong doc duoc dau' }); continue; }
+  if (!d.ngay) {
+    ketQua.push({ ...base, tep_goc: '', ung_vien: d.lech || '',
+                  trang_thai: d.lech ? 'hai luot lech nhau' : 'khong doc duoc dau' });
+    continue;
+  }
   const ds = gocTheoKhoa.get(khoa(tru, d.ngay, d.gio)) ?? [];
   if (ds.length === 0) { ketQua.push({ ...base, tep_goc: '', ung_vien: '', trang_thai: 'khong tim thay' }); continue; }
   if (ds.length === 1) { ketQua.push({ ...base, tep_goc: ds[0].tuongDoi, ung_vien: '', trang_thai: 'chac chan' }); continue; }
@@ -306,6 +335,7 @@ console.log(`\nchắc chắn         : ${dem('chac chan')}`);
 console.log(`cần kiểm tra      : ${dem('can kiem tra')}   (nhiều ảnh cùng một phút)`);
 console.log(`không tìm thấy    : ${dem('khong tim thay')}   (không có ảnh nào cùng trụ+ngày+phút)`);
 console.log(`không đọc được dấu: ${dem('khong doc duoc dau')}`);
+console.log(`hai lượt lệch nhau : ${dem('hai luot lech nhau')}   (đọc ra chữ nhưng hai lượt khác nhau, không dám nhận)`);
 
 const lech = ketQua.filter((r) => r.ngay_dau && r.ngay_bc && r.ngay_dau !== r.ngay_bc).length;
 if (lech) console.log(`\n  ${lech} ảnh có ngày trên dấu khác ngày của báo cáo — xem cột ngay_dau trong CSV.`);

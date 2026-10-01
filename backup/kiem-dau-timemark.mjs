@@ -23,15 +23,20 @@
  *
  * Phần mong đợi viết tự do, script chỉ dò trong đó ngày (YYYY-MM-DD), giờ
  * (HH:MM) và số trụ (WTG nn) — thiếu phần nào thì không kiểm phần đó.
+ *
+ * Tuỳ chọn --cao=1600 đổi cỡ phóng dải dấu, --nhanh bỏ lượt đọc đối chứng.
+ * Dùng --cao để dò lại khi có ảnh đọc không ra.
  */
 
 import fs from 'node:fs';
 import { createWorker, PSM } from 'tesseract.js';
 import { Jimp } from 'jimp';
-import { docDau, duongDanNgonNgu } from './dau-timemark.mjs';
+import { docDau, duongDanNgonNgu, CAO_MAC_DINH } from './dau-timemark.mjs';
 
 const doiSo = process.argv.slice(2);
 const lay = (ten) => doiSo.find((a) => a.startsWith(`--${ten}=`))?.slice(ten.length + 3) ?? '';
+const CAO = Math.max(600, Number(lay('cao') || CAO_MAC_DINH));
+const nhanh = doiSo.includes('--nhanh');
 
 const dsAnh = [];
 const dsFile = lay('danh-sach');
@@ -54,9 +59,15 @@ await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
 
 let hong = 0;
 for (const { tep, mong } of dsAnh) {
-  const d = await docDau(Jimp, worker, tep);
+  const d = await docDau(Jimp, worker, tep, { cao: CAO, nhanh });
   const ten = tep.split(/[\\/]/).pop();
-  if (!d.ngay) { console.log(`✗ ${ten}: không đọc được dấu`); hong++; continue; }
+  if (!d.ngay) {
+    console.log(d.lech
+      ? `✗ ${ten}: hai lượt đọc lệch nhau (${d.lech}) — không dám nhận`
+      : `✗ ${ten}: không đọc được dấu`);
+    hong++;
+    continue;
+  }
 
   const can = [];
   const mNgay = mong.match(/\d{4}-\d{2}-\d{2}/);
