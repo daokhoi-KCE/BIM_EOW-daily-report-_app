@@ -76,6 +76,9 @@
  *   --doc-lai        bỏ cache, đọc lại từ đầu
  *   --thu-lai-loi    chỉ đọc lại các ảnh lần trước không ra dấu, giữ nguyên
  *                    các ảnh đã đọc được — dùng sau khi nâng cách đọc
+ *   --nhan-trung     chấp nhận một ảnh gốc thuộc về nhiều phát hiện. Hai lỗi
+ *                    chụp cùng phút cùng chỗ thì chùm ảnh đó đúng là của cả
+ *                    hai; không có cách nào tách bằng dấu
  */
 
 import fs from 'node:fs';
@@ -100,6 +103,7 @@ const apDung = doiSo.includes('--ap-dung');
 const chiDoc = doiSo.includes('--chi-doc');
 const docLai = doiSo.includes('--doc-lai');
 const thuLaiLoi = doiSo.includes('--thu-lai-loi');
+const nhanTrung = doiSo.includes('--nhan-trung');
 
 // Hạ mức ưu tiên để máy còn dùng được việc khác trong lúc đọc dấu.
 try { os.setPriority(os.constants.priority.PRIORITY_BELOW_NORMAL); } catch { /* hệ nào không cho thì thôi */ }
@@ -363,7 +367,7 @@ for (const [finding_id, anhs] of theoPh) {
   };
 
   if (phut.length === 0) {
-    ketQua.push({ ...base, ten_anh_goc: '', so_anh_goc: 0, trang_thai: 'khong doc duoc dau',
+    ketQua.push({ ...base, ten_anh_goc: '', so_anh_goc: 0, lyDo: [], trang_thai: 'khong doc duoc dau',
                   ghi_chu: soLech ? `${soLech} ảnh hai lượt đọc lệch nhau` : '' });
     continue;
   }
@@ -377,7 +381,7 @@ for (const [finding_id, anhs] of theoPh) {
     for (const g of ds) if (!ungVien.some((u) => u.tep === g.tep)) ungVien.push(g);
   }
   if (ungVien.length === 0) {
-    ketQua.push({ ...base, ten_anh_goc: '', so_anh_goc: 0, trang_thai: 'khong tim thay', ghi_chu: '' });
+    ketQua.push({ ...base, ten_anh_goc: '', so_anh_goc: 0, lyDo: [], trang_thai: 'khong tim thay', ghi_chu: '' });
     continue;
   }
 
@@ -393,17 +397,16 @@ for (const [finding_id, anhs] of theoPh) {
     if (hop.length) chon = hop;
   }
 
-  const ghiChu = [];
-  if (phutTrong.length) ghiChu.push(`không có ảnh gốc ở phút ${phutTrong.join(', ')}`);
+  const ghiChu = [], lyDo = [];
+  if (phutTrong.length) { lyDo.push('thieu-phut'); ghiChu.push(`không có ảnh gốc ở phút ${phutTrong.join(', ')}`); }
   if (lechViTri && chon !== ungVien) ghiChu.push(`bỏ ${lechViTri} ảnh khác vị trí`);
-  if (lechViTri && chon === ungVien) ghiChu.push('vị trí không khớp, giữ nguyên cả chùm');
-  if (soLech) ghiChu.push(`${soLech} ảnh app hai lượt đọc lệch nhau`);
+  if (lechViTri && chon === ungVien) { lyDo.push('lech-vi-tri'); ghiChu.push('vị trí không khớp, giữ nguyên cả chùm'); }
   if (base.doc_duoc < anhs.length) ghiChu.push(`chỉ đọc được dấu ${base.doc_duoc}/${anhs.length} ảnh app`);
 
   ketQua.push({
-    ...base, so_anh_goc: chon.length,
+    ...base, so_anh_goc: chon.length, lyDo,
     ten_anh_goc: chon.map((g) => g.tuongDoi).join(' | '),
-    trang_thai: phutTrong.length || (lechViTri && chon === ungVien) ? 'can kiem tra' : 'chac chan',
+    trang_thai: lyDo.length ? 'can kiem tra' : 'chac chan',
     ghi_chu: ghiChu.join('; '),
   });
 }
@@ -416,12 +419,13 @@ for (const r of ketQua) {
   for (const t of r.ten_anh_goc.split(' | ')) nhanBoi.set(t, (nhanBoi.get(t) ?? 0) + 1);
 }
 for (const r of ketQua) {
-  if (r.trang_thai !== 'chac chan') continue;
+  if (!r.ten_anh_goc) continue;
   const chung = r.ten_anh_goc.split(' | ').filter((t) => nhanBoi.get(t) > 1).length;
-  if (chung) {
-    r.trang_thai = 'can kiem tra';
-    r.ghi_chu = [r.ghi_chu, `${chung} ảnh cũng thuộc phát hiện khác`].filter(Boolean).join('; ');
-  }
+  if (!chung) continue;
+  r.ghi_chu = [r.ghi_chu, `${chung} ảnh cũng thuộc phát hiện khác`].filter(Boolean).join('; ');
+  if (nhanTrung) continue; // bạn đã chọn chấp nhận chuyện dùng chung
+  r.lyDo.push('trung-phat-hien');
+  r.trang_thai = 'can kiem tra';
 }
 
 const dem = (t) => ketQua.filter((r) => r.trang_thai === t).length;
@@ -432,14 +436,27 @@ console.log(`  cần kiểm tra      : ${dem('can kiem tra')}   → ${anhCua('ca
 console.log(`  không tìm thấy    : ${dem('khong tim thay')}   (không có ảnh gốc nào cùng trụ+ngày+phút)`);
 console.log(`  không đọc được dấu: ${dem('khong doc duoc dau')}   (không ảnh app nào của phát hiện đọc được dấu)`);
 
+const canKt = ketQua.filter((r) => r.trang_thai === 'can kiem tra');
+if (canKt.length) {
+  const demLyDo = (ma) => canKt.filter((r) => r.lyDo.includes(ma)).length;
+  console.log('\n  Vì sao phải kiểm tra:');
+  console.log(`    ${demLyDo('trung-phat-hien')} · ảnh gốc được nhiều phát hiện cùng nhận` +
+              ` — hai lỗi chụp cùng phút cùng chỗ. Chấp nhận dùng chung thì thêm --nhan-trung.`);
+  console.log(`    ${demLyDo('thieu-phut')} · có phút không tìm ra ảnh gốc nào`);
+  console.log(`    ${demLyDo('lech-vi-tri')} · vị trí trên dấu không khớp khu vực của phát hiện`);
+  const soAnh = canKt.map((r) => r.so_anh_goc).sort((a, b) => a - b);
+  console.log(`\n  Số ảnh gốc mỗi phát hiện nhận được: ít nhất ${soAnh[0]},` +
+              ` giữa ${soAnh[Math.floor(soAnh.length / 2)]}, nhiều nhất ${soAnh[soAnh.length - 1]}`);
+}
+
 const lech = ketQua.filter((r) => r.ngay_dau && r.ngay_bc && !r.ngay_dau.includes(r.ngay_bc)).length;
 if (lech) console.log(`\n  ${lech} phát hiện có ngày trên dấu khác ngày của báo cáo — xem cột ngay_dau trong CSV.`);
 
 fs.writeFileSync(CSV_RA, '\uFEFF' + [
-  'trang_thai,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_app,doc_duoc,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
+  'trang_thai,ly_do,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_app,doc_duoc,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
   ...ketQua
     .sort((a, b) => String(a.tru).localeCompare(String(b.tru)) || String(a.phut_app).localeCompare(String(b.phut_app)))
-    .map((r) => [r.trang_thai, r.ghi_chu, r.tru, r.ngay_bc, r.ngay_dau, r.phut_app, r.khu_vuc, r.muc_do,
+    .map((r) => [r.trang_thai, (r.lyDo ?? []).join(' '), r.ghi_chu, r.tru, r.ngay_bc, r.ngay_dau, r.phut_app, r.khu_vuc, r.muc_do,
                  r.so_anh_app, r.doc_duoc, r.so_anh_goc, r.ten_anh_goc, r.dien_giai, r.finding_id].map(oCsv).join(',')),
 ].join('\n'));
 console.log(`\nĐã ghi ${CSV_RA} — mở bằng Excel để xem trước khi áp dụng.`);
