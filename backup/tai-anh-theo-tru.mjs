@@ -39,7 +39,7 @@ import path from 'node:path';
 const URL_DU_AN = 'https://mjxkmbbwdjrvphmqloes.supabase.co';
 const BUCKET = 'evidence-photos';
 const TRANG = 1000; // PostgREST cắt ở 1000 dòng
-const SONG_SONG = 6; // số ảnh tải cùng lúc
+const SONG_SONG = 4; // số ảnh tải cùng lúc — ít luồng thì ít bị chặn tạm
 
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!KEY) {
@@ -78,23 +78,49 @@ async function docHet(bang, cot, loc = '') {
 const sach = (s) => (s || '').replace(/[\\/:*?"<>|\t\n\r]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
 const oCsv = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/[\r\n\t]+/g, ' ')}"`;
 
+const nghi = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Tải một ảnh, thử lại khi hỏng.
+ *
+ * Tải vài trăm ảnh liền nhau thì kiểu gì cũng có vài lần đứt mạng hoặc bị
+ * máy chủ chặn tạm (429). Bỏ qua luôn là mất ảnh mà không ai biết, nên thử
+ * lại ba lần, giãn dần 1s - 2s - 4s.
+ *
+ * File đã có sẵn trên đĩa thì bỏ qua — nhờ vậy chạy lại lệnh cũ là chỉ tải
+ * phần còn thiếu, không tải lại từ đầu.
+ */
 async function taiMot(duongDan, dich) {
-  const res = await fetch(`${URL_DU_AN}/storage/v1/object/${BUCKET}/${encodeURI(duongDan)}`, { headers });
-  if (!res.ok) throw new Error(`${res.status} ${duongDan}`);
-  fs.mkdirSync(path.dirname(dich), { recursive: true });
-  fs.writeFileSync(dich, Buffer.from(await res.arrayBuffer()));
+  if (fs.existsSync(dich) && fs.statSync(dich).size > 0) return 'co-san';
+  let loiCuoi = '';
+  for (let lan = 0; lan < 3; lan++) {
+    if (lan) await nghi(1000 * 2 ** (lan - 1));
+    try {
+      const res = await fetch(`${URL_DU_AN}/storage/v1/object/${BUCKET}/${encodeURI(duongDan)}`, { headers });
+      if (!res.ok) { loiCuoi = `HTTP ${res.status}`; continue; }
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length === 0) { loiCuoi = 'file rỗng'; continue; }
+      fs.mkdirSync(path.dirname(dich), { recursive: true });
+      fs.writeFileSync(dich, buf);
+      return 'tai-moi';
+    } catch (e) {
+      loiCuoi = e.message;
+    }
+  }
+  throw new Error(loiCuoi);
 }
 
 /** Chạy nhiều việc cùng lúc nhưng có giới hạn, tránh nghẽn mạng. */
 async function chayTheoLo(viec, n) {
-  let i = 0, xong = 0, hong = [];
+  let i = 0, xong = 0, coSan = 0;
+  const hong = [];
   await Promise.all(
     Array.from({ length: n }, async () => {
       for (;;) {
         const k = i++;
         if (k >= viec.length) return;
         try {
-          await viec[k].chay();
+          if ((await viec[k].chay()) === 'co-san') coSan++;
           if (++xong % 25 === 0) process.stdout.write(`\r  đã tải ${xong}/${viec.length}`);
         } catch (e) {
           hong.push(`${viec[k].ten}: ${e.message}`);
@@ -102,7 +128,7 @@ async function chayTheoLo(viec, n) {
       }
     }),
   );
-  process.stdout.write(`\r  đã tải ${xong}/${viec.length}\n`);
+  process.stdout.write(`\r  đã tải ${xong}/${viec.length}${coSan ? ` (${coSan} đã có sẵn)` : ''}\n`);
   return hong;
 }
 
@@ -177,8 +203,9 @@ for (const r of chon) {
   fs.mkdirSync(thuMuc, { recursive: true });
   fs.writeFileSync(path.join(thuMuc, 'danh-muc.csv'), '﻿' + csv.join('\n'));
   if (hong.length) {
-    console.log(`  ${hong.length} ảnh tải hỏng:`);
+    console.log(`  ${hong.length} ảnh tải hỏng sau 3 lần thử:`);
     hong.slice(0, 10).forEach((h) => console.log('    ' + h));
+    console.log('  → chạy lại đúng lệnh này, nó chỉ tải phần còn thiếu.');
   }
 }
 console.log('\nXong. Ảnh nằm trong thư mục ./anh');
