@@ -12,6 +12,17 @@
  *   node tai-anh-theo-tru.mjs "WTG 13" "WTG 14" "WTG 15"
  *   node tai-anh-theo-tru.mjs --tat-ca          # cả 22 trụ
  *
+ * Lọc hẹp lại:
+ *
+ *   --ngay=2026-08-28           chỉ báo cáo của ngày đó
+ *   --khu-vuc="top section,section a-top"   chỉ các khu vực khớp
+ *
+ * Khu vực so khớp theo kiểu "chứa chuỗi", đã bỏ qua hoa thường và khoảng
+ * trắng quanh dấu gạch — nên "section a-top" bắt được cả "Section A-Top"
+ * lẫn "Section A -Top", còn "section b-a" thì không dính "section Base-D".
+ * Lọc khu vực chỉ áp cho ảnh phát hiện; ảnh hiện trường không có khu vực
+ * nên khi lọc sẽ bỏ qua.
+ *
  * Kết quả đặt trong thư mục ./anh:
  *
  *   anh/WTG 13/phat-hien/001 - Middle B-A - M3.jpg
@@ -40,6 +51,13 @@ const headers = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 const doiSo = process.argv.slice(2);
 const tatCa = doiSo.includes('--tat-ca');
 const truMuon = doiSo.filter((a) => !a.startsWith('--')).map((t) => t.replace(/\s+/g, '').toUpperCase());
+const ngayMuon = doiSo.find((a) => a.startsWith('--ngay='))?.slice('--ngay='.length) || '';
+
+/** Bỏ hoa thường, gom khoảng trắng, dán sát hai bên dấu gạch. */
+const chuan = (s) => (s || '').toLowerCase().replace(/\t/g, ' ').replace(/\s+/g, ' ').replace(/\s*-\s*/g, '-').trim();
+const mauKhuVuc = (doiSo.find((a) => a.startsWith('--khu-vuc='))?.slice('--khu-vuc='.length) || '')
+  .split(',').map(chuan).filter(Boolean);
+const hopKhuVuc = (area) => mauKhuVuc.length === 0 || mauKhuVuc.some((m) => chuan(area).includes(m));
 if (!tatCa && truMuon.length === 0) {
   console.error('Chưa nêu trụ nào. Ví dụ:  node tai-anh-theo-tru.mjs "WTG 13" "WTG 14"');
   process.exit(1);
@@ -96,9 +114,11 @@ const [baoCao, phatHien, anhPh, anhHt] = await Promise.all([
 ]);
 
 const tenTru = (r) => (r.planned_turbines || r.actual_turbines || '').trim();
-const chon = baoCao.filter((r) => tatCa || truMuon.includes(tenTru(r).replace(/\s+/g, '').toUpperCase()));
+const chon = baoCao
+  .filter((r) => tatCa || truMuon.includes(tenTru(r).replace(/\s+/g, '').toUpperCase()))
+  .filter((r) => !ngayMuon || r.report_date === ngayMuon);
 if (chon.length === 0) {
-  console.error('Không tìm thấy báo cáo nào khớp. Các trụ đang có:');
+  console.error('Không tìm thấy báo cáo nào khớp bộ lọc. Các trụ đang có:');
   console.error('  ' + [...new Set(baoCao.map(tenTru).filter(Boolean))].sort().join(', '));
   process.exit(1);
 }
@@ -120,7 +140,9 @@ for (const r of chon) {
   const viec = [];
   const csv = ['loai,tep,ngay,tru,khu_vuc,dien_giai,muc_do,storage_path'];
 
-  const fs_ = (phTheoBaoCao.get(r.id) ?? []).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const fs_ = (phTheoBaoCao.get(r.id) ?? [])
+    .filter((f) => hopKhuVuc(f.area))
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   let stt = 0;
   for (const f of fs_) {
     const list = (anhTheoPh.get(f.id) ?? []).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
@@ -134,7 +156,8 @@ for (const r of chon) {
     }
   }
 
-  const ht = (anhHt.filter((s) => s.report_id === r.id)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  // Lọc theo khu vực thì bỏ ảnh hiện trường — chúng không gắn khu vực nào.
+  const ht = (mauKhuVuc.length ? [] : anhHt.filter((s) => s.report_id === r.id)).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
   ht.forEach((p, k) => {
     const duoi = path.extname(p.storage_path) || '.jpg';
     const ten = `${String(k + 1).padStart(3, '0')}${duoi}`;
@@ -142,7 +165,14 @@ for (const r of chon) {
     csv.push(['hien-truong', ten, r.report_date, tru, '', '', '', p.storage_path].map(oCsv).join(','));
   });
 
-  console.log(`\n${tru} — ${r.report_date}: ${fs_.length} phát hiện, ${viec.length} ảnh`);
+  const loc = [ngayMuon && `ngày ${ngayMuon}`, mauKhuVuc.length && `${mauKhuVuc.length} mẫu khu vực`]
+    .filter(Boolean).join(', ');
+  console.log(`\n${tru} — ${r.report_date}${loc ? ` [lọc: ${loc}]` : ''}: ${fs_.length} phát hiện, ${viec.length} ảnh`);
+  if (mauKhuVuc.length) {
+    for (const [kv, n] of [...fs_.reduce((m, f) => m.set(String(f.area).replace(/\t/g, ' / '),
+        (m.get(String(f.area).replace(/\t/g, ' / ')) ?? 0) + (anhTheoPh.get(f.id) ?? []).length), new Map())])
+      console.log(`    ${String(n).padStart(3)} ảnh  ${kv}`);
+  }
   const hong = await chayTheoLo(viec, SONG_SONG);
   fs.mkdirSync(thuMuc, { recursive: true });
   fs.writeFileSync(path.join(thuMuc, 'danh-muc.csv'), '﻿' + csv.join('\n'));
