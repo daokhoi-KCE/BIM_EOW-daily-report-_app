@@ -117,6 +117,19 @@ export default function FinalReportView({
   // Hạng mục đã kiểm tra mà không có lỗi vẫn thấy được ở ma trận OK/NG 4.3.
   const printedSections = sections.filter((g) => g.findings.length > 0);
 
+  /**
+   * Bản tổng hợp cả công trường — khác với 22 bản final của từng trụ.
+   *
+   * Bản tổng hợp không in chi tiết phát hiện 5.1-5.19: in hết phát hiện của
+   * cả 22 trụ kèm ảnh thì thành một tập hàng trăm trang lặp lại đúng nội
+   * dung đã có trong 22 bản final riêng. Bản tổng hợp giữ phần đối chiếu
+   * giữa các trụ (mục 4), danh mục ảnh hiện trường (5.20) và bảng chi tiết
+   * từng trụ (mục 6); ai cần xem ảnh của một phát hiện thì mở bản final của
+   * trụ đó. Mục 5.x vẫn in đầy đủ trong mỗi bản final một trụ.
+   */
+  const banTongHop = siteMulti && !siteHasMore;
+  const inChiTietPhatHien = !banTongHop;
+
   // Cỡ ảnh mục 5, theo trụ mà bản in này nói tới. Bản gộp nhiều trụ chỉ
   // dùng cỡ lớn khi mọi trụ trong đó đều thuộc danh sách — một bản in phải
   // có cỡ ảnh thống nhất từ đầu đến cuối, không to nhỏ lẫn lộn giữa chừng.
@@ -271,15 +284,16 @@ export default function FinalReportView({
           vi="Chi tiết phát hiện"
         />
         <div className="pl-5">
-          {printedSections.map((g) => (
-            <TocLine
-              key={g.section.id}
-              href={`#${sectionAnchorId(g.section.id)}`}
-              no={g.section.no}
-              en={g.section.en}
-              page={String(g.findings.length)}
-            />
-          ))}
+          {inChiTietPhatHien &&
+            printedSections.map((g) => (
+              <TocLine
+                key={g.section.id}
+                href={`#${sectionAnchorId(g.section.id)}`}
+                no={g.section.no}
+                en={g.section.en}
+                page={String(g.findings.length)}
+              />
+            ))}
           <TocLine
             href={`#${SITE_PHOTOS_ANCHOR}`}
             no={SITE_PHOTOS_SECTION.no}
@@ -343,9 +357,9 @@ export default function FinalReportView({
           <>
             This volume covers <b>{totals.turbines}</b> turbines ({reportDates}), with{" "}
             <b>{totals.findings}</b> findings and <b>{totals.photos}</b> photographs.{" "}
-            <b>Section 4</b> summarises and compares the turbines; <b>Section 5</b> details every
-            finding with its photographs, regrouped by component and location; the final section
-            retains the per-turbine view.
+            <b>Section 4</b> summarises and compares the turbines and <b>Section 6</b> lists the
+            findings of each one; the detail of every finding, with its photographs, is reproduced
+            in the individual volume issued for each turbine.
           </>
         )}
       </p>
@@ -358,7 +372,7 @@ export default function FinalReportView({
         {INSPECTORS.map((p) => p.name).join(" và ")} thực hiện.{" "}
         {siteHasMore
           ? `Bản này dành riêng cho ${scopeLabel} (${reportDates}) với ${totals.findings} phát hiện và ${totals.photos} ảnh; mỗi tuabin có một bản final riêng. Mục 4 là phần tổng hợp của cả ${site.totals.turbines} trụ để đối chiếu, mục 5 là chi tiết từng phát hiện của ${scopeLabel} kèm ảnh, sắp xếp theo cụm thiết bị.`
-          : `Bản này bao phủ ${totals.turbines} tuabin (${reportDates}) với ${totals.findings} phát hiện và ${totals.photos} ảnh. Mục 4 tóm tắt và đối chiếu giữa các trụ, mục 5 là chi tiết từng phát hiện kèm ảnh, mục cuối giữ cách trình bày theo từng trụ.`}
+          : `Bản này bao phủ ${totals.turbines} tuabin (${reportDates}) với ${totals.findings} phát hiện và ${totals.photos} ảnh. Mục 4 tóm tắt và đối chiếu giữa các trụ, mục 6 liệt kê phát hiện của từng trụ; chi tiết từng phát hiện kèm ảnh nằm trong bản final riêng của mỗi trụ.`}
       </p>
 
       {/* ── 2. Reference documents ────────────────────────────────────── */}
@@ -615,9 +629,27 @@ export default function FinalReportView({
           compact
         />
       </div>
-      {printedSections.map((g) => (
-        <SectionFindings key={g.section.id} group={g} multiTurbine={multiTurbine} photoSize={photoSize} />
-      ))}
+      {/* Giữ số mục 5 và 5.20 y như bản một trụ, để hai tài liệu tra chéo
+          được với nhau — chỉ phần chi tiết 5.1-5.19 là không in. */}
+      {inChiTietPhatHien ? (
+        printedSections.map((g) => (
+          <SectionFindings key={g.section.id} group={g} multiTurbine={multiTurbine} photoSize={photoSize} />
+        ))
+      ) : (
+        <>
+          <p className="prose-doc text-[12px] leading-relaxed text-justify mt-2">
+            Every finding is reproduced in full, with its photographs, in the individual volume
+            issued for each of the <b>{site.totals.turbines}</b> turbines. This volume carries the
+            comparison between turbines in <b>Section 4</b>, the site photograph index in{" "}
+            <b>5.20</b> below, and the per-turbine tables in <b>Section 6</b>.
+          </p>
+          <p className="prose-doc text-[10px] italic text-slate-500 leading-relaxed text-justify mt-1.5">
+            Chi tiết từng phát hiện kèm ảnh nằm trong bản final riêng của mỗi trụ, tổng cộng{" "}
+            {site.totals.turbines} bản. Bản tổng hợp này giữ phần đối chiếu giữa các trụ ở mục 4,
+            danh mục ảnh hiện trường ở mục 5.20 và bảng chi tiết từng trụ ở mục 6.
+          </p>
+        </>
+      )}
       {/* Cả 22 trụ, kể cả trong bản final của một trụ. */}
       <SitePhotosSection reports={site.reports} scope={scopeTurbines} />
 
