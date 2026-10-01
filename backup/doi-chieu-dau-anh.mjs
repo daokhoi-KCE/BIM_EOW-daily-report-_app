@@ -259,6 +259,7 @@ for (const p of anhPh) {
 }
 
 const mucApp = [];
+const tongAnhTheoPh = new Map(); // finding_id -> số ảnh trong CSDL
 let thieuTep = 0;
 for (const r of baoCao) {
   const tru = (r.planned_turbines || r.actual_turbines || '').trim();
@@ -273,8 +274,12 @@ for (const r of baoCao) {
       const duoi = path.extname(p.storage_path) || '.jpg';
       const ten = `${String(stt).padStart(3, '0')} - ${sach(f.area) || 'khong ro khu vuc'} - M${f.severity ?? '?'}${duoi}`;
       const tep = path.join(thuMuc, ten);
-      if (!fs.existsSync(tep)) { thieuTep++; continue; }
       if (chiTru.size && !chiTru.has(soTru(tru))) continue;
+      // Đếm theo số ảnh trong CSDL, không theo số ảnh đã tải về: báo cáo in
+      // ảnh lấy từ CSDL, nên nếu đếm theo số đã tải thì một phát hiện còn
+      // ảnh chưa tải vẫn bị coi là ghép đủ, và báo cáo lại thiếu tên.
+      tongAnhTheoPh.set(f.id, (tongAnhTheoPh.get(f.id) ?? 0) + 1);
+      if (!fs.existsSync(tep)) { thieuTep++; continue; }
       mucApp.push({ tep, finding_id: f.id, tru, ngay_bc: r.report_date, khu_vuc: f.area ?? '',
                     dien_giai: f.description ?? '', muc_do: f.severity ?? '' });
     }
@@ -285,7 +290,10 @@ if (thieuTep) console.log(`  ${thieuTep} ảnh (tính cả 22 trụ) có trong C
 
 const tepGoc = quetThuMuc(thuMucGoc)
   .map((tep) => ({ tep, tuongDoi: path.relative(thuMucGoc, tep).replace(/\\/g, '/') }))
-  .filter((g) => !chiTru.size || chiTru.has(soTru(g.tuongDoi)));
+  // Lọc theo đường dẫn, NHƯNG giữ lại ảnh mà đường dẫn không ghi số trụ:
+  // thư mục kiểu "WTG Unknown" vẫn có thể chứa ảnh của trụ đang xét, và chỉ
+  // dấu Timemark trong ảnh mới nói được. Loại sớm ở đây là mất ảnh oan.
+  .filter((g) => !chiTru.size || !soTru(g.tuongDoi) || chiTru.has(soTru(g.tuongDoi)));
 if (chiTru.size) console.log(`Chỉ xử lý trụ: ${[...chiTru].sort().join(', ')}`);
 console.log(`Ảnh trong app  : ${mucApp.length}`);
 console.log(`Ảnh thư mục bạn: ${tepGoc.length}`);
@@ -487,6 +495,7 @@ for (const [finding_id, anhs] of theoPh) {
   const base = {
     finding_id, tru: m0.tru, ngay_bc: m0.ngay_bc, khu_vuc: m0.khu_vuc,
     muc_do: m0.muc_do, dien_giai: m0.dien_giai,
+    so_anh_db: tongAnhTheoPh.get(finding_id) ?? anhs.length,
     so_anh_app: anhs.length, so_anh_goc: ganDuoc.length,
     phut_app: [...new Set(doc.filter((x) => x.d.ngay).map((x) => x.d.gio))].sort().join(' '),
     ngay_dau: [...new Set(doc.filter((x) => x.d.ngay).map((x) => x.d.ngay))].join(' '),
@@ -495,7 +504,12 @@ for (const [finding_id, anhs] of theoPh) {
 
   const lyDo = [], ghiChu = [];
   const chuaDoc = doc.filter((x) => !x.d.ngay).length;
+  const chuaTai = base.so_anh_db - anhs.length;
   const thieu = anhs.length - ganDuoc.length;
+  if (chuaTai > 0) {
+    lyDo.push('chua-tai-anh');
+    ghiChu.push(`${chuaTai} ảnh chưa tải về — chạy node tai-anh-theo-tru.mjs --tat-ca`);
+  }
   if (chuaDoc) { lyDo.push('khong-doc-duoc-dau'); ghiChu.push(`${chuaDoc} ảnh không đọc được dấu`); }
   if (thieu > chuaDoc) { lyDo.push('thieu-anh-goc'); ghiChu.push(`${thieu - chuaDoc} ảnh không tìm được bản gốc`); }
   const mongManh = ganDuoc.filter((x) => x.gan.cach < 4 && x.gan.soUngVien > 1).length;
@@ -524,6 +538,7 @@ if (canKt.length) {
   console.log(`    ${demLyDo('thieu-anh-goc')} · có ảnh không tìm được bản gốc cùng phút`);
   console.log(`    ${demLyDo('cach-biet-mong')} · có ảnh mà tấm gốc nhì gần tương đương tấm nhất`);
   console.log(`    ${demLyDo('khong-doc-duoc-dau')} · có ảnh không đọc được dấu`);
+  console.log(`    ${demLyDo('chua-tai-anh')} · có ảnh chưa tải về máy`);
 }
 
 // Khoảng cách vân tay của các cặp đã chọn cho biết hai bên có thật là một
@@ -567,11 +582,11 @@ function ghiCsv(ten, noiDung) {
 }
 
 const daGhi = ghiCsv(CSV_RA, '﻿' + [
-  'trang_thai,ly_do,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_app,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
+  'trang_thai,ly_do,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_db,so_anh_app,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
   ...ketQua
     .sort((a, b) => String(a.tru).localeCompare(String(b.tru)) || String(a.phut_app).localeCompare(String(b.phut_app)))
     .map((r) => [r.trang_thai, r.lyDo.join(' '), r.ghi_chu, r.tru, r.ngay_bc, r.ngay_dau, r.phut_app, r.khu_vuc,
-                 r.muc_do, r.so_anh_app, r.so_anh_goc, r.ten_anh_goc, r.dien_giai, r.finding_id].map(oCsv).join(',')),
+                 r.muc_do, r.so_anh_db, r.so_anh_app, r.so_anh_goc, r.ten_anh_goc, r.dien_giai, r.finding_id].map(oCsv).join(',')),
 ].join('\n'));
 console.log(`\nĐã ghi ${daGhi} — mở bằng Excel để xem trước khi áp dụng.`);
 
