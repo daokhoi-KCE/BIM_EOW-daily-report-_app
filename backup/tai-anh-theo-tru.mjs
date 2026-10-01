@@ -138,7 +138,7 @@ for (const r of chon) {
   const tru = tenTru(r);
   const thuMuc = path.join('anh', sach(tru));
   const viec = [];
-  const csv = ['loai,tep,ngay,tru,khu_vuc,dien_giai,muc_do,storage_path'];
+  const csv = ['loai,tep,ngay,tru,finding_id,khu_vuc,dien_giai,muc_do,storage_path'];
 
   const fs_ = (phTheoBaoCao.get(r.id) ?? [])
     .filter((f) => hopKhuVuc(f.area))
@@ -152,7 +152,7 @@ for (const r of chon) {
       const ten = `${String(stt).padStart(3, '0')} - ${sach(f.area) || 'khong ro khu vuc'} - M${f.severity ?? '?'}${duoi}`;
       const dich = path.join(thuMuc, 'phat-hien', ten);
       viec.push({ ten: p.storage_path, chay: () => taiMot(p.storage_path, dich) });
-      csv.push(['phat-hien', ten, r.report_date, tru, f.area, f.description, f.severity ?? '', p.storage_path].map(oCsv).join(','));
+      csv.push(['phat-hien', ten, r.report_date, tru, f.id, f.area, f.description, f.severity ?? '', p.storage_path].map(oCsv).join(','));
     }
   }
 
@@ -162,7 +162,7 @@ for (const r of chon) {
     const duoi = path.extname(p.storage_path) || '.jpg';
     const ten = `${String(k + 1).padStart(3, '0')}${duoi}`;
     viec.push({ ten: p.storage_path, chay: () => taiMot(p.storage_path, path.join(thuMuc, 'hien-truong', ten)) });
-    csv.push(['hien-truong', ten, r.report_date, tru, '', '', '', p.storage_path].map(oCsv).join(','));
+    csv.push(['hien-truong', ten, r.report_date, tru, '', '', '', '', p.storage_path].map(oCsv).join(','));
   });
 
   const loc = [ngayMuon && `ngày ${ngayMuon}`, mauKhuVuc.length && `${mauKhuVuc.length} mẫu khu vực`]
