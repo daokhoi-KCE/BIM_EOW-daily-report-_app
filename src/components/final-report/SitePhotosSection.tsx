@@ -3,7 +3,7 @@ import { NAVY } from "@/lib/theme";
 import { td, ThCell } from "@/components/print/shared";
 import { SITE_PHOTOS_SECTION } from "@/lib/report-sections";
 import {
-  PHOTO_LIBRARY_ROOT,
+  PHOTO_LIBRARY_URL,
   PHOTO_LIBRARY_COUNTS,
   PHOTO_LIBRARY_COUNT_DATE,
 } from "@/lib/project-info";
@@ -24,9 +24,10 @@ export const SITE_PHOTOS_ANCHOR = "section-site-photos";
  * là vài trăm MB, mà phần chứng cứ cho từng phát hiện đã có đủ ảnh ở mục
  * 5.1-5.19 rồi.
  *
- * Bảng liệt kê **cả 22 trụ** chứ không chỉ trụ của bản in này, kèm đường dẫn
- * thư mục ảnh gốc trên máy đội kiểm tra. Người cầm bản final của một trụ vẫn
- * thấy được toàn bộ kho ảnh của dự án nằm ở đâu.
+ * Bảng liệt kê **cả 22 trụ** chứ không chỉ trụ của bản in này. Địa chỉ kho
+ * ảnh gốc in một lần phía trên bảng: trước đây là đường dẫn ổ D trên máy đội
+ * kiểm tra, nhưng khách hàng không với tới ổ đĩa đó, nên nay là thư mục
+ * Google Drive đã chia sẻ.
  *
  * `scope` là trụ mà bản in này nói tới — được đánh dấu trong bảng.
  */
@@ -77,17 +78,21 @@ export default function SitePhotosSection({
           condition of the site, access routes and work in progress — for all{" "}
           {rows.length} turbines of the campaign. Evidence for each individual finding is reproduced
           in sections 5.1 to 5.19 above. The full resolution originals — {totalKho.toLocaleString("en")}{" "}
-          photographs in all — are held in the inspection photograph library, one folder per
+          photographs in all — are shared in the project photograph library, one folder per
           turbine:
         </p>
+        {/* In cả địa chỉ chứ không chỉ gắn chữ vào thẻ: bản giao khách là
+            file PDF và bản in giấy, ở đó bấm vào không đi đâu được. */}
         <p className="text-[10px] font-mono text-slate-700 bg-slate-50 border border-slate-200 rounded-sm px-2 py-1 mt-1.5 break-all">
-          {PHOTO_LIBRARY_ROOT}
+          <a href={PHOTO_LIBRARY_URL} target="_blank" rel="noopener noreferrer" className="no-underline">
+            {PHOTO_LIBRARY_URL}
+          </a>
         </p>
         <p className="prose-doc text-[9.5px] italic text-slate-500 leading-relaxed text-justify mt-1.5">
           Ảnh chụp chung tại hiện trường của cả {rows.length} trụ, không gắn với phát hiện cụ thể:
           hiện trạng công trường, lối tiếp cận, quá trình thi công. Ảnh chứng cứ của từng phát hiện
           đã in đầy đủ ở mục 5.1-5.19. Ảnh gốc độ phân giải đầy đủ — {totalKho.toLocaleString("en")}{" "}
-          tấm — lưu trong thư mục trên, mỗi trụ một thư mục con.
+          tấm — lưu ở địa chỉ trên, mỗi trụ một thư mục con.
         </p>
         <p className="prose-doc text-[9px] italic text-slate-400 leading-snug text-justify mt-1">
           Cột <b>Ảnh lưu trữ</b> là số file đếm trong thư mục ngày{" "}
@@ -113,7 +118,6 @@ export default function SitePhotosSection({
                 <ThCell en="Date" vi="Ngày" compact />
                 <ThCell en="On file" vi="Ảnh lưu trữ" compact />
                 <ThCell en="In report" vi="Trong báo cáo" compact />
-                <ThCell en="Folder" vi="Thư mục ảnh" compact />
               </tr>
             </thead>
             <tbody>
@@ -139,11 +143,6 @@ export default function SitePhotosSection({
                     {r.kho ? r.kho.toLocaleString("en") : "—"}
                   </td>
                   <td className={`${td} tabular-nums text-slate-500`}>{r.count || "—"}</td>
-                  {/* Chỉ in tên thư mục con; đường dẫn gốc đã nêu ở trên, lặp
-                      lại 22 lần thì bảng dài ra mà không thêm thông tin gì. */}
-                  <td className={`${td} font-mono text-[10px] text-slate-600 break-all`}>
-                    {r.turbine ? `…\\${r.turbine}` : "—"}
-                  </td>
                 </tr>
               ))}
               <tr style={{ background: "rgba(31,53,82,0.06)" }}>
@@ -156,7 +155,6 @@ export default function SitePhotosSection({
                 <td className="py-1.5 px-2 font-bold tabular-nums text-[11px] text-slate-500">
                   {total.toLocaleString("en")}
                 </td>
-                <td />
               </tr>
             </tbody>
           </table>

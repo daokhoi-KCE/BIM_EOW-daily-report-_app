@@ -28,13 +28,14 @@ export const PROJECT = {
 /**
  * Thư mục ảnh gốc trên máy đội kiểm tra.
  *
- * Mục 5.20 in đường dẫn này kèm tên trụ, để người đọc báo cáo biết tìm ảnh
- * đầy đủ ở đâu. Ảnh trong app là bản đã nén để đưa vào báo cáo; bản gốc
- * nằm trong thư mục này.
+ * Mục 5.20 in địa chỉ này để người đọc báo cáo biết tìm ảnh đầy đủ ở đâu.
+ * Ảnh trong app là bản đã nén để đưa vào báo cáo; bản gốc nằm ở đây.
  *
- * Dùng dấu gạch chéo ngược vì đích đến là máy Windows.
+ * Trước đây là đường dẫn ổ D trên máy đội kiểm tra, nhưng khách hàng không
+ * với tới ổ đĩa đó — nay trỏ về thư mục Google Drive đã chia sẻ.
  */
-export const PHOTO_LIBRARY_ROOT = "D:\\JCT\\KCE\\Project\\BIM - GE inspection\\Pictures_Sorted";
+export const PHOTO_LIBRARY_URL =
+  "https://drive.google.com/drive/folders/1zTDd_M8S2lHfpfIR9YBca2q3zEsICoMl?usp=drive_link";
 
 /**
  * Số ảnh trong thư mục ảnh gốc, đếm trên máy đội kiểm tra ngày 01/10/2026.
