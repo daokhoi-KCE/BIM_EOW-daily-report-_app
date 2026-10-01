@@ -5,6 +5,7 @@ import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 import { sortFindingsByArea } from "@/lib/finding-order";
 import { displayArea } from "@/lib/area-label";
+import { parsePhotoRef } from "@/lib/photo-ref";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
@@ -131,7 +132,7 @@ export default function TurbineSection({
                   <ThCell en="Area" vi="Khu vực" compact />
                   <ThCell en="Finding" vi="Phát hiện" compact />
                   <ThCell en="Sev." vi="Mức" compact />
-                  <ThCell en="Photos" vi="Ảnh" compact />
+                  <ThCell en="Photo" vi="Tên ảnh" compact />
                 </tr>
               </thead>
               <tbody>
@@ -147,7 +148,32 @@ export default function TurbineSection({
                       <td className={`${td} font-bold whitespace-nowrap ${tone.text}`}>
                         M{f.severity || "?"}
                       </td>
-                      <td className={`${td} text-right tabular-nums`}>{f.photos?.length ?? 0}</td>
+                      {/* Tên file ảnh trong thư mục gốc. Chưa đối chiếu được
+                          thì in số lượng, để ô không bị trống trơn. */}
+                      <td className={`${td} text-[10px]`}>
+                        {(() => {
+                          const { names } = parsePhotoRef(f.photo);
+                          const soAnh = f.photos?.length ?? 0;
+                          if (names.length === 0)
+                            return <span className="tabular-nums text-slate-400">{soAnh} ảnh</span>;
+                          return (
+                            <>
+                              {names.map((ten, k) => (
+                                <span key={k} className="block font-mono break-all leading-tight">
+                                  {ten}
+                                </span>
+                              ))}
+                              {/* Số tên khác số ảnh nghĩa là còn ảnh chưa đối
+                                  chiếu ra — nói thẳng thay vì để người đọc tự đếm. */}
+                              {names.length !== soAnh && (
+                                <span className="block text-[9px] italic text-amber-700 tabular-nums">
+                                  {names.length}/{soAnh} ảnh đã đối chiếu
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </td>
                     </tr>
                   );
                 })}
