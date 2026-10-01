@@ -474,14 +474,36 @@ if (canKt.length) {
 const lech = ketQua.filter((r) => r.ngay_dau && r.ngay_bc && !r.ngay_dau.includes(r.ngay_bc)).length;
 if (lech) console.log(`\n  ${lech} phát hiện có ngày trên dấu khác ngày của báo cáo — xem cột ngay_dau trong CSV.`);
 
-fs.writeFileSync(CSV_RA, '\uFEFF' + [
+/**
+ * Ghi CSV, mở sẵn trong Excel cũng không sao.
+ *
+ * Windows khoá file đang mở, nên writeFileSync ném EBUSY và cả lượt chạy
+ * chết theo — kể cả khi đang chạy --ap-dung, lúc bạn đã xem CSV xong rồi và
+ * chỉ còn chờ ghi vào cơ sở dữ liệu. Bị khoá thì ghi sang tên khác rồi chạy
+ * tiếp, chứ không bỏ dở.
+ */
+function ghiCsv(ten, noiDung) {
+  try {
+    fs.writeFileSync(ten, noiDung);
+    return ten;
+  } catch (e) {
+    if (e.code !== 'EBUSY' && e.code !== 'EPERM' && e.code !== 'EACCES') throw e;
+    const gio = new Date().toISOString().slice(11, 19).replace(/:/g, '');
+    const thay = ten.replace(/\.csv$/, `-${gio}.csv`);
+    fs.writeFileSync(thay, noiDung);
+    console.log(`\n  ${ten} đang mở ở chương trình khác nên không ghi đè được.`);
+    return thay;
+  }
+}
+
+const daGhi = ghiCsv(CSV_RA, '\uFEFF' + [
   'trang_thai,ly_do,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_app,doc_duoc,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
   ...ketQua
     .sort((a, b) => String(a.tru).localeCompare(String(b.tru)) || String(a.phut_app).localeCompare(String(b.phut_app)))
     .map((r) => [r.trang_thai, (r.lyDo ?? []).join(' '), r.ghi_chu, r.tru, r.ngay_bc, r.ngay_dau, r.phut_app, r.khu_vuc, r.muc_do,
                  r.so_anh_app, r.doc_duoc, r.so_anh_goc, r.ten_anh_goc, r.dien_giai, r.finding_id].map(oCsv).join(',')),
 ].join('\n'));
-console.log(`\nĐã ghi ${CSV_RA} — mở bằng Excel để xem trước khi áp dụng.`);
+console.log(`\nĐã ghi ${daGhi} — mở bằng Excel để xem trước khi áp dụng.`);
 
 if (!apDung) {
   console.log('\nChạy lại kèm  --ap-dung  để điền tên file vào ô Photo ref của các phát hiện.');
