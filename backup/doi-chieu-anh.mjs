@@ -1,5 +1,20 @@
 #!/usr/bin/env node
 /**
+ * KHÔNG DÙNG ĐƯỢC CHO DỰ ÁN NÀY — dùng doi-chieu-dau-anh.mjs thay thế.
+ *
+ * Script này so chính nội dung ảnh bằng vân tay (dHash). Chạy thật trên
+ * toàn bộ dữ liệu thì khớp được 0/2864 ảnh. Lý do: ảnh trong app KHÔNG phải
+ * bản thu nhỏ của ảnh trong thư mục — hai bên là hai lần bấm máy khác nhau
+ * cho cùng một chỗ, nên nội dung ảnh khác hẳn và so kiểu gì cũng trượt.
+ *
+ * Chỗ hai bên thật sự gặp nhau là DẤU TIMEMARK đóng trên ảnh (số trụ WTG,
+ * vị trí, ngày, giờ:phút). doi-chieu-dau-anh.mjs đọc dấu đó bằng OCR rồi
+ * ghép theo trụ + ngày + giờ:phút. Đã kiểm trên ảnh thật: đọc đúng cả kiểu
+ * dấu gọn lẫn kiểu bảng.
+ *
+ * Giữ lại file này để tham khảo, phòng khi về sau cần so hai bộ ảnh thật sự
+ * là bản sao của nhau.
+ *
  * Đối chiếu ảnh trong thư mục của bạn với ảnh đã tải lên app, rồi điền tên
  * file vào ô "Photo ref" của từng phát hiện.
  *

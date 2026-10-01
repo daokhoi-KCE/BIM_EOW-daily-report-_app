@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * THUỘC HƯỚNG CŨ (so nội dung ảnh) — xem ghi chú đầu doi-chieu-anh.mjs.
+ *
+ * Script này dựng ra để tìm lý do khớp 0/2864. Câu trả lời: hai bộ ảnh là
+ * hai lần bấm máy khác nhau, không phải bản sao của nhau. Hướng dùng thật
+ * là đọc dấu Timemark — doi-chieu-dau-anh.mjs.
+ *
  * Chẩn đoán: vì sao không ghép được ảnh nào?
  *
  * Chạy nhanh trên MỘT trụ thay vì cả 22, và thử ảnh ở cả bốn góc xoay cùng
