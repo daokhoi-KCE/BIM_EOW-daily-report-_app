@@ -15,16 +15,20 @@
  * CÁCH CHẠY — ba bước
  *
  *   npm install jimp
- *
- *   # 1. tải ảnh từ app về (cần service_role key)
  *   export SUPABASE_SERVICE_ROLE_KEY='<khoá>'
+ *
+ *   # ảnh app phải có sẵn trong thư mục ./anh — nếu chưa:
  *   node tai-anh-theo-tru.mjs --tat-ca
  *
- *   # 2. đối chiếu, chưa ghi gì vào cơ sở dữ liệu
+ *   # đối chiếu, chưa ghi gì vào cơ sở dữ liệu
  *   node doi-chieu-anh.mjs --thu-muc="D:\\Anh WTG"
  *
- *   # 3. xem file doi-chieu-anh.csv, thấy ổn thì ghi
+ *   # xem file doi-chieu-anh.csv, thấy ổn thì ghi
  *   node doi-chieu-anh.mjs --thu-muc="D:\\Anh WTG" --ap-dung
+ *
+ * Danh mục ảnh đọc thẳng từ cơ sở dữ liệu, không đọc file danh-muc.csv —
+ * nhờ vậy ảnh tải về bằng bản script nào cũng dùng được, và không phải tải
+ * lại chỉ vì file danh mục cũ thiếu cột.
  *
  * THU HẸP PHẠM VI TRƯỚC KHI SO ẢNH
  *
@@ -69,6 +73,13 @@ if (!fs.existsSync(THU_MUC_APP)) {
   process.exit(1);
 }
 
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!KEY) {
+  console.error('Thiếu SUPABASE_SERVICE_ROLE_KEY — cần để đọc danh mục ảnh từ cơ sở dữ liệu.');
+  process.exit(1);
+}
+const headers = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' };
+
 let Jimp;
 try {
   ({ Jimp } = await import('jimp'));
@@ -107,27 +118,6 @@ function quetThuMuc(goc, ra = []) {
   return ra;
 }
 
-/** Đọc CSV đơn giản, có xử lý ô bọc trong dấu nháy kép. */
-function docCsv(tep) {
-  const txt = fs.readFileSync(tep, 'utf8').replace(/^\uFEFF/, '');
-  const dong = [];
-  let o = '', hang = [], trongNhay = false;
-  for (let i = 0; i < txt.length; i++) {
-    const c = txt[i];
-    if (trongNhay) {
-      if (c === '"' && txt[i + 1] === '"') { o += '"'; i++; }
-      else if (c === '"') trongNhay = false;
-      else o += c;
-    } else if (c === '"') trongNhay = true;
-    else if (c === ',') { hang.push(o); o = ''; }
-    else if (c === '\n') { hang.push(o); dong.push(hang); hang = []; o = ''; }
-    else if (c !== '\r') o += c;
-  }
-  if (o || hang.length) { hang.push(o); dong.push(hang); }
-  const [dau, ...con] = dong.filter((h) => h.length > 1);
-  return con.map((h) => Object.fromEntries(dau.map((k, i) => [k, h[i] ?? ''])));
-}
-
 const laCanh = (kv) => /blade/i.test(kv) && /\d{6}/.test(kv);
 
 /** Số trụ lấy từ chuỗi bất kỳ: "WTG 18", "WTG-05", "wtg18" → "18", "05". */
@@ -160,20 +150,66 @@ function viTri(s) {
   return `doan-${thuTu[i[0]]}-${thuTu[i[i.length - 1]]}`;
 }
 
-// ── Gom danh mục ảnh app từ các file danh-muc.csv ────────────────────────
-const muc = [];
-for (const tru of fs.readdirSync(THU_MUC_APP, { withFileTypes: true }).filter((d) => d.isDirectory())) {
-  const csv = path.join(THU_MUC_APP, tru.name, 'danh-muc.csv');
-  if (!fs.existsSync(csv)) continue;
-  for (const r of docCsv(csv)) {
-    if (r.loai !== 'phat-hien' || !r.finding_id) continue;
-    if (laCanh(r.khu_vuc)) continue; // bỏ phần khảo sát cánh
-    const tep = path.join(THU_MUC_APP, tru.name, 'phat-hien', r.tep);
-    if (fs.existsSync(tep)) muc.push({ ...r, tep });
+// ── Dựng lại danh mục ảnh app từ cơ sở dữ liệu ──────────────────────────
+// Tên file trong thư mục ./anh do tai-anh-theo-tru.mjs đặt theo đúng công
+// thức dưới đây, nên chỉ cần đọc lại cùng dữ liệu là suy ra được tên file,
+// không cần file danh-muc.csv.
+const TRANG = 1000;
+async function docHet(bang, cot) {
+  const ra = [];
+  for (let tu = 0; ; tu += TRANG) {
+    const res = await fetch(`${URL_DU_AN}/rest/v1/${bang}?select=${cot}&limit=${TRANG}&offset=${tu}`, { headers });
+    if (!res.ok) throw new Error(`Không đọc được ${bang}: ${res.status} ${await res.text()}`);
+    const rows = await res.json();
+    ra.push(...rows);
+    if (rows.length < TRANG) return ra;
   }
 }
+/** Giống hệt hàm cùng tên trong tai-anh-theo-tru.mjs — đổi là lệch tên file. */
+const sach = (s) => (s || '').replace(/[\\/:*?"<>|\t\n\r]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+
+console.log('Đang đọc danh mục ảnh từ cơ sở dữ liệu…');
+const [baoCao, phatHien, anhPh] = await Promise.all([
+  docHet('reports', 'id,report_date,planned_turbines,actual_turbines'),
+  docHet('findings', 'id,report_id,area,description,severity,sort_order'),
+  docHet('finding_photos', 'id,finding_id,storage_path,created_at'),
+]);
+const phTheoBaoCao = new Map();
+for (const f of phatHien) {
+  if (!phTheoBaoCao.has(f.report_id)) phTheoBaoCao.set(f.report_id, []);
+  phTheoBaoCao.get(f.report_id).push(f);
+}
+const anhTheoPh = new Map();
+for (const p of anhPh) {
+  if (!anhTheoPh.has(p.finding_id)) anhTheoPh.set(p.finding_id, []);
+  anhTheoPh.get(p.finding_id).push(p);
+}
+
+const muc = [];
+let thieuTep = 0;
+for (const r of baoCao) {
+  const tru = (r.planned_turbines || r.actual_turbines || '').trim();
+  const thuMuc = path.join(THU_MUC_APP, sach(tru), 'phat-hien');
+  const fs_ = (phTheoBaoCao.get(r.id) ?? []).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  let stt = 0;
+  for (const f of fs_) {
+    const list = (anhTheoPh.get(f.id) ?? []).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    for (const p of list) {
+      stt++;
+      if (laCanh(f.area)) continue; // bỏ phần khảo sát cánh
+      const duoi = path.extname(p.storage_path) || '.jpg';
+      const ten = `${String(stt).padStart(3, '0')} - ${sach(f.area) || 'khong ro khu vuc'} - M${f.severity ?? '?'}${duoi}`;
+      const tep = path.join(thuMuc, ten);
+      if (!fs.existsSync(tep)) { thieuTep++; continue; }
+      muc.push({ tep, finding_id: f.id, tru, ngay: r.report_date, khu_vuc: f.area ?? '',
+                 dien_giai: f.description ?? '', muc_do: f.severity ?? '' });
+    }
+  }
+}
+if (thieuTep) console.log(`  ${thieuTep} ảnh có trong CSDL nhưng chưa tải về — chạy  node tai-anh-theo-tru.mjs --tat-ca`);
 if (muc.length === 0) {
-  console.error('Không thấy ảnh phát hiện nào trong thư mục "anh". Chạy lại bước tải ảnh.');
+  console.error('Không khớp được ảnh nào trong thư mục "anh" với cơ sở dữ liệu.');
+  console.error('Chạy  node tai-anh-theo-tru.mjs --tat-ca  rồi thử lại.');
   process.exit(1);
 }
 
@@ -282,10 +318,6 @@ if (!apDung) {
 }
 
 // ── Ghi photo_ref ───────────────────────────────────────────────────────
-const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!KEY) { console.error('Thiếu SUPABASE_SERVICE_ROLE_KEY để ghi vào cơ sở dữ liệu.'); process.exit(1); }
-const headers = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' };
-
 // Một phát hiện có nhiều ảnh — gom tên file lại, chỉ lấy các ảnh khớp chắc chắn.
 const theoFinding = new Map();
 for (const r of ketQua) {
