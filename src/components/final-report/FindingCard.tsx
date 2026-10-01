@@ -2,6 +2,7 @@ import type { DatedFinding } from "@/lib/final-report";
 import { severityTier, TIER } from "@/components/print/shared";
 import { displayArea } from "@/lib/area-label";
 import { PHOTO_SIZES } from "@/lib/project-info";
+import { parsePhotoRef } from "@/lib/photo-ref";
 
 /**
  * Một phát hiện: cột trái là diễn giải, cột phải là ảnh chứng cứ.
@@ -21,6 +22,9 @@ export default function FindingCard({
   photoSize?: { cols: number; height: string };
 }) {
   const tier = severityTier(f.severity);
+  // Tên file trong thư mục ảnh gốc, ghép 1-1 và xếp cùng thứ tự với f.photos
+  // (cả hai đều theo created_at), nên tên thứ n là của tấm thứ n.
+  const tenAnh = parsePhotoRef(f.photo).names;
   const tone = TIER[tier];
 
   return (
@@ -52,9 +56,12 @@ export default function FindingCard({
           <p className="prose-doc text-[12px] leading-snug text-slate-900 mb-2">
             {f.desc || "—"}
           </p>
-          {f.photo && (
-            <div className="text-[9px] text-slate-600">
-              <span className="font-semibold">Photo ref:</span> {f.photo}
+          {/* Tên file gốc in dưới từng tấm ảnh bên phải, nên ở đây chỉ còn
+              việc báo khi số tên không khớp số ảnh — lúc đó không biết tên
+              nào ứng với tấm nào, và người đọc cần biết điều đó. */}
+          {tenAnh.length > 0 && tenAnh.length !== (f.photos?.length ?? 0) && (
+            <div className="text-[9px] italic text-amber-700">
+              Photo ref: {tenAnh.length} tên cho {f.photos?.length ?? 0} ảnh — chưa đối chiếu đủ
             </div>
           )}
           {tier === "high" && (
@@ -76,7 +83,7 @@ export default function FindingCard({
               className={`fr-photo-list cols-${photoSize.cols}`}
               style={{ ["--fr-photo-h" as string]: photoSize.height }}
             >
-              {f.photos.map((p) =>
+              {f.photos.map((p, i) =>
                 // URL rỗng nghĩa là ảnh có trong CSDL nhưng ký URL hỏng. Nếu
                 // vẫn dựng thẻ <img> thì nó hiện ra khoảng trắng và người đọc
                 // tưởng phát hiện này vốn không có ảnh.
@@ -94,6 +101,11 @@ export default function FindingCard({
                       className="w-full rounded-sm block bg-white border border-slate-200"
                       style={{ height: photoSize.height, objectFit: "contain" }}
                     />
+                    {tenAnh[i] && (
+                      <div className="font-mono text-[7.5px] leading-tight text-slate-500 break-all">
+                        {tenAnh[i]}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div

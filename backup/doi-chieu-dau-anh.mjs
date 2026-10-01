@@ -3,22 +3,39 @@
  * Đối chiếu ảnh theo DẤU TIMEMARK in trên ảnh, rồi điền tên file gốc vào ô
  * "Photo ref" của từng phát hiện.
  *
- * VÌ SAO ĐỔI SANG CÁCH NÀY
+ * GHÉP HAI BƯỚC: DẤU THU PHẠM VI, VÂN TAY CHỌN TẤM
  *
- * Bản trước so chính nội dung ảnh bằng vân tay (dHash) và khớp được 0/2864.
- * Nghĩa là ảnh trong app KHÔNG phải bản thu nhỏ của ảnh trong thư mục của
- * bạn — hai bên là hai lần bấm máy khác nhau cho cùng một chỗ. So nội dung
- * kiểu gì cũng trượt.
+ * Mỗi bước một mình đều hỏng, ghép lại mới chạy.
  *
- * Nhưng cả hai bên đều có dấu Timemark đóng sẵn trên ảnh, ghi cùng một bộ
- * thông tin: SỐ TRỤ WTG, VỊ TRÍ, NGÀY và GIỜ:PHÚT. Đó mới là chỗ hai bên
- * gặp nhau. Script này đọc dấu đó bằng OCR rồi ghép theo khoá
+ * So nội dung ảnh một mình: chạy trên cả kho thì khớp 0/2864. App nén ảnh
+ * xuống 1000px chất lượng 0.62, nên vân tay lệch đi đủ để mọi ngưỡng tuyệt
+ * đối đều trượt.
  *
- *       trụ + ngày + giờ:phút
+ * Đọc dấu một mình: dấu chỉ in tới PHÚT, không có giây, mà một phút thường
+ * có mấy tấm chụp liên tiếp. Bản trước gán cả chùm cho phát hiện, thành ra
+ * một phát hiện 7 ảnh lại nhận 15 tên — sai hẳn, số tên phải đúng bằng số
+ * ảnh.
  *
- * LƯU Ý VỀ GIÂY: dấu chỉ in tới PHÚT, không có giây. Nên hai tấm bấm trong
- * cùng một phút sẽ trùng khoá. Gặp trường hợp đó script không tự điền mà
- * xếp vào loại "cần kiểm tra", kèm đủ các ảnh ứng viên để bạn tự chọn.
+ * Ghép lại thì:
+ *
+ *   1. Đọc dấu Timemark (số trụ WTG, ngày, giờ:phút) ở cả hai bên, gom
+ *      theo khoá  trụ + ngày + giờ:phút. Mỗi nhúm thường chỉ 2-5 tấm.
+ *   2. Trong từng nhúm, so vân tay ảnh để ghép 1 ảnh app ↔ 1 ảnh gốc, chọn
+ *      cặp gần nhau nhất trước, mỗi ảnh chỉ dùng một lần.
+ *
+ * Bước 2 không cần ngưỡng tuyệt đối — chỉ cần xếp hạng xem trong 3 tấm thì
+ * tấm nào giống nhất. Đó là lý do nó chạy được trong khi so cả kho thì không.
+ *
+ * Script in ra khoảng cách vân tay của các cặp đã chọn. Gần 0 nghĩa là hai
+ * bên đúng là cùng một tấm, chỉ khác cỡ. Nếu khoảng cách lớn thì hai bên là
+ * hai lần bấm máy khác nhau, việc xếp hạng chỉ là chọn tấm đỡ khác nhất, và
+ * script sẽ cảnh báo đừng áp dụng.
+ *
+ * Tên ảnh ghi theo đúng thứ tự created_at — app xếp ảnh cũng theo thứ tự đó
+ * — nên tên thứ n ứng với tấm thứ n trong báo cáo.
+ *
+ * Phát hiện nào không ghép đủ 1-1 cho mọi ảnh thì xếp vào "cần kiểm tra",
+ * không ghi vào cơ sở dữ liệu.
  *
  * ĐỌC DẤU THẾ NÀO
  *
@@ -76,9 +93,6 @@
  *   --doc-lai        bỏ cache, đọc lại từ đầu
  *   --thu-lai-loi    chỉ đọc lại các ảnh lần trước không ra dấu, giữ nguyên
  *                    các ảnh đã đọc được — dùng sau khi nâng cách đọc
- *   --nhan-trung     chấp nhận một ảnh gốc thuộc về nhiều phát hiện. Hai lỗi
- *                    chụp cùng phút cùng chỗ thì chùm ảnh đó đúng là của cả
- *                    hai; không có cách nào tách bằng dấu
  */
 
 import fs from 'node:fs';
@@ -103,7 +117,6 @@ const apDung = doiSo.includes('--ap-dung');
 const chiDoc = doiSo.includes('--chi-doc');
 const docLai = doiSo.includes('--doc-lai');
 const thuLaiLoi = doiSo.includes('--thu-lai-loi');
-const nhanTrung = doiSo.includes('--nhan-trung');
 
 // Hạ mức ưu tiên để máy còn dùng được việc khác trong lúc đọc dấu.
 try { os.setPriority(os.constants.priority.PRIORITY_BELOW_NORMAL); } catch { /* hệ nào không cho thì thôi */ }
@@ -122,6 +135,25 @@ try {
   process.exit(1);
 }
 const LANG_PATH = duongDanNgonNgu();
+
+/**
+ * Vân tay ảnh 64 bit (dHash): thu ảnh về 9x8 điểm xám rồi ghi lại 64 phép so
+ * sáng tối giữa hai điểm cạnh nhau. Không đổi khi ảnh bị thu nhỏ hay nén
+ * lại, nên bản gốc và bản app cùng một tấm vẫn cho vân tay gần nhau.
+ */
+async function vanTay(tep) {
+  const img = await Jimp.read(tep);
+  img.greyscale().resize({ w: 9, h: 8 });
+  let bits = 0n;
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      const a = img.bitmap.data[(y * 9 + x) * 4];
+      const b = img.bitmap.data[(y * 9 + x + 1) * 4];
+      bits = (bits << 1n) | (a > b ? 1n : 0n);
+    }
+  }
+  return bits;
+}
 
 // ── CSV ─────────────────────────────────────────────────────────────────
 const oCsv = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/[\r\n]+/g, ' ')}"`;
@@ -256,13 +288,17 @@ if (!docLai && fs.existsSync(CACHE)) {
   const dong = fs.readFileSync(CACHE, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/).slice(1);
   for (const d of dong) {
     if (!d.trim()) continue;
-    const [tep, ngay, gio, tru, muc, lech, tho] = tachDong(d);
+    const [tep, ngay, gio, tru, muc, lech, tho, vt] = tachDong(d);
     if (thuLaiLoi && !ngay) continue; // bỏ ra để đọc lại
-    cache.set(tep, { ngay, gio, tru, muc, lech, tho });
+    cache.set(tep, { ngay, gio, tru, muc, lech, tho, vt: vt ? BigInt(vt) : null });
   }
   console.log(`Đã có sẵn dấu của ${cache.size} ảnh trong ${CACHE}`);
   if (thuLaiLoi) console.log('  (các ảnh lần trước không ra dấu sẽ được đọc lại)');
 }
+
+const dongCache = (t, k) =>
+  [t, k.ngay, k.gio, k.tru, k.muc, k.lech, k.tho, k.vt === null || k.vt === undefined ? '' : k.vt.toString()]
+    .map(oCsv).join(',') + '\n';
 
 const canDoc = [...mucApp.map((m) => m.tep), ...tepGoc.map((g) => g.tep)].filter((t) => !cache.has(t));
 if (canDoc.length) {
@@ -272,8 +308,8 @@ if (canDoc.length) {
   const noiThem = cache.size > 0 && !thuLaiLoi;
   const ghi = fs.createWriteStream(CACHE, { flags: noiThem ? 'a' : 'w' });
   if (!noiThem) {
-    ghi.write('\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho\n');
-    for (const [t, k] of cache) ghi.write([t, k.ngay, k.gio, k.tru, k.muc, k.lech, k.tho].map(oCsv).join(',') + '\n');
+    ghi.write('\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho,vt\n');
+    for (const [t, k] of cache) ghi.write(dongCache(t, k));
   }
 
   let i = 0, xong = 0, docDuoc = 0;
@@ -290,8 +326,9 @@ if (canDoc.length) {
       let kq;
       try { kq = await docDau(Jimp, worker, tep, { cao: CAO, nhanh }); }
       catch { kq = { ngay: '', gio: '', tru: '', muc: '', lech: '', tho: '' }; }
+      try { kq.vt = await vanTay(tep); } catch { kq.vt = null; }
       cache.set(tep, kq);
-      ghi.write([tep, kq.ngay, kq.gio, kq.tru, kq.muc, kq.lech, kq.tho].map(oCsv).join(',') + '\n');
+      ghi.write(dongCache(tep, kq));
       if (kq.ngay) docDuoc++;
       if (++xong % 20 === 0) {
         const giay = (Date.now() - batDau) / 1000;
@@ -305,8 +342,26 @@ if (canDoc.length) {
   console.log(`\r  ${xong}/${canDoc.length} · đọc được dấu ${docDuoc}${' '.repeat(30)}`);
 }
 
-const dauCua = (tep) => cache.get(tep) ?? { ngay: '', gio: '', tru: '', muc: '', lech: '', tho: '' };
+const dauCua = (tep) => cache.get(tep) ?? { ngay: '', gio: '', tru: '', muc: '', lech: '', tho: '', vt: null };
 const coDau = (ds, lay) => ds.filter((x) => dauCua(lay(x)).ngay).length;
+// Ảnh đã đọc dấu từ lần chạy trước thì chưa có vân tay — tính bổ sung.
+// Việc này không cần OCR nên nhanh hơn hẳn lượt đọc dấu.
+const canVanTay = [...mucApp.map((m) => m.tep), ...tepGoc.map((g) => g.tep)]
+  .filter((t) => cache.has(t) && cache.get(t).vt == null);
+if (canVanTay.length) {
+  console.log(`\nĐang tính vân tay cho ${canVanTay.length} ảnh (không cần OCR, nhanh hơn nhiều)…`);
+  let n = 0;
+  for (const t of canVanTay) {
+    try { cache.get(t).vt = await vanTay(t); } catch { /* ảnh hỏng thì bỏ qua */ }
+    if (++n % 50 === 0) process.stdout.write(`\r  ${n}/${canVanTay.length}   `);
+  }
+  process.stdout.write(`\r  ${canVanTay.length}/${canVanTay.length}\n`);
+  const tam = `${CACHE}.tam`;
+  fs.writeFileSync(tam, '\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho,vt\n' +
+    [...cache].map(([t, k]) => dongCache(t, k)).join(''));
+  fs.renameSync(tam, CACHE); // thay một phát, mất điện giữa chừng không hỏng cache
+}
+
 const demLech = (ds, lay) => ds.filter((x) => dauCua(lay(x)).lech).length;
 console.log(`\nĐọc được dấu — ảnh app: ${coDau(mucApp, (m) => m.tep)}/${mucApp.length}` +
             ` · ảnh của bạn: ${coDau(tepGoc, (g) => g.tep)}/${tepGoc.length}`);
@@ -318,21 +373,39 @@ if (chiDoc) {
   process.exit(0);
 }
 
-// ── Ghép theo PHÁT HIỆN, không ghép từng ảnh một ────────────────────────
+// ── Ghép 1 ẢNH ↔ 1 ẢNH ──────────────────────────────────────────────────
 //
-// Thử ghép 1 ảnh app ↔ 1 ảnh gốc thì hỏng: dấu chỉ in tới phút, mà một
-// phút thường có mấy tấm chụp liên tiếp cùng một lỗi. Chạy thử trụ 16 thì
-// 92/105 ảnh đọc được rơi vào cảnh "nhiều ảnh cùng một phút", ép chọn một
-// tấm trong đó là đoán bừa.
+// Bản trước gán cho mỗi phát hiện cả chùm ảnh cùng phút, nên một phát hiện
+// có 7 ảnh lại nhận 15 tên — sai hẳn. Số tên phải đúng bằng số ảnh.
 //
-// Mà cũng không cần ghép 1-1. Cái cần điền vào báo cáo là TÊN ẢNH GỐC của
-// một phát hiện, nên gom theo phát hiện: lấy các phút đọc được từ ảnh app
-// của nó, rồi liệt kê mọi ảnh gốc cùng trụ + ngày + phút đó. Mấy tấm cùng
-// một phút cùng một chỗ gần như chắc chắn là cùng một lỗi — liệt kê cả
-// chùm vừa đúng hơn vừa có ích hơn cho khách khi đi tìm ảnh.
+// Riêng dấu Timemark không đủ: nó chỉ in tới phút, mà một phút có mấy tấm.
+// Nhưng dấu thu phạm vi lại cực hẹp — thường 2 đến 5 tấm — và trong phạm vi
+// đó thì SO NỘI DUNG ẢNH lại ăn thua, vì chỉ cần xếp hạng tấm nào giống
+// nhất, không cần một ngưỡng tuyệt đối.
+//
+// (Lần trước so nội dung ảnh trên toàn bộ kho thì khớp 0/2864 vì ngưỡng
+// tuyệt đối không chịu nổi việc app nén ảnh xuống 1000px. Xếp hạng trong
+// một nhúm 3 tấm là chuyện khác hẳn.)
+//
+// Vân tay ảnh dHash: thu ảnh về 9x8 điểm xám rồi ghi 64 phép so sáng tối
+// giữa hai điểm cạnh nhau. Không đổi khi ảnh bị thu nhỏ hay nén lại.
 const khoa = (tru, ngay, gio) => `${tru}|${ngay}|${gio}`;
 
-const gocTheoKhoa = new Map();
+const khoangCach = (a, b) => {
+  let x = a ^ b, n = 0;
+  while (x) { n += Number(x & 1n); x >>= 1n; }
+  return n;
+};
+
+// Gom cả hai bên theo phút.
+const appTheoKhoa = new Map(), gocTheoKhoa = new Map();
+for (const m of mucApp) {
+  const d = dauCua(m.tep);
+  if (!d.ngay) continue;
+  const k = khoa(d.tru || soTru(m.tru), d.ngay, d.gio);
+  if (!appTheoKhoa.has(k)) appTheoKhoa.set(k, []);
+  appTheoKhoa.get(k).push(m);
+}
 for (const g of tepGoc) {
   const d = dauCua(g.tep);
   if (!d.ngay) continue;
@@ -340,33 +413,39 @@ for (const g of tepGoc) {
   if (!tru) continue;
   const k = khoa(tru, d.ngay, d.gio);
   if (!gocTheoKhoa.has(k)) gocTheoKhoa.set(k, []);
-  gocTheoKhoa.get(k).push({ ...g, muc: d.muc });
+  gocTheoKhoa.get(k).push(g);
 }
 
-/**
- * Vị trí trên trụ, quy về một tên — bản rút gọn của src/lib/area-label.ts.
- * Dùng để loại các ảnh cùng phút nhưng khác chỗ, nên "Middle B-A",
- * "Section B - A" và "Tower B-A" đều phải về một mối.
- */
-function viTri(s) {
-  const t = String(s).toLowerCase().replace(/[\t_]+/g, ' ').replace(/\s+/g, ' ').trim();
-  if (/\b(nacelle\s*top|top\s*nacelle)\b/.test(t)) return 'nacelle-top';
-  if (/\bnace/.test(t)) return 'nacelle';
-  if (/\bhub\b/.test(t)) return 'hub';
-  if (/\bblade/.test(t)) return 'blades';
-  if (/\byaw\b/.test(t)) return 'top-yaw';
-  if (/\bbasement\b|\bdoor\b/.test(t)) return 'base';
-  if (/\b(hardstand|foundation|outside|outer|external|exterior)\b/.test(t)) return 'ngoai';
-  const moc = [];
-  for (const m of t.matchAll(/\b(base|top|[a-d])\b/g)) if (!moc.includes(m[1])) moc.push(m[1]);
-  if (moc.length === 0) return '';
-  const thuTu = ['base', 'd', 'c', 'b', 'a', 'top'];
-  if (moc.length === 1) return moc[0] === 'base' ? 'base' : moc[0] === 'top' ? 'top-yaw' : `doan-${moc[0]}`;
-  const k = moc.map((m) => thuTu.indexOf(m)).sort((x, y) => x - y);
-  return `doan-${thuTu[k[0]]}-${thuTu[k[k.length - 1]]}`;
+// Trong từng phút: chọn cặp gần nhau nhất trước, mỗi ảnh chỉ được dùng một
+// lần. Nhúm nhỏ nên cách tham lam này cho đúng kết quả như giải tối ưu.
+const vt = (tep) => cache.get(tep)?.vt ?? null;
+const ganCho = new Map();
+const khoangCachDaChon = [];
+for (const [k, apps] of appTheoKhoa) {
+  const gocs = (gocTheoKhoa.get(k) ?? []).filter((g) => vt(g.tep) !== null);
+  if (gocs.length === 0) continue;
+  const cap = [];
+  for (const a of apps) {
+    const va = vt(a.tep);
+    if (va === null) continue;
+    for (const g of gocs) cap.push({ a, g, d: khoangCach(va, vt(g.tep)) });
+  }
+  cap.sort((x, y) => x.d - y.d);
+  const daA = new Set(), daG = new Set();
+  for (const c of cap) {
+    if (daA.has(c.a.tep) || daG.has(c.g.tep)) continue;
+    daA.add(c.a.tep); daG.add(c.g.tep);
+    // Cách biệt với ứng viên nhì của chính ảnh app này — gần bằng nhau thì
+    // việc chọn chỉ là may rủi, phải nói ra.
+    const cungApp = cap.filter((x) => x.a.tep === c.a.tep && x.g.tep !== c.g.tep).map((x) => x.d);
+    const nhi = cungApp.length ? Math.min(...cungApp) : Infinity;
+    ganCho.set(c.a.tep, { g: c.g, d: c.d, cach: nhi - c.d, soUngVien: gocs.length });
+    khoangCachDaChon.push(c.d);
+  }
 }
 
-// Gom ảnh app theo phát hiện.
+// Gom lại theo phát hiện. Tên ảnh ghi theo đúng thứ tự created_at — app xếp
+// ảnh cũng theo thứ tự đó, nên tên thứ n ứng với tấm thứ n.
 const theoPh = new Map();
 for (const m of mucApp) {
   if (!theoPh.has(m.finding_id)) theoPh.set(m.finding_id, []);
@@ -376,99 +455,62 @@ for (const m of mucApp) {
 const ketQua = [];
 for (const [finding_id, anhs] of theoPh) {
   const m0 = anhs[0];
-  const tru = soTru(m0.tru);
-  const doc = anhs.map((m) => ({ m, d: dauCua(m.tep) }));
-  const phut = [...new Set(doc.filter((x) => x.d.ngay).map((x) => khoa(x.d.tru || tru, x.d.ngay, x.d.gio)))];
-  const soLech = doc.filter((x) => !x.d.ngay && x.d.lech).length;
+  const doc = anhs.map((m) => ({ m, d: dauCua(m.tep), gan: ganCho.get(m.tep) }));
+  const ganDuoc = doc.filter((x) => x.gan);
   const base = {
     finding_id, tru: m0.tru, ngay_bc: m0.ngay_bc, khu_vuc: m0.khu_vuc,
     muc_do: m0.muc_do, dien_giai: m0.dien_giai,
-    so_anh_app: anhs.length, doc_duoc: doc.filter((x) => x.d.ngay).length,
-    phut_app: phut.map((k) => k.split('|')[2]).sort().join(' '),
+    so_anh_app: anhs.length, so_anh_goc: ganDuoc.length,
+    phut_app: [...new Set(doc.filter((x) => x.d.ngay).map((x) => x.d.gio))].sort().join(' '),
     ngay_dau: [...new Set(doc.filter((x) => x.d.ngay).map((x) => x.d.ngay))].join(' '),
+    ten_anh_goc: ganDuoc.map((x) => x.gan.g.tuongDoi).join(' | '),
   };
 
-  if (phut.length === 0) {
-    ketQua.push({ ...base, ten_anh_goc: '', so_anh_goc: 0, lyDo: [], trang_thai: 'khong doc duoc dau',
-                  ghi_chu: soLech ? `${soLech} ảnh hai lượt đọc lệch nhau` : '' });
-    continue;
-  }
-
-  // Mọi ảnh gốc rơi vào đúng các phút đó.
-  const ungVien = [];
-  const phutTrong = [];
-  for (const k of phut) {
-    const ds = gocTheoKhoa.get(k) ?? [];
-    if (ds.length === 0) phutTrong.push(k.split('|')[2]);
-    for (const g of ds) if (!ungVien.some((u) => u.tep === g.tep)) ungVien.push(g);
-  }
-  if (ungVien.length === 0) {
-    ketQua.push({ ...base, ten_anh_goc: '', so_anh_goc: 0, lyDo: [], trang_thai: 'khong tim thay', ghi_chu: '' });
-    continue;
-  }
-
-  // Loại ảnh cùng phút nhưng khác chỗ — chỉ loại khi cả hai bên đều đọc ra vị trí.
-  const vtPh = viTri(`${m0.khu_vuc} ${doc.map((x) => x.d.muc).join(' ')}`);
-  let chon = ungVien, lechViTri = 0;
-  if (vtPh) {
-    const hop = ungVien.filter((g) => {
-      const v = viTri(`${g.muc} ${g.tuongDoi}`);
-      return !v || v === vtPh;
-    });
-    lechViTri = ungVien.length - hop.length;
-    if (hop.length) chon = hop;
-  }
-
-  const ghiChu = [], lyDo = [];
-  if (phutTrong.length) { lyDo.push('thieu-phut'); ghiChu.push(`không có ảnh gốc ở phút ${phutTrong.join(', ')}`); }
-  if (lechViTri && chon !== ungVien) ghiChu.push(`bỏ ${lechViTri} ảnh khác vị trí`);
-  if (lechViTri && chon === ungVien) { lyDo.push('lech-vi-tri'); ghiChu.push('vị trí không khớp, giữ nguyên cả chùm'); }
-  if (base.doc_duoc < anhs.length) ghiChu.push(`chỉ đọc được dấu ${base.doc_duoc}/${anhs.length} ảnh app`);
+  const lyDo = [], ghiChu = [];
+  const chuaDoc = doc.filter((x) => !x.d.ngay).length;
+  const thieu = anhs.length - ganDuoc.length;
+  if (chuaDoc) { lyDo.push('khong-doc-duoc-dau'); ghiChu.push(`${chuaDoc} ảnh không đọc được dấu`); }
+  if (thieu > chuaDoc) { lyDo.push('thieu-anh-goc'); ghiChu.push(`${thieu - chuaDoc} ảnh không có bản gốc cùng phút`); }
+  const mongManh = ganDuoc.filter((x) => x.gan.cach < 4 && x.gan.soUngVien > 1).length;
+  if (mongManh) { lyDo.push('cach-biet-mong'); ghiChu.push(`${mongManh} ảnh có tấm khác gần tương đương`); }
 
   ketQua.push({
-    ...base, so_anh_goc: chon.length, lyDo,
-    ten_anh_goc: chon.map((g) => g.tuongDoi).join(' | '),
-    trang_thai: lyDo.length ? 'can kiem tra' : 'chac chan',
+    ...base, lyDo,
+    trang_thai: ganDuoc.length === 0 ? (chuaDoc === anhs.length ? 'khong doc duoc dau' : 'khong tim thay')
+      : lyDo.length ? 'can kiem tra' : 'chac chan',
     ghi_chu: ghiChu.join('; '),
   });
-}
-
-// Một ảnh gốc bị nhiều phát hiện cùng nhận thì không chắc nữa — hai lỗi
-// chụp cùng một phút ở cùng một chỗ, phải xem lại bằng mắt.
-const nhanBoi = new Map();
-for (const r of ketQua) {
-  if (!r.ten_anh_goc) continue;
-  for (const t of r.ten_anh_goc.split(' | ')) nhanBoi.set(t, (nhanBoi.get(t) ?? 0) + 1);
-}
-for (const r of ketQua) {
-  if (!r.ten_anh_goc) continue;
-  const chung = r.ten_anh_goc.split(' | ').filter((t) => nhanBoi.get(t) > 1).length;
-  if (!chung) continue;
-  r.ghi_chu = [r.ghi_chu, `${chung} ảnh cũng thuộc phát hiện khác`].filter(Boolean).join('; ');
-  if (nhanTrung) continue; // bạn đã chọn chấp nhận chuyện dùng chung
-  r.lyDo.push('trung-phat-hien');
-  r.trang_thai = 'can kiem tra';
 }
 
 const dem = (t) => ketQua.filter((r) => r.trang_thai === t).length;
 const anhCua = (t) => ketQua.filter((r) => r.trang_thai === t).reduce((n, r) => n + r.so_anh_goc, 0);
 console.log(`\nTheo PHÁT HIỆN (${ketQua.length} phát hiện, ${mucApp.length} ảnh app):`);
-console.log(`  chắc chắn         : ${dem('chac chan')}   → ${anhCua('chac chan')} tên ảnh gốc`);
-console.log(`  cần kiểm tra      : ${dem('can kiem tra')}   → ${anhCua('can kiem tra')} tên ảnh gốc, xem cột ghi_chu`);
-console.log(`  không tìm thấy    : ${dem('khong tim thay')}   (không có ảnh gốc nào cùng trụ+ngày+phút)`);
-console.log(`  không đọc được dấu: ${dem('khong doc duoc dau')}   (không ảnh app nào của phát hiện đọc được dấu)`);
+console.log(`  chắc chắn         : ${dem('chac chan')}   → ${anhCua('chac chan')} tên ảnh, đúng một tên mỗi ảnh`);
+console.log(`  cần kiểm tra      : ${dem('can kiem tra')}   → ${anhCua('can kiem tra')} tên ảnh, xem cột ghi_chu`);
+console.log(`  không tìm thấy    : ${dem('khong tim thay')}`);
+console.log(`  không đọc được dấu: ${dem('khong doc duoc dau')}`);
 
 const canKt = ketQua.filter((r) => r.trang_thai === 'can kiem tra');
 if (canKt.length) {
   const demLyDo = (ma) => canKt.filter((r) => r.lyDo.includes(ma)).length;
   console.log('\n  Vì sao phải kiểm tra:');
-  console.log(`    ${demLyDo('trung-phat-hien')} · ảnh gốc được nhiều phát hiện cùng nhận` +
-              ` — hai lỗi chụp cùng phút cùng chỗ. Chấp nhận dùng chung thì thêm --nhan-trung.`);
-  console.log(`    ${demLyDo('thieu-phut')} · có phút không tìm ra ảnh gốc nào`);
-  console.log(`    ${demLyDo('lech-vi-tri')} · vị trí trên dấu không khớp khu vực của phát hiện`);
-  const soAnh = canKt.map((r) => r.so_anh_goc).sort((a, b) => a - b);
-  console.log(`\n  Số ảnh gốc mỗi phát hiện nhận được: ít nhất ${soAnh[0]},` +
-              ` giữa ${soAnh[Math.floor(soAnh.length / 2)]}, nhiều nhất ${soAnh[soAnh.length - 1]}`);
+  console.log(`    ${demLyDo('thieu-anh-goc')} · có ảnh không tìm được bản gốc cùng phút`);
+  console.log(`    ${demLyDo('cach-biet-mong')} · có ảnh mà tấm gốc nhì gần tương đương tấm nhất`);
+  console.log(`    ${demLyDo('khong-doc-duoc-dau')} · có ảnh không đọc được dấu`);
+}
+
+// Khoảng cách vân tay của các cặp đã chọn cho biết hai bên có thật là một
+// tấm hay không. Gần 0 nghĩa là cùng một tấm, chỉ khác cỡ. Lớn nghĩa là hai
+// lần bấm máy khác nhau — lúc đó việc xếp hạng chỉ là chọn tấm đỡ khác
+// nhất, và tên ảnh ghi ra không đáng tin.
+if (khoangCachDaChon.length) {
+  const sx = [...khoangCachDaChon].sort((a, b) => a - b);
+  const vi = (q) => sx[Math.min(sx.length - 1, Math.floor(q * sx.length))];
+  console.log(`\n  Khoảng cách vân tay cặp đã chọn: giữa ${vi(0.5)}, phân vị 90 ${vi(0.9)}, lớn nhất ${sx[sx.length - 1]} (0 = cùng một tấm, 64 = khác hẳn)`);
+  if (vi(0.5) > 12) {
+    console.log('  ⚠ Khoảng cách lớn — hai bên có thể không phải cùng một tấm ảnh.');
+    console.log('    Đừng áp dụng, gửi dòng này cho tôi xem lại.');
+  }
 }
 
 const lech = ketQua.filter((r) => r.ngay_dau && r.ngay_bc && !r.ngay_dau.includes(r.ngay_bc)).length;
@@ -496,12 +538,12 @@ function ghiCsv(ten, noiDung) {
   }
 }
 
-const daGhi = ghiCsv(CSV_RA, '\uFEFF' + [
-  'trang_thai,ly_do,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_app,doc_duoc,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
+const daGhi = ghiCsv(CSV_RA, '﻿' + [
+  'trang_thai,ly_do,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_app,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
   ...ketQua
     .sort((a, b) => String(a.tru).localeCompare(String(b.tru)) || String(a.phut_app).localeCompare(String(b.phut_app)))
-    .map((r) => [r.trang_thai, (r.lyDo ?? []).join(' '), r.ghi_chu, r.tru, r.ngay_bc, r.ngay_dau, r.phut_app, r.khu_vuc, r.muc_do,
-                 r.so_anh_app, r.doc_duoc, r.so_anh_goc, r.ten_anh_goc, r.dien_giai, r.finding_id].map(oCsv).join(',')),
+    .map((r) => [r.trang_thai, r.lyDo.join(' '), r.ghi_chu, r.tru, r.ngay_bc, r.ngay_dau, r.phut_app, r.khu_vuc,
+                 r.muc_do, r.so_anh_app, r.so_anh_goc, r.ten_anh_goc, r.dien_giai, r.finding_id].map(oCsv).join(',')),
 ].join('\n'));
 console.log(`\nĐã ghi ${daGhi} — mở bằng Excel để xem trước khi áp dụng.`);
 
