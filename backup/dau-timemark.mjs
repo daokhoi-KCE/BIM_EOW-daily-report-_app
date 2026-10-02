@@ -33,6 +33,19 @@
  * Đã kiểm trên ảnh thật của dự án với cả hai kiểu dấu — kiểu gọn (ảnh trong
  * app) và kiểu bảng (ảnh gốc trong máy) — xem kiem-dau-timemark.mjs.
  *
+ * BIẾT SỚM KHI ẢNH KHÔNG CÓ DẤU
+ *
+ * Không phải ảnh nào cũng được đóng dấu: thư mục của dự án có vài trăm tấm
+ * chụp không qua app Timemark. Trước đây mỗi tấm như vậy vẫn phải thử hết
+ * mọi ngưỡng ở cả hai dải rồi mới chịu thua — mười hai lượt OCR cho một tấm
+ * chẳng có gì để đọc, tốn gấp sáu lần một tấm đọc được.
+ *
+ * Nhận ra sớm được, vì ảnh CÓ dấu thì lượt nào cũng ra nhiều chữ, kể cả lượt
+ * đặt ngưỡng sai bét: ngưỡng 245 trên ảnh mẫu ra "BIM:WIGM 6. | H [i L Hoan
+ * f SIT Ti Horry nD li i NR" — đọc sai hết nhưng vẫn là một đống ký tự. Nên
+ * hai lượt đầu của một dải mà không lượt nào ra nổi 12 ký tự chữ số thì dải
+ * đó không có dấu, bỏ sang dải sau luôn.
+ *
  * LƯU Ý: dấu chỉ in tới PHÚT, không có giây.
  */
 
@@ -138,12 +151,17 @@ export async function docDau(Jimp, worker, tep, { cao = CAO_MAC_DINH, nhanh = fa
     base.resize({ w: Math.min(cao, base.bitmap.width * 3) });
 
     const luot = [];
+    let soLuot = 0, chuNhieuNhat = 0;
     // Vòng 1 ảnh nguyên trạng, vòng 2 kéo giãn dải sáng cho ảnh nhoè.
     for (const manh of [false, true]) {
       const nen = manh ? base.clone().normalize() : base;
       for (const muc of NGUONG_SANG) {
         const { data } = await worker.recognize(await locSang(nen.clone(), muc).getBuffer('image/png'));
         const txt = data.text.replace(/\s+/g, ' ').trim();
+        chuNhieuNhat = Math.max(chuNhieuNhat, (txt.match(/[A-Za-z0-9]/g) ?? []).length);
+        // Hai lượt đầu không lượt nào ra nổi 12 ký tự thì dải này không có
+        // dấu — xem ghi chú "BIẾT SỚM KHI ẢNH KHÔNG CÓ DẤU" ở đầu file.
+        if (++soLuot >= 2 && chuNhieuNhat < 12) break;
         const ng = tachNgayGio(txt);
         if (!ng) continue;
         const kq = { ...ng, tru: tachTru(txt), muc: tachMuc(txt), tho: txt.slice(0, 200), lech: '' };
@@ -158,6 +176,7 @@ export async function docDau(Jimp, worker, tep, { cao = CAO_MAC_DINH, nhanh = fa
         }
         luot.push(kq);
       }
+      if (soLuot >= 2 && chuNhieuNhat < 12) break; // bỏ cả vòng tăng tương phản
     }
     if (luot.length) {
       // Đọc ra chữ nhưng các lượt không thống nhất — không nhận, ghi lại để dò.
