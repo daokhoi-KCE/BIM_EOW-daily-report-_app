@@ -10,7 +10,15 @@
  *
  * Bảng ở mục 6 chỉ in tên file, bỏ phần thư mục: trụ và khu vực đã nằm ở
  * hai cột bên cạnh, in lại đường dẫn đầy đủ chỉ làm cột phình ra.
+ *
+ * Tên thứ n là của tấm ảnh thứ n (cả hai cùng xếp theo created_at). Tấm nào
+ * không tìm được bản gốc trong thư mục thì chỗ đó ghi PHOTO_REF_MISSING, để
+ * các tên sau nó vẫn đứng đúng vị trí.
  */
+export const PHOTO_REF_MISSING = "—";
+
+export const isMissingPhotoRef = (name: string) => name === PHOTO_REF_MISSING;
+
 export interface PhotoRefs {
   /** Tên file, đã bỏ phần thư mục. */
   names: string[];

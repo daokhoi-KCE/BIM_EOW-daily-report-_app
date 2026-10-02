@@ -509,6 +509,7 @@ if (chiDoc) {
 //
 // Vân tay ảnh dHash: thu ảnh về 9x8 điểm xám rồi ghi 64 phép so sáng tối
 // giữa hai điểm cạnh nhau. Không đổi khi ảnh bị thu nhỏ hay nén lại.
+const CHUA_CO_GOC = '—'; // phải trùng PHOTO_REF_MISSING trong src/lib/photo-ref.ts
 const khoa = (tru, ngay, gio) => `${tru}|${ngay}|${gio}`;
 
 const khoangCach = (a, b) => {
@@ -613,6 +614,10 @@ for (const [finding_id, anhs] of theoPh) {
     phut_app: [...new Set(doc.filter((x) => x.d.ngay).map((x) => x.d.gio))].sort().join(' '),
     ngay_dau: [...new Set(doc.filter((x) => x.d.ngay).map((x) => x.d.ngay))].join(' '),
     ten_anh_goc: ganDuoc.map((x) => x.gan.g.tuongDoi).join(' | '),
+    // Ghi vào photo_ref: tên thứ n là của tấm thứ n (cùng xếp theo
+    // created_at với ảnh trong app). Tấm không có bản gốc giữ chỗ bằng "—"
+    // để các tên sau vẫn đứng đúng vị trí — app hiểu dấu này.
+    ten_theo_vi_tri: doc.map((x) => (x.gan ? x.gan.g.tuongDoi : CHUA_CO_GOC)).join(', '),
   };
 
   const lyDo = [], ghiChu = [];
@@ -628,18 +633,25 @@ for (const [finding_id, anhs] of theoPh) {
   const mongManh = ganDuoc.filter((x) => x.gan.cach < 4 && x.gan.soUngVien > 1).length;
   if (mongManh) { lyDo.push('cach-biet-mong'); ghiChu.push(`${mongManh} ảnh có tấm khác gần tương đương`); }
 
-  ketQua.push({
-    ...base, lyDo,
-    trang_thai: ganDuoc.length === 0 ? (chuaDoc === anhs.length ? 'khong doc duoc dau' : 'khong tim thay')
-      : lyDo.length ? 'can kiem tra' : 'chac chan',
-    ghi_chu: ghiChu.join('; '),
-  });
+  // "Một phần": các tấm ghép được đều chắc chắn, chỉ là có tấm không tìm ra
+  // bản gốc (hoặc không đọc được dấu). Vẫn ghi — tấm thiếu để "—" — vì tên
+  // nằm ngay dưới từng tấm ảnh nên người đọc thấy rõ tấm nào có bản gốc.
+  // Không ghi khi còn ảnh chưa tải về (vị trí sẽ lệch) hoặc có cặp mà tấm nhì
+  // gần tương đương (tên có thể nhầm giữa hai tấm).
+  const trangThai =
+    ganDuoc.length === 0 ? (chuaDoc === anhs.length ? 'khong doc duoc dau' : 'khong tim thay')
+    : chuaTai > 0 || mongManh > 0 ? 'can kiem tra'
+    : thieu > 0 ? 'mot phan'
+    : 'chac chan';
+
+  ketQua.push({ ...base, lyDo, trang_thai: trangThai, ghi_chu: ghiChu.join('; ') });
 }
 
 const dem = (t) => ketQua.filter((r) => r.trang_thai === t).length;
 const anhCua = (t) => ketQua.filter((r) => r.trang_thai === t).reduce((n, r) => n + r.so_anh_goc, 0);
 console.log(`\nTheo PHÁT HIỆN (${ketQua.length} phát hiện, ${mucApp.length} ảnh app):`);
 console.log(`  chắc chắn         : ${dem('chac chan')}   → ${anhCua('chac chan')} tên ảnh, đúng một tên mỗi ảnh`);
+console.log(`  một phần          : ${dem('mot phan')}   → ${anhCua('mot phan')} tên ảnh, tấm không có bản gốc ghi "—"`);
 console.log(`  cần kiểm tra      : ${dem('can kiem tra')}   → ${anhCua('can kiem tra')} tên ảnh, xem cột ghi_chu`);
 console.log(`  không tìm thấy    : ${dem('khong tim thay')}`);
 console.log(`  không đọc được dấu: ${dem('khong doc duoc dau')}`);
@@ -690,19 +702,20 @@ if (khoangCachDaChon.length) {
   const theoTru = new Map();
   for (const r of ketQua) {
     const k = String(r.tru).trim() || '?';
-    if (!theoTru.has(k)) theoTru.set(k, { n: 0, chac: 0, kt: 0, khong: 0, chuaDoc: 0 });
+    if (!theoTru.has(k)) theoTru.set(k, { n: 0, chac: 0, motPhan: 0, kt: 0, khong: 0, chuaDoc: 0 });
     const o = theoTru.get(k);
     o.n++;
     if (r.trang_thai === 'chac chan') o.chac++;
+    else if (r.trang_thai === 'mot phan') o.motPhan++;
     else if (r.trang_thai === 'can kiem tra') o.kt++;
     else if (r.trang_thai === 'khong tim thay') o.khong++;
     else o.chuaDoc++;
   }
   if (theoTru.size > 1) {
     console.log('\n  Theo từng trụ:');
-    console.log('    trụ         phát hiện  chắc chắn  cần kiểm tra  không thấy  không đọc dấu');
+    console.log('    trụ         phát hiện  chắc chắn  một phần  cần kiểm tra  không thấy  không đọc dấu');
     for (const [k, o] of [...theoTru].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))) {
-      console.log(`    ${k.padEnd(10)}  ${String(o.n).padStart(8)}  ${String(o.chac).padStart(9)}  ${String(o.kt).padStart(12)}  ${String(o.khong).padStart(10)}  ${String(o.chuaDoc).padStart(13)}`);
+      console.log(`    ${k.padEnd(10)}  ${String(o.n).padStart(8)}  ${String(o.chac).padStart(9)}  ${String(o.motPhan).padStart(8)}  ${String(o.kt).padStart(12)}  ${String(o.khong).padStart(10)}  ${String(o.chuaDoc).padStart(13)}`);
     }
   }
 }
@@ -733,11 +746,11 @@ function ghiCsv(ten, noiDung) {
 }
 
 const daGhi = ghiCsv(CSV_RA, '﻿' + [
-  'trang_thai,ly_do,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_db,so_anh_app,so_anh_goc,ten_anh_goc,dien_giai,finding_id',
+  'trang_thai,ly_do,ghi_chu,tru,ngay_bc,ngay_dau,phut_app,khu_vuc,muc_do,so_anh_db,so_anh_app,so_anh_goc,ten_theo_vi_tri,dien_giai,finding_id',
   ...ketQua
     .sort((a, b) => String(a.tru).localeCompare(String(b.tru)) || String(a.phut_app).localeCompare(String(b.phut_app)))
     .map((r) => [r.trang_thai, r.lyDo.join(' '), r.ghi_chu, r.tru, r.ngay_bc, r.ngay_dau, r.phut_app, r.khu_vuc,
-                 r.muc_do, r.so_anh_db, r.so_anh_app, r.so_anh_goc, r.ten_anh_goc, r.dien_giai, r.finding_id].map(oCsv).join(',')),
+                 r.muc_do, r.so_anh_db, r.so_anh_app, r.so_anh_goc, r.ten_theo_vi_tri, r.dien_giai, r.finding_id].map(oCsv).join(',')),
 ].join('\n'));
 console.log(`\nĐã ghi ${daGhi} — mở bằng Excel để xem trước khi áp dụng.`);
 
@@ -747,9 +760,9 @@ if (!apDung) {
 }
 
 // ── Ghi photo_ref ───────────────────────────────────────────────────────
-// Chỉ ghi các phát hiện ghép chắc chắn. Loại "cần kiểm tra" để lại trong
-// CSV cho bạn xem bằng mắt rồi quyết định.
-const seGhi = ketQua.filter((r) => r.trang_thai === 'chac chan' && r.ten_anh_goc);
+// Ghi các phát hiện "chắc chắn" và "một phần" (tấm thiếu bản gốc ghi "—").
+// Loại "cần kiểm tra" để lại trong CSV cho bạn xem bằng mắt rồi quyết định.
+const seGhi = ketQua.filter((r) => (r.trang_thai === 'chac chan' || r.trang_thai === 'mot phan') && r.ten_anh_goc);
 console.log(`\nSẽ điền Photo ref cho ${seGhi.length} phát hiện…`);
 
 // Lưu giá trị CŨ trước khi ghi đè. Lệnh này thay hẳn ô photo_ref, mà ô đó có
@@ -758,13 +771,14 @@ console.log(`\nSẽ điền Photo ref cho ${seGhi.length} phát hiện…`);
 const saoLuu = ghiCsv(`photo-ref-cu-${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '').slice(2)}.csv`,
   '\uFEFF' + ['finding_id,tru,photo_ref_cu,photo_ref_moi',
     ...seGhi.map((r) => [r.finding_id, r.tru, photoRefCu.get(r.finding_id) ?? '',
-      [...new Set(r.ten_anh_goc.split(' | '))].join(', ')].map(oCsv).join(','))].join('\n'));
+      r.ten_theo_vi_tri].map(oCsv).join(','))].join('\n'));
 const seDe = seGhi.filter((r) => (photoRefCu.get(r.finding_id) ?? '').trim()).length;
 console.log(`  Đã lưu giá trị cũ vào ${saoLuu}` +
             `${seDe ? ` — ${seDe} phát hiện đang có chữ sẽ bị thay` : ' — ô đang trống hết'}.`);
 let xongGhi = 0, hongGhi = 0;
 for (const r of seGhi) {
-  const ten = [...new Set(r.ten_anh_goc.split(' | '))].join(', ');
+  // Không gộp trùng: các "—" giữ chỗ phải còn nguyên từng cái một.
+  const ten = r.ten_theo_vi_tri;
   const res = await goi(`${URL_DU_AN}/rest/v1/findings?id=eq.${r.finding_id}`, {
     method: 'PATCH', headers, body: JSON.stringify({ photo_ref: ten }),
   });

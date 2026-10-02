@@ -5,7 +5,7 @@ import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 import { sortFindingsByArea } from "@/lib/finding-order";
 import { displayArea } from "@/lib/area-label";
-import { groupPhotoNames, parsePhotoRef } from "@/lib/photo-ref";
+import { groupPhotoNames, isMissingPhotoRef, parsePhotoRef } from "@/lib/photo-ref";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
@@ -154,7 +154,9 @@ export default function TurbineSection({
                           tên đánh số liền nhau gộp lại thành một dải. */}
                       <td className={`${td} text-[10px]`}>
                         {(() => {
-                          const { names } = parsePhotoRef(f.photo);
+                          // Chỗ giữ vị trí cho tấm không có bản gốc chỉ có
+                          // nghĩa khi đặt cạnh từng tấm ảnh; ở bảng này thì bỏ.
+                          const names = parsePhotoRef(f.photo).names.filter((n) => !isMissingPhotoRef(n));
                           const soAnh = f.photos?.length ?? 0;
                           if (names.length === 0)
                             return <span className="tabular-nums text-slate-400">{soAnh} ảnh</span>;

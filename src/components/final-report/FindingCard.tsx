@@ -2,7 +2,7 @@ import type { DatedFinding } from "@/lib/final-report";
 import { severityTier, TIER } from "@/components/print/shared";
 import { displayArea } from "@/lib/area-label";
 import { PHOTO_SIZES } from "@/lib/project-info";
-import { parsePhotoRef } from "@/lib/photo-ref";
+import { isMissingPhotoRef, parsePhotoRef } from "@/lib/photo-ref";
 
 /**
  * Một phát hiện: cột trái là diễn giải, cột phải là ảnh chứng cứ.
@@ -101,11 +101,14 @@ export default function FindingCard({
                       className="w-full rounded-sm block bg-white border border-slate-200"
                       style={{ height: photoSize.height, objectFit: "contain" }}
                     />
-                    {tenAnh[i] && (
-                      <div className="font-mono text-[7.5px] leading-tight text-slate-500 break-all">
-                        {tenAnh[i]}
-                      </div>
-                    )}
+                    {tenAnh[i] &&
+                      (isMissingPhotoRef(tenAnh[i]) ? (
+                        <div className="text-[7.5px] leading-tight text-slate-400">—</div>
+                      ) : (
+                        <div className="font-mono text-[7.5px] leading-tight text-slate-500 break-all">
+                          {tenAnh[i]}
+                        </div>
+                      ))}
                   </div>
                 ) : (
                   <div
