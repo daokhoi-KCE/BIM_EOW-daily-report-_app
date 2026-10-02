@@ -262,6 +262,29 @@ const headers = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': '
 const TRANG = 1000;
 
 /**
+ * Lỗi chứng chỉ TLS thì báo thẳng, đừng thử lại.
+ *
+ * Phần mềm diệt virus hoặc proxy công ty chen vào giữa kết nối HTTPS và
+ * trình ra chứng chỉ của chính nó; Node không dùng kho chứng chỉ của Windows
+ * nên không nhận. Đây không phải trục trặc nhất thời — thử lại 4 lần chỉ mất
+ * thêm 15 giây rồi vẫn hỏng, mà lại chôn mất dòng nói ra cách sửa.
+ */
+const LOI_CHUNG_CHI = new Set([
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'SELF_SIGNED_CERT_IN_CHAIN',
+  'DEPTH_ZERO_SELF_SIGNED_CERT', 'CERT_HAS_EXPIRED', 'ERR_TLS_CERT_ALTNAME_INVALID',
+]);
+function chungChiHong(e) {
+  const ma = e?.cause?.code ?? e?.code;
+  if (!LOI_CHUNG_CHI.has(ma)) return null;
+  return `Kết nối HTTPS bị chặn bởi chứng chỉ lạ (${ma}).\n` +
+    'Thường là do phần mềm diệt virus hoặc proxy công ty chen vào giữa.\n' +
+    'Chạy lại kèm --use-system-ca để Node dùng kho chứng chỉ của Windows:\n\n' +
+    '  node --use-system-ca <tên script> ...\n\n' +
+    'Hoặc đặt một lần cho cả phiên PowerShell:\n\n' +
+    '  $env:NODE_OPTIONS="--use-system-ca"';
+}
+
+/**
  * Gọi mạng có thử lại. Lần chạy trước đứt giữa chừng ngay ở bước đọc cơ sở
  * dữ liệu — Node trên Windows chết hẳn với "UV_HANDLE_CLOSING" khi fetch
  * bị cắt ngang. Thử lại 1/2/4/8 giây như các script khác trong dự án.
@@ -275,7 +298,11 @@ async function goi(url, tuyChon = {}, lan = 4) {
       // 5xx là lỗi phía máy chủ, thử lại có ích; 4xx thì thử lại cũng thế.
       if (res.ok || res.status < 500) return res;
       loiCuoi = new Error(`${res.status} ${await res.text()}`);
-    } catch (e) { loiCuoi = e; }
+    } catch (e) {
+      const giaiThich = chungChiHong(e);
+      if (giaiThich) { console.error(`\n${giaiThich}\n`); throw e; }
+      loiCuoi = e;
+    }
     if (i < lan) process.stdout.write(`\r  mạng trục trặc, thử lại lần ${i + 1}…   `);
   }
   throw loiCuoi;
