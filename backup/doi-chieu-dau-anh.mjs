@@ -295,15 +295,19 @@ async function goi(url, tuyChon = {}, lan = 4) {
     if (i) await new Promise((r) => setTimeout(r, 1000 * 2 ** (i - 1)));
     try {
       const res = await fetch(url, tuyChon);
-      // 5xx là lỗi phía máy chủ, thử lại có ích; 4xx thì thử lại cũng thế.
-      if (res.ok || res.status < 500) return res;
-      loiCuoi = new Error(`${res.status} ${await res.text()}`);
+      // 5xx là lỗi phía máy chủ, thử lại có ích. 4xx thì thường vô ích, trừ
+      // 401 kèm mã PGRST303 "JWT issued at future" — khoá vẫn đúng, chỉ là
+      // đồng hồ lúc cấp khoá lệch so với máy chủ đang kiểm; chờ một lát là hết.
+      if (res.ok || (res.status < 500 && res.status !== 401)) return res;
+      const chu = res.status === 401 ? await res.clone().text() : await res.text();
+      if (res.status === 401 && !chu.includes('PGRST303')) return res; // khoá sai thật
+      loiCuoi = new Error(`${res.status} ${chu}`);
     } catch (e) {
       const giaiThich = chungChiHong(e);
       if (giaiThich) { console.error(`\n${giaiThich}\n`); throw e; }
       loiCuoi = e;
     }
-    if (i < lan) process.stdout.write(`\r  mạng trục trặc, thử lại lần ${i + 1}…   `);
+    if (i < lan) process.stdout.write(`\r  máy chủ chưa nhận, thử lại lần ${i + 1}…   `);
   }
   throw loiCuoi;
 }
