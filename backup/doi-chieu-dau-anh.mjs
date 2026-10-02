@@ -26,6 +26,30 @@
  *   2. Trong từng nhúm, so vân tay ảnh để ghép 1 ảnh app ↔ 1 ảnh gốc, chọn
  *      cặp gần nhau nhất trước, mỗi ảnh chỉ dùng một lần.
  *
+ * BỎ HẲN BƯỚC ĐỌC DẤU: --khong-ocr
+ *
+ * Đo trên trụ 16 cho thấy khoảng cách vân tay của các cặp đúng là GIỮA 0,
+ * phân vị 90 là 2 — vân tay nhận dạng chính xác hơn hẳn mức cần thiết. Nếu
+ * vậy thì cái dấu chỉ còn làm mỗi việc thu phạm vi, mà SỐ TRỤ đã thu phạm vi
+ * gần như đủ rồi: số trụ của ảnh app lấy từ cơ sở dữ liệu, của ảnh gốc lấy
+ * từ tên thư mục, không cần đọc chữ trên ảnh.
+ *
+ * --khong-ocr bỏ hẳn bước đọc dấu và so vân tay trong phạm vi cả trụ. Đọc
+ * dấu mất chừng một giây mỗi ảnh, tính vân tay mất chừng một phần mười giây
+ * — nhanh hơn khoảng mười lần.
+ *
+ * Đổi lại, phạm vi so rộng ra vài trăm tấm thay vì vài tấm, nên nếu trong
+ * trụ có hai tấm chụp gần giống hệt nhau thì dễ chọn nhầm hơn. Script vẫn
+ * giữ nguyên hai lớp chặn: ngưỡng loại tự tính theo phân bố, và cảnh báo khi
+ * tấm nhì gần tương đương tấm nhất.
+ *
+ * CÁCH KIỂM TRƯỚC KHI TIN: trụ 16 đã chạy bằng cách đọc dấu và ra 41 phát
+ * hiện / 113 tên. Chạy lại trụ 16 với --khong-ocr, ra đúng con số đó thì
+ * dùng được cho 21 trụ còn lại; lệch nhiều thì quay lại cách đọc dấu.
+ *
+ * (Chế độ này ghi vào cache các dòng không có dấu. Sau này muốn quay lại
+ * cách đọc dấu thì thêm --thu-lai-loi để đọc dấu cho những ảnh đó.)
+ *
  * Bước 2 không cần ngưỡng tuyệt đối — chỉ cần xếp hạng xem trong 3 tấm thì
  * tấm nào giống nhất. Đó là lý do nó chạy được trong khi so cả kho thì không.
  *
@@ -62,7 +86,10 @@
  * Trong PowerShell gõ TỪNG DÒNG một, Enter sau mỗi dòng — dán cả khối thì
  * PowerShell nối chúng lại thành một lệnh rồi báo lỗi.
  *
- *   npm install jimp tesseract.js "@tesseract.js-data/eng"
+ *   npm install jimp tesseract.js "@tesseract.js-data/eng" sharp
+ *
+ * sharp là tuỳ chọn nhưng nên cài: nó giải mã ảnh nhanh hơn jimp hàng chục
+ * lần, mà phần tính vân tay chiếm gần hết thời gian chạy.
  *
  * Nháy quanh "@tesseract..." là bắt buộc: dấu @ đầu đối số bị PowerShell hiểu
  * là toán tử splatting. Đường dẫn có dấu cách hay dấu ngoặc thì bọc nháy cả
@@ -85,6 +112,9 @@
  * việc khác và không nóng tới mức tự khởi động lại. Máy khoẻ thì tăng
  * --luong, nhưng tăng rồi mà máy treo hay tự tắt thì hạ lại.
  *
+ * NHANH NHẤT là --khong-ocr: bỏ hẳn bước đọc dấu, nhanh hơn chừng mười lần.
+ * Đọc phần "BỎ HẲN BƯỚC ĐỌC DẤU" ở trên trước khi dùng.
+ *
  * Làm từng đợt cũng được: --tru=16,17,18 chỉ đọc mấy trụ đó rồi dừng. Chạy
  * vài trụ, nghỉ cho máy nguội, rồi chạy tiếp vài trụ khác.
  *
@@ -101,6 +131,8 @@
  *   --doc-lai        bỏ cache, đọc lại từ đầu
  *   --thu-lai-loi    chỉ đọc lại các ảnh lần trước không ra dấu, giữ nguyên
  *                    các ảnh đã đọc được — dùng sau khi nâng cách đọc
+ *   --khong-ocr      BỎ HẲN BƯỚC ĐỌC DẤU, chỉ so vân tay trong phạm vi một
+ *                    trụ. Nhanh hơn chừng mười lần. Xem phần dưới.
  */
 
 import fs from 'node:fs';
@@ -117,7 +149,7 @@ const DUOI_ANH = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
 const doiSo = process.argv.slice(2);
 const lay = (ten, mac) => doiSo.find((a) => a.startsWith(`--${ten}=`))?.slice(ten.length + 3) ?? mac;
 const thuMucGoc = lay('thu-muc', '');
-const LUONG = Math.max(1, Number(lay('luong', '1')));
+const LUONG = Math.max(1, Number(lay('luong', '2')));
 const CAO = Math.max(600, Number(lay('cao', String(CAO_MAC_DINH))));
 const chiTru = new Set(lay('tru', '').split(',').map((t) => t.trim().padStart(2, '0')).filter((t) => t !== '00'));
 const nhanh = doiSo.includes('--nhanh');
@@ -125,6 +157,7 @@ const apDung = doiSo.includes('--ap-dung');
 const chiDoc = doiSo.includes('--chi-doc');
 const docLai = doiSo.includes('--doc-lai');
 const thuLaiLoi = doiSo.includes('--thu-lai-loi');
+const khongOcr = doiSo.includes('--khong-ocr');
 
 // Hạ mức ưu tiên để máy còn dùng được việc khác trong lúc đọc dấu.
 try { os.setPriority(os.constants.priority.PRIORITY_BELOW_NORMAL); } catch { /* hệ nào không cho thì thôi */ }
@@ -139,9 +172,27 @@ try {
   ({ Jimp } = await import('jimp'));
   ({ createWorker, PSM } = await import('tesseract.js'));
 } catch {
-  console.error('Thiếu thư viện. Chạy:  npm install jimp tesseract.js @tesseract.js-data/eng');
+  console.error('Thiếu thư viện. Chạy:  npm install jimp tesseract.js "@tesseract.js-data/eng"');
   process.exit(1);
 }
+
+/**
+ * Thư viện giải mã ảnh để tính vân tay.
+ *
+ * jimp giải mã trọn vẹn tấm ảnh rồi mới thu nhỏ: đo trên ảnh gốc 1600x1200
+ * của dự án mất 335ms một tấm, tức gần một tiếng cho cả kho. sharp giải mã
+ * thẳng ở cỡ nhỏ nên mất 13ms — nhanh hơn 14 đến 31 lần tuỳ ảnh.
+ *
+ * Hai thư viện thu nhỏ ảnh theo cách khác nhau nên VÂN TAY CHÚNG TÍNH RA
+ * LỆCH NHAU 4-5 bit. Dưới ngưỡng loại 9 bit nên trộn vào không đổ vỡ ngay,
+ * nhưng ăn gần hết phần dư an toàn. Vì vậy cache ghi kèm tên thư viện, và
+ * vân tay tính bằng thư viện khác sẽ bị bỏ đi để tính lại.
+ *
+ * sharp là tuỳ chọn: không cài được thì vẫn chạy bằng jimp, chỉ chậm hơn.
+ */
+let sharp = null;
+try { ({ default: sharp } = await import('sharp')); } catch { /* chạy bằng jimp */ }
+const MAY = sharp ? 'sharp' : 'jimp';
 const LANG_PATH = duongDanNgonNgu();
 
 /**
@@ -150,14 +201,19 @@ const LANG_PATH = duongDanNgonNgu();
  * lại, nên bản gốc và bản app cùng một tấm vẫn cho vân tay gần nhau.
  */
 async function vanTay(tep) {
-  const img = await Jimp.read(tep);
-  img.greyscale().resize({ w: 9, h: 8 });
+  let xam; // 72 điểm xám, 9 cột x 8 hàng
+  if (sharp) {
+    xam = await sharp(tep, { failOn: 'none' }).greyscale().resize(9, 8, { fit: 'fill' }).raw().toBuffer();
+  } else {
+    const img = await Jimp.read(tep);
+    img.greyscale().resize({ w: 9, h: 8 });
+    xam = new Uint8Array(72);
+    for (let i = 0; i < 72; i++) xam[i] = img.bitmap.data[i * 4];
+  }
   let bits = 0n;
   for (let y = 0; y < 8; y++) {
     for (let x = 0; x < 8; x++) {
-      const a = img.bitmap.data[(y * 9 + x) * 4];
-      const b = img.bitmap.data[(y * 9 + x + 1) * 4];
-      bits = (bits << 1n) | (a > b ? 1n : 0n);
+      bits = (bits << 1n) | (xam[y * 9 + x] > xam[y * 9 + x + 1] ? 1n : 0n);
     }
   }
   return bits;
@@ -304,19 +360,32 @@ if (!docLai && fs.existsSync(CACHE)) {
   const dong = fs.readFileSync(CACHE, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/).slice(1);
   for (const d of dong) {
     if (!d.trim()) continue;
-    const [tep, ngay, gio, tru, muc, lech, tho, vt] = tachDong(d);
+    const [tep, ngay, gio, tru, muc, lech, tho, vt, may] = tachDong(d);
     if (thuLaiLoi && !ngay) continue; // bỏ ra để đọc lại
-    cache.set(tep, { ngay, gio, tru, muc, lech, tho, vt: vt ? BigInt(vt) : null });
+    // Vân tay của thư viện khác thì bỏ, tính lại — xem ghi chú ở MAY.
+    cache.set(tep, { ngay, gio, tru, muc, lech, tho, may: MAY,
+                     vt: vt && may === MAY ? BigInt(vt) : null });
   }
   console.log(`Đã có sẵn dấu của ${cache.size} ảnh trong ${CACHE}`);
   if (thuLaiLoi) console.log('  (các ảnh lần trước không ra dấu sẽ được đọc lại)');
 }
 
 const dongCache = (t, k) =>
-  [t, k.ngay, k.gio, k.tru, k.muc, k.lech, k.tho, k.vt === null || k.vt === undefined ? '' : k.vt.toString()]
-    .map(oCsv).join(',') + '\n';
+  [t, k.ngay, k.gio, k.tru, k.muc, k.lech, k.tho,
+   k.vt === null || k.vt === undefined ? '' : k.vt.toString(),
+   k.vt ? (k.may ?? MAY) : ''].map(oCsv).join(',') + '\n';
 
-const canDoc = [...mucApp.map((m) => m.tep), ...tepGoc.map((g) => g.tep)].filter((t) => !cache.has(t));
+const canDoc = khongOcr
+  ? []
+  : [...mucApp.map((m) => m.tep), ...tepGoc.map((g) => g.tep)].filter((t) => !cache.has(t));
+if (khongOcr) {
+  // Dựng sẵn ô trống cho ảnh chưa có trong cache, để lượt tính vân tay bên
+  // dưới nhận ra là phải tính cho chúng.
+  for (const t of [...mucApp.map((m) => m.tep), ...tepGoc.map((g) => g.tep)]) {
+    if (!cache.has(t)) cache.set(t, { ngay: '', gio: '', tru: '', muc: '', lech: '', tho: '', vt: null, may: MAY });
+  }
+  console.log('\nBỏ bước đọc dấu (--khong-ocr) — chỉ so vân tay trong phạm vi từng trụ.');
+}
 if (canDoc.length) {
   console.log(`\nĐang đọc dấu trên ${canDoc.length} ảnh bằng ${LUONG} luồng — việc này lâu, cứ để chạy.`);
   // Đọc lại các ảnh hỏng thì phải ghi lại cả file, nếu không các dòng hỏng
@@ -324,7 +393,7 @@ if (canDoc.length) {
   const noiThem = cache.size > 0 && !thuLaiLoi;
   const ghi = fs.createWriteStream(CACHE, { flags: noiThem ? 'a' : 'w' });
   if (!noiThem) {
-    ghi.write('\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho,vt\n');
+    ghi.write('\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho,vt,may\n');
     for (const [t, k] of cache) ghi.write(dongCache(t, k));
   }
 
@@ -342,7 +411,7 @@ if (canDoc.length) {
       let kq;
       try { kq = await docDau(Jimp, worker, tep, { cao: CAO, nhanh }); }
       catch { kq = { ngay: '', gio: '', tru: '', muc: '', lech: '', tho: '' }; }
-      try { kq.vt = await vanTay(tep); } catch { kq.vt = null; }
+      try { kq.vt = await vanTay(tep); kq.may = MAY; } catch { kq.vt = null; }
       cache.set(tep, kq);
       ghi.write(dongCache(tep, kq));
       if (kq.ngay) docDuoc++;
@@ -365,24 +434,27 @@ const coDau = (ds, lay) => ds.filter((x) => dauCua(lay(x)).ngay).length;
 const canVanTay = [...mucApp.map((m) => m.tep), ...tepGoc.map((g) => g.tep)]
   .filter((t) => cache.has(t) && cache.get(t).vt == null);
 if (canVanTay.length) {
-  console.log(`\nĐang tính vân tay cho ${canVanTay.length} ảnh (không cần OCR, nhanh hơn nhiều)…`);
+  console.log(`\nĐang tính vân tay cho ${canVanTay.length} ảnh bằng ${MAY}` +
+              `${sharp ? '' : ' — cài thêm sharp (npm install sharp) thì nhanh hơn chục lần'}…`);
   let n = 0;
   for (const t of canVanTay) {
-    try { cache.get(t).vt = await vanTay(t); } catch { /* ảnh hỏng thì bỏ qua */ }
+    try { const k = cache.get(t); k.vt = await vanTay(t); k.may = MAY; } catch { /* ảnh hỏng thì bỏ qua */ }
     if (++n % 50 === 0) process.stdout.write(`\r  ${n}/${canVanTay.length}   `);
   }
   process.stdout.write(`\r  ${canVanTay.length}/${canVanTay.length}\n`);
   const tam = `${CACHE}.tam`;
-  fs.writeFileSync(tam, '\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho,vt\n' +
+  fs.writeFileSync(tam, '\uFEFF' + 'tep,ngay,gio,tru,muc,lech,tho,vt,may\n' +
     [...cache].map(([t, k]) => dongCache(t, k)).join(''));
   fs.renameSync(tam, CACHE); // thay một phát, mất điện giữa chừng không hỏng cache
 }
 
 const demLech = (ds, lay) => ds.filter((x) => dauCua(lay(x)).lech).length;
-console.log(`\nĐọc được dấu — ảnh app: ${coDau(mucApp, (m) => m.tep)}/${mucApp.length}` +
-            ` · ảnh của bạn: ${coDau(tepGoc, (g) => g.tep)}/${tepGoc.length}`);
-const tongLech = demLech(mucApp, (m) => m.tep) + demLech(tepGoc, (g) => g.tep);
-if (tongLech) console.log(`  ${tongLech} ảnh hai lượt đọc lệch nhau nên bỏ qua — xem cột lech trong ${CACHE}`);
+if (!khongOcr) {
+  console.log(`\nĐọc được dấu — ảnh app: ${coDau(mucApp, (m) => m.tep)}/${mucApp.length}` +
+              ` · ảnh của bạn: ${coDau(tepGoc, (g) => g.tep)}/${tepGoc.length}`);
+  const tongLech = demLech(mucApp, (m) => m.tep) + demLech(tepGoc, (g) => g.tep);
+  if (tongLech) console.log(`  ${tongLech} ảnh hai lượt đọc lệch nhau nên bỏ qua — xem cột lech trong ${CACHE}`);
+}
 
 if (chiDoc) {
   console.log(`\nĐã ghi ${CACHE}. Bỏ --chi-doc để đối chiếu.`);
@@ -413,21 +485,30 @@ const khoangCach = (a, b) => {
   return n;
 };
 
-// Gom cả hai bên theo phút.
+// Gom cả hai bên: theo phút nếu có đọc dấu, theo trụ nếu --khong-ocr.
 const appTheoKhoa = new Map(), gocTheoKhoa = new Map();
+const gocChuaRoTru = []; // thư mục không ghi số trụ — so với mọi trụ
 for (const m of mucApp) {
   const d = dauCua(m.tep);
-  if (!d.ngay) continue;
-  const k = khoa(d.tru || soTru(m.tru), d.ngay, d.gio);
+  let k;
+  if (khongOcr) k = soTru(m.tru);
+  else { if (!d.ngay) continue; k = khoa(d.tru || soTru(m.tru), d.ngay, d.gio); }
+  if (!k) continue;
   if (!appTheoKhoa.has(k)) appTheoKhoa.set(k, []);
   appTheoKhoa.get(k).push(m);
 }
 for (const g of tepGoc) {
   const d = dauCua(g.tep);
-  if (!d.ngay) continue;
-  const tru = d.tru || soTru(g.tuongDoi);
-  if (!tru) continue;
-  const k = khoa(tru, d.ngay, d.gio);
+  let k;
+  if (khongOcr) {
+    k = soTru(g.tuongDoi);
+    if (!k) { gocChuaRoTru.push(g); continue; }
+  } else {
+    if (!d.ngay) continue;
+    const tru = d.tru || soTru(g.tuongDoi);
+    if (!tru) continue;
+    k = khoa(tru, d.ngay, d.gio);
+  }
   if (!gocTheoKhoa.has(k)) gocTheoKhoa.set(k, []);
   gocTheoKhoa.get(k).push(g);
 }
@@ -438,7 +519,7 @@ const vt = (tep) => cache.get(tep)?.vt ?? null;
 const ganCho = new Map();
 const khoangCachDaChon = [];
 for (const [k, apps] of appTheoKhoa) {
-  const gocs = (gocTheoKhoa.get(k) ?? []).filter((g) => vt(g.tep) !== null);
+  const gocs = [...(gocTheoKhoa.get(k) ?? []), ...gocChuaRoTru].filter((g) => vt(g.tep) !== null);
   if (gocs.length === 0) continue;
   const cap = [];
   for (const a of apps) {
@@ -503,7 +584,7 @@ for (const [finding_id, anhs] of theoPh) {
   };
 
   const lyDo = [], ghiChu = [];
-  const chuaDoc = doc.filter((x) => !x.d.ngay).length;
+  const chuaDoc = khongOcr ? 0 : doc.filter((x) => !x.d.ngay).length;
   const chuaTai = base.so_anh_db - anhs.length;
   const thieu = anhs.length - ganDuoc.length;
   if (chuaTai > 0) {
@@ -537,7 +618,7 @@ if (canKt.length) {
   console.log('\n  Vì sao phải kiểm tra:');
   console.log(`    ${demLyDo('thieu-anh-goc')} · có ảnh không tìm được bản gốc cùng phút`);
   console.log(`    ${demLyDo('cach-biet-mong')} · có ảnh mà tấm gốc nhì gần tương đương tấm nhất`);
-  console.log(`    ${demLyDo('khong-doc-duoc-dau')} · có ảnh không đọc được dấu`);
+  if (!khongOcr) console.log(`    ${demLyDo('khong-doc-duoc-dau')} · có ảnh không đọc được dấu`);
   console.log(`    ${demLyDo('chua-tai-anh')} · có ảnh chưa tải về máy`);
 }
 

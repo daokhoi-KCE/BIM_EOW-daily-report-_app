@@ -45,8 +45,15 @@ export const DAI_DAY = { x: 0, y: 0.55, w: 1.0, h: 0.45 };
 // sau hai lượt đầu; ảnh app bị nén xuống 1000px chất lượng 0.62 nên chữ
 // nhoè, phải thử thêm mới có hai lượt đồng ý.
 export const NGUONG_SANG = [225, 200, 245, 210, 180, 235];
-/** Cỡ ngang tối đa của dải sau khi phóng. 1600 đọc đúng mà nhẹ hơn 1800. */
-export const CAO_MAC_DINH = 1600;
+/**
+ * Cỡ ngang tối đa của dải sau khi phóng.
+ *
+ * Đo trên ảnh thật của dự án: 1400 vẫn đọc đúng ngày, giờ và số trụ ở cả hai
+ * kiểu dấu, mà nhanh hơn 1600 chừng 1,6 lần. Ở 1400 có mất phần đọc tên vị
+ * trí trên dấu, nhưng việc ghép đã chuyển sang so vân tay nên tên vị trí
+ * không còn tham gia quyết định nữa.
+ */
+export const CAO_MAC_DINH = 1400;
 
 const THANG = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 
