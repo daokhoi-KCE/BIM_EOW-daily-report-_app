@@ -331,9 +331,10 @@ if (!fs.existsSync(THU_MUC_APP)) {
 console.log('Đang đọc danh mục ảnh từ cơ sở dữ liệu…');
 const [baoCao, phatHien, anhPh] = await Promise.all([
   docHet('reports', 'id,report_date,planned_turbines,actual_turbines'),
-  docHet('findings', 'id,report_id,area,description,severity,sort_order'),
+  docHet('findings', 'id,report_id,area,description,severity,sort_order,photo_ref'),
   docHet('finding_photos', 'id,finding_id,storage_path,created_at'),
 ]);
+const photoRefCu = new Map(phatHien.map((f) => [f.id, f.photo_ref ?? '']));
 const phTheoBaoCao = new Map();
 for (const f of phatHien) {
   if (!phTheoBaoCao.has(f.report_id)) phTheoBaoCao.set(f.report_id, []);
@@ -658,13 +659,51 @@ if (canKt.length) {
 // lần bấm máy khác nhau — lúc đó việc xếp hạng chỉ là chọn tấm đỡ khác
 // nhất, và tên ảnh ghi ra không đáng tin.
 if (khoangCachDaChon.length) {
-  const sx = [...khoangCachDaChon].sort((a, b) => a - b);
-  const vi = (q) => sx[Math.min(sx.length - 1, Math.floor(q * sx.length))];
-  console.log(`\n  Khoảng cách vân tay cặp đã chọn: giữa ${vi(0.5)}, phân vị 90 ${vi(0.9)}, lớn nhất ${sx[sx.length - 1]} (0 = cùng một tấm, 64 = khác hẳn)`);
+  const thongKe = (mang) => {
+    const sx = [...mang].sort((a, b) => a - b);
+    const vi = (q) => sx[Math.min(sx.length - 1, Math.floor(q * sx.length))];
+    return { giua: vi(0.5), p90: vi(0.9), max: sx[sx.length - 1] };
+  };
+  // Hai dòng, vì chúng nói hai chuyện khác nhau. Dòng "trước khi loại" gồm cả
+  // các ảnh app không có bản gốc, bị buộc ghép với tấm đỡ khác nhất — nên
+  // phân vị 90 ở đó cao là bình thường, không nói gì về chất lượng ghép. Dòng
+  // "giữ lại" mới là các cặp thật sự được dùng, và là dòng cần nhìn.
+  const truoc = thongKe(khoangCachDaChon);
+  console.log(`\n  Khoảng cách vân tay, trước khi loại : giữa ${truoc.giua}, phân vị 90 ${truoc.p90}, lớn nhất ${truoc.max}`);
+  const giuLai = khoangCachDaChon.filter((d) => d <= cat);
+  if (giuLai.length) {
+    const sau = thongKe(giuLai);
+    console.log(`  Khoảng cách vân tay, các cặp GIỮ LẠI: giữa ${sau.giua}, phân vị 90 ${sau.p90}, lớn nhất ${sau.max}  (0 = cùng một tấm, 64 = khác hẳn)`);
+  }
   if (soLoai) console.log(`  Đã loại ${soLoai} cặp lệch quá ${cat} bit — ảnh đó không có bản gốc trong thư mục.`);
-  if (vi(0.5) > 12) {
+  if (truoc.giua > 12) {
     console.log('  ⚠ Khoảng cách lớn — hai bên có thể không phải cùng một tấm ảnh.');
     console.log('    Đừng áp dụng, gửi dòng này cho tôi xem lại.');
+  }
+}
+
+// Theo từng trụ: gộp cả đợt thì che mất trụ nào hỏng. Trụ có tỷ lệ "không
+// tìm thấy" cao bất thường thường là thư mục ảnh gốc của trụ đó đặt tên khác
+// hoặc còn nằm ở thư mục chưa phân loại — việc cần sửa nằm ở dữ liệu, không
+// ở thuật toán.
+{
+  const theoTru = new Map();
+  for (const r of ketQua) {
+    const k = String(r.tru).trim() || '?';
+    if (!theoTru.has(k)) theoTru.set(k, { n: 0, chac: 0, kt: 0, khong: 0, chuaDoc: 0 });
+    const o = theoTru.get(k);
+    o.n++;
+    if (r.trang_thai === 'chac chan') o.chac++;
+    else if (r.trang_thai === 'can kiem tra') o.kt++;
+    else if (r.trang_thai === 'khong tim thay') o.khong++;
+    else o.chuaDoc++;
+  }
+  if (theoTru.size > 1) {
+    console.log('\n  Theo từng trụ:');
+    console.log('    trụ         phát hiện  chắc chắn  cần kiểm tra  không thấy  không đọc dấu');
+    for (const [k, o] of [...theoTru].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))) {
+      console.log(`    ${k.padEnd(10)}  ${String(o.n).padStart(8)}  ${String(o.chac).padStart(9)}  ${String(o.kt).padStart(12)}  ${String(o.khong).padStart(10)}  ${String(o.chuaDoc).padStart(13)}`);
+    }
   }
 }
 
@@ -712,6 +751,17 @@ if (!apDung) {
 // CSV cho bạn xem bằng mắt rồi quyết định.
 const seGhi = ketQua.filter((r) => r.trang_thai === 'chac chan' && r.ten_anh_goc);
 console.log(`\nSẽ điền Photo ref cho ${seGhi.length} phát hiện…`);
+
+// Lưu giá trị CŨ trước khi ghi đè. Lệnh này thay hẳn ô photo_ref, mà ô đó có
+// thể đang chứa chữ do người nhập tay — ghi nhầm mà không có bản sao thì
+// không lùi lại được.
+const saoLuu = ghiCsv(`photo-ref-cu-${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '').slice(2)}.csv`,
+  '\uFEFF' + ['finding_id,tru,photo_ref_cu,photo_ref_moi',
+    ...seGhi.map((r) => [r.finding_id, r.tru, photoRefCu.get(r.finding_id) ?? '',
+      [...new Set(r.ten_anh_goc.split(' | '))].join(', ')].map(oCsv).join(','))].join('\n'));
+const seDe = seGhi.filter((r) => (photoRefCu.get(r.finding_id) ?? '').trim()).length;
+console.log(`  Đã lưu giá trị cũ vào ${saoLuu}` +
+            `${seDe ? ` — ${seDe} phát hiện đang có chữ sẽ bị thay` : ' — ô đang trống hết'}.`);
 let xongGhi = 0, hongGhi = 0;
 for (const r of seGhi) {
   const ten = [...new Set(r.ten_anh_goc.split(' | '))].join(', ');
