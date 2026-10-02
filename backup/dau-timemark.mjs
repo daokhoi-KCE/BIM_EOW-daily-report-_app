@@ -94,14 +94,33 @@ export function locSang(img, muc) {
 
 /** "Fri, 11 Sep 2026 08:29" → { ngay: '2026-09-11', gio: '08:29' }. */
 export function tachNgayGio(txt) {
-  const re = /(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(\d{4})\s*(\d{1,2})\s*[:;.\s]\s*(\d{2})/gi;
-  for (const m of String(txt).matchAll(re)) {
-    const d = +m[1], th = THANG[m[2].toLowerCase()], y = +m[3], h = +m[4], p = +m[5];
-    if (d < 1 || d > 31 || y < 2020 || y > 2100 || h > 23 || p > 59) continue;
+  const chuan = (y, th, d, h, p) => {
+    if (d < 1 || d > 31 || th < 1 || th > 12 || y < 2020 || y > 2100 || h > 23 || p > 59) return null;
     return {
       ngay: `${y}-${String(th).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
       gio: `${String(h).padStart(2, '0')}:${String(p).padStart(2, '0')}`,
     };
+  };
+
+  // Kiểu chữ: "Fri, 11 Sep 2026 09:35" (dấu dạng bảng, dấu gọn của trụ 16).
+  const reChu = /(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(\d{4})\s*(\d{1,2})\s*[:;.\s]\s*(\d{2})/gi;
+  for (const m of String(txt).matchAll(reChu)) {
+    const kq = chuan(+m[3], THANG[m[2].toLowerCase()], +m[1], +m[4], +m[5]);
+    if (kq) return kq;
+  }
+
+  // Kiểu số: "Tues, 18/08/2026 10:12" — mẫu dấu của trụ 01 và 08, máy cài
+  // định dạng ngày/tháng/năm. Không nhận kiểu này thì OCR đọc đúng từng chữ
+  // mà vẫn ra "không đọc được dấu". Ngưỡng sáng cao đôi khi đọc gạch chéo
+  // thành dấu phẩy ("18,08,2026"), nên nhận cả , . - làm dấu ngăn.
+  // Mặc định ngày trước tháng; chỉ khi số thứ nhất không thể là ngày-trong-
+  // tháng hợp lệ ở vị trí tháng (>12) thì mới hiểu là tháng/ngày.
+  const reSo = /(\d{1,2})\s*[\/,.\-]\s*(\d{1,2})\s*[\/,.\-]\s*(\d{4})\s+(\d{1,2})\s*[:;.]\s*(\d{2})/g;
+  for (const m of String(txt).matchAll(reSo)) {
+    let d = +m[1], th = +m[2];
+    if (th > 12 && d <= 12) [d, th] = [th, d];
+    const kq = chuan(+m[3], th, d, +m[4], +m[5]);
+    if (kq) return kq;
   }
   return null;
 }
