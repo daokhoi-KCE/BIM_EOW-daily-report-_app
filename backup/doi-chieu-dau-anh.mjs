@@ -131,6 +131,9 @@
  *   --doc-lai        bỏ cache, đọc lại từ đầu
  *   --thu-lai-loi    chỉ đọc lại các ảnh lần trước không ra dấu, giữ nguyên
  *                    các ảnh đã đọc được — dùng sau khi nâng cách đọc
+ *   --ghi-de         ghi cả vào ô Photo ref đang có chữ do NGƯỜI nhập. Mặc
+ *                    định không: chỉ ghi vào ô trống hoặc ô do chính script
+ *                    ghi lần trước. Xem ghi chú ở phần "Ghi photo_ref".
  *   --khong-ocr      BỎ HẲN BƯỚC ĐỌC DẤU, chỉ so vân tay trong phạm vi một
  *                    trụ. Nhanh hơn chừng mười lần. Xem phần dưới.
  */
@@ -157,6 +160,7 @@ const apDung = doiSo.includes('--ap-dung');
 const chiDoc = doiSo.includes('--chi-doc');
 const docLai = doiSo.includes('--doc-lai');
 const thuLaiLoi = doiSo.includes('--thu-lai-loi');
+const ghiDe = doiSo.includes('--ghi-de');
 const khongOcr = doiSo.includes('--khong-ocr');
 
 // Hạ mức ưu tiên để máy còn dùng được việc khác trong lúc đọc dấu.
@@ -778,8 +782,25 @@ if (!apDung) {
 // ── Ghi photo_ref ───────────────────────────────────────────────────────
 // Ghi các phát hiện "chắc chắn" và "một phần" (tấm thiếu bản gốc ghi "—").
 // Loại "cần kiểm tra" để lại trong CSV cho bạn xem bằng mắt rồi quyết định.
-const seGhi = ketQua.filter((r) => (r.trang_thai === 'chac chan' || r.trang_thai === 'mot phan') && r.ten_anh_goc);
+// Không ghi đè chữ do người nhập. Lượt ghi trụ 1–8 đã thay 83 ô đang có chữ
+// mà không hỏi; phải khôi phục bằng khoi-phuc-photo-ref.mjs. Chữ do chính
+// script ghi thì nhận ra được: mọi mục trong đó đều là đường dẫn có thật trong
+// thư mục ảnh gốc, hoặc là "—". Chữ khác thế coi là của người, để nguyên.
+const tapDuongDan = new Set(tepGoc.map((g) => g.tuongDoi));
+const laChuCuaScript = (v) => {
+  const muc = v.split(',').map((x) => x.trim()).filter(Boolean);
+  return muc.length > 0 && muc.every((x) => x === CHUA_CO_GOC || tapDuongDan.has(x));
+};
+const duDieuKien = ketQua.filter((r) => (r.trang_thai === 'chac chan' || r.trang_thai === 'mot phan') && r.ten_anh_goc);
+const cuaNguoi = duDieuKien.filter((r) => {
+  const cu = (photoRefCu.get(r.finding_id) ?? '').trim();
+  return cu && !laChuCuaScript(cu);
+});
+const seGhi = ghiDe ? duDieuKien : duDieuKien.filter((r) => !cuaNguoi.includes(r));
 console.log(`\nSẽ điền Photo ref cho ${seGhi.length} phát hiện…`);
+if (cuaNguoi.length && !ghiDe) {
+  console.log(`  Giữ nguyên ${cuaNguoi.length} ô đang có chữ do người nhập — thêm --ghi-de nếu thật sự muốn thay.`);
+}
 
 // Lưu giá trị CŨ trước khi ghi đè. Lệnh này thay hẳn ô photo_ref, mà ô đó có
 // thể đang chứa chữ do người nhập tay — ghi nhầm mà không có bản sao thì
@@ -788,9 +809,11 @@ const saoLuu = ghiCsv(`photo-ref-cu-${new Date().toISOString().slice(0, 19).repl
   '\uFEFF' + ['finding_id,tru,photo_ref_cu,photo_ref_moi',
     ...seGhi.map((r) => [r.finding_id, r.tru, photoRefCu.get(r.finding_id) ?? '',
       r.ten_theo_vi_tri].map(oCsv).join(','))].join('\n'));
-const seDe = seGhi.filter((r) => (photoRefCu.get(r.finding_id) ?? '').trim()).length;
-console.log(`  Đã lưu giá trị cũ vào ${saoLuu}` +
-            `${seDe ? ` — ${seDe} phát hiện đang có chữ sẽ bị thay` : ' — ô đang trống hết'}.`);
+const capNhat = seGhi.filter((r) => laChuCuaScript((photoRefCu.get(r.finding_id) ?? '').trim())).length;
+const thayChuNguoi = seGhi.filter((r) => cuaNguoi.includes(r)).length;
+console.log(`  Đã lưu giá trị cũ vào ${saoLuu}.` +
+            `${capNhat ? ` ${capNhat} ô do script ghi lần trước sẽ được cập nhật.` : ''}` +
+            `${thayChuNguoi ? ` ${thayChuNguoi} ô CÓ CHỮ DO NGƯỜI NHẬP sẽ bị thay (--ghi-de).` : ''}`);
 let xongGhi = 0, hongGhi = 0;
 for (const r of seGhi) {
   // Không gộp trùng: các "—" giữ chỗ phải còn nguyên từng cái một.
