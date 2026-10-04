@@ -441,7 +441,7 @@ if (canDoc.length) {
       if (k >= canDoc.length) return;
       const tep = canDoc[k];
       let kq;
-      try { kq = await docDau(Jimp, worker, tep, { cao: CAO, nhanh }); }
+      try { kq = await docDau(Jimp, worker, tep, { cao: CAO, nhanh, sharp }); }
       catch { kq = { ngay: '', gio: '', tru: '', muc: '', lech: '', tho: '' }; }
       try { kq.vt = await vanTay(tep); kq.may = MAY; } catch { kq.vt = null; }
       cache.set(tep, kq);

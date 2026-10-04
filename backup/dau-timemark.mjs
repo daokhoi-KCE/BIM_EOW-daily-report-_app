@@ -158,24 +158,108 @@ const RONG = { ngay: '', gio: '', tru: '', muc: '', tho: '', lech: '' };
  * Trả về { ngay, gio, tru, muc, tho, lech }. Không đọc được thì ngay/gio
  * rỗng; hai lượt lệch nhau thì lech ghi lại các giá trị đã đọc ra.
  */
-export async function docDau(Jimp, worker, tep, { cao = CAO_MAC_DINH, nhanh = false } = {}) {
+/**
+ * Chuẩn bị ảnh cho OCR bằng jimp — cách cũ, dùng khi máy không có sharp.
+ * Trả về một hàm: cho dải, có kéo giãn hay không, ngưỡng sáng → PNG đen trắng.
+ */
+async function nguonJimp(Jimp, tep) {
   const goc = await Jimp.read(tep);
   const { width: W, height: H } = goc.bitmap;
-
-  for (const dai of [DAI_DAU, DAI_DAY]) {
+  return async (dai, cao) => {
     const base = goc.clone().crop({
       x: Math.round(dai.x * W), y: Math.round(dai.y * H),
       w: Math.max(1, Math.round(dai.w * W)), h: Math.max(1, Math.round(dai.h * H)),
     });
     base.resize({ w: Math.min(cao, base.bitmap.width * 3) });
+    let gian = null;
+    return (manh, muc) => {
+      if (manh && !gian) gian = base.clone().normalize();
+      return locSang((manh ? gian : base).clone(), muc).getBuffer('image/png');
+    };
+  };
+}
+
+/**
+ * Cùng việc đó bằng sharp.
+ *
+ * Đo trên ảnh gốc 1600x1200 của dự án: mỗi ảnh tốn 808ms thì chỉ 312ms là
+ * OCR thật — còn lại là jimp giải mã JPEG (249ms), cắt và phóng dải (104ms)
+ * và nén PNG (127ms), toàn bằng JavaScript thuần. sharp làm ba việc đó bằng
+ * mã máy. Phần lọc sáng và kéo giãn vẫn viết tay trên mảng điểm ảnh, đúng
+ * công thức của jimp, để ảnh đưa vào OCR giống bản cũ:
+ *   - xoay theo EXIF trước (jimp cũng xoay);
+ *   - kéo giãn: từng kênh màu co giãn tuyến tính từ [nhỏ nhất, lớn nhất] về
+ *     [0, 255], như normalize() của jimp;
+ *   - lọc sáng: độ sáng 0.299R + 0.587G + 0.114B, như locSang.
+ */
+/**
+ * Bỏ khối pHYs (độ phân giải) khỏi PNG.
+ *
+ * sharp ghi khối này với một giá trị tesseract đọc ra 25 dpi, nên mỗi lượt
+ * OCR in một dòng "Invalid resolution 25 dpi" — hàng nghìn dòng mỗi lượt
+ * chạy. PNG của jimp không có khối này và tesseract tự ước lượng; bỏ đi để
+ * hai đường xử lý như nhau.
+ */
+function boDoPhanGiai(png) {
+  const phan = [png.subarray(0, 8)];
+  for (let i = 8; i < png.length;) {
+    const dai = png.readUInt32BE(i);
+    const het = i + 12 + dai;
+    if (png.toString('latin1', i + 4, i + 8) !== 'pHYs') phan.push(png.subarray(i, het));
+    i = het;
+  }
+  return Buffer.concat(phan);
+}
+
+async function nguonSharp(sharp, tep) {
+  const anh = sharp(tep, { failOn: 'none' }).rotate();
+  const { data: goc, info } = await anh.removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const W = info.width, H = info.height;
+  return async (dai, cao) => {
+    const w = Math.max(1, Math.round(dai.w * W)), h = Math.max(1, Math.round(dai.h * H));
+    const { data: rgb, info: i2 } = await sharp(goc, { raw: { width: W, height: H, channels: 3 } })
+      .extract({ left: Math.round(dai.x * W), top: Math.round(dai.y * H), width: Math.min(w, W - Math.round(dai.x * W)), height: Math.min(h, H - Math.round(dai.y * H)) })
+      .resize({ width: Math.min(cao, w * 3), kernel: 'linear' })
+      .raw().toBuffer({ resolveWithObject: true });
+    const n = i2.width * i2.height;
+    const sang = (src) => {
+      const out = new Float32Array(n);
+      for (let k = 0, j = 0; k < n; k++, j += 3) out[k] = src[j] * 0.299 + src[j + 1] * 0.587 + src[j + 2] * 0.114;
+      return out;
+    };
+    const gianRa = () => {
+      const g = Buffer.from(rgb);
+      for (let c = 0; c < 3; c++) {
+        let lo = 255, hi = 0;
+        for (let j = c; j < g.length; j += 3) { if (g[j] < lo) lo = g[j]; if (g[j] > hi) hi = g[j]; }
+        if (hi > lo) for (let j = c; j < g.length; j += 3) g[j] = Math.round(((g[j] - lo) * 255) / (hi - lo));
+      }
+      return g;
+    };
+    const doSang = { false: sang(rgb), true: null };
+    return (manh, muc) => {
+      if (manh && !doSang.true) doSang.true = sang(gianRa());
+      const L = doSang[manh];
+      const bw = Buffer.alloc(n);
+      for (let k = 0; k < n; k++) bw[k] = L[k] >= muc ? 0 : 255;
+      return sharp(bw, { raw: { width: i2.width, height: i2.height, channels: 1 } })
+        .png({ compressionLevel: 1 }).toBuffer().then(boDoPhanGiai);
+    };
+  };
+}
+
+export async function docDau(Jimp, worker, tep, { cao = CAO_MAC_DINH, nhanh = false, sharp = null } = {}) {
+  const nguon = sharp ? await nguonSharp(sharp, tep) : await nguonJimp(Jimp, tep);
+
+  for (const dai of [DAI_DAU, DAI_DAY]) {
+    const lamAnh = await nguon(dai, cao);
 
     const luot = [];
     let soLuot = 0, chuNhieuNhat = 0;
     // Vòng 1 ảnh nguyên trạng, vòng 2 kéo giãn dải sáng cho ảnh nhoè.
     for (const manh of [false, true]) {
-      const nen = manh ? base.clone().normalize() : base;
       for (const muc of NGUONG_SANG) {
-        const { data } = await worker.recognize(await locSang(nen.clone(), muc).getBuffer('image/png'));
+        const { data } = await worker.recognize(await lamAnh(manh, muc));
         const txt = data.text.replace(/\s+/g, ' ').trim();
         chuNhieuNhat = Math.max(chuNhieuNhat, (txt.match(/[A-Za-z0-9]/g) ?? []).length);
         // Hai lượt đầu không lượt nào ra nổi 12 ký tự thì dải này không có

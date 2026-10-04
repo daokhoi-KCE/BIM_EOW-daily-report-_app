@@ -31,6 +31,9 @@
 import fs from 'node:fs';
 import { createWorker, PSM } from 'tesseract.js';
 import { Jimp } from 'jimp';
+// sharp chuẩn bị ảnh nhanh hơn jimp nhiều; không có thì vẫn chạy bằng jimp.
+let sharp = null;
+try { ({ default: sharp } = await import('sharp')); } catch { /* chạy bằng jimp */ }
 import { docDau, duongDanNgonNgu, CAO_MAC_DINH } from './dau-timemark.mjs';
 
 const doiSo = process.argv.slice(2);
@@ -59,7 +62,7 @@ await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
 
 let hong = 0;
 for (const { tep, mong } of dsAnh) {
-  const d = await docDau(Jimp, worker, tep, { cao: CAO, nhanh });
+  const d = await docDau(Jimp, worker, tep, { cao: CAO, nhanh, sharp });
   const ten = tep.split(/[\\/]/).pop();
   if (!d.ngay) {
     console.log(d.lech
