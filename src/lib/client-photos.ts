@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/compress-image";
-import { EVIDENCE_BUCKET, SIGNED_URL_TTL_SECONDS } from "@/lib/storage";
+import { EVIDENCE_BUCKET, PHOTO_CACHE_CONTROL, SIGNED_URL_TTL_SECONDS } from "@/lib/storage";
 import { newId } from "@/lib/utils";
 import { ensureFindingRow } from "@/lib/actions/reports";
 import type { Photo } from "@/lib/types";
@@ -13,7 +13,7 @@ async function uploadAndSign(path: string, file: File): Promise<Photo> {
 
   const { error: uploadErr } = await supabase.storage
     .from(EVIDENCE_BUCKET)
-    .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+    .upload(path, blob, { contentType: "image/jpeg", upsert: false, cacheControl: PHOTO_CACHE_CONTROL });
   if (uploadErr) throw new Error(uploadErr.message);
 
   const { data: signedData } = await supabase.storage

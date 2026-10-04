@@ -92,6 +92,22 @@ export async function createReportAction(): Promise<void> {
  */
 const SIGN_BATCH_SIZE = 100;
 
+/**
+ * Link đã ký, giữ lại để lần mở sau trả đúng link cũ.
+ *
+ * Trình duyệt chỉ dùng lại ảnh đã tải khi đường link y hệt; ký lại thì chữ
+ * ký trong link đổi và ảnh bị tải lại từ Supabase, tính vào băng thông. Giữ
+ * trong bộ nhớ máy chủ nên khởi động lại thì mất, lúc đó chỉ đơn giản là ký
+ * lại — không sai, chỉ tốn hơn.
+ *
+ * Dùng chung giữa các người dùng là an toàn vì quyền xem ảnh như nhau: mọi
+ * người đã đăng nhập đều đọc được cả kho (policy "authenticated read
+ * evidence-photos"), và mọi lối gọi tới đây đều đã qua requireUser.
+ */
+const linkDaKy = new Map<string, { url: string; hetHan: number }>();
+/** Chỉ dùng lại link còn sống ít nhất chừng này, để trang vừa mở còn xem được lâu. */
+const CON_SONG_TOI_THIEU_MS = 2 * 60 * 60 * 1000;
+
 async function signPhotos(
   supabase: Awaited<ReturnType<typeof createClient>>,
   paths: string[],
@@ -99,8 +115,16 @@ async function signPhotos(
   const map = new Map<string, string>();
   if (paths.length === 0) return map;
 
-  for (let i = 0; i < paths.length; i += SIGN_BATCH_SIZE) {
-    const batch = paths.slice(i, i + SIGN_BATCH_SIZE);
+  const now = Date.now();
+  const canKy: string[] = [];
+  for (const p of paths) {
+    const cu = linkDaKy.get(p);
+    if (cu && cu.hetHan - now > CON_SONG_TOI_THIEU_MS) map.set(p, cu.url);
+    else canKy.push(p);
+  }
+
+  for (let i = 0; i < canKy.length; i += SIGN_BATCH_SIZE) {
+    const batch = canKy.slice(i, i + SIGN_BATCH_SIZE);
     const { data, error } = await supabase.storage
       .from(EVIDENCE_BUCKET)
       .createSignedUrls(batch, SIGNED_URL_TTL_SECONDS);
@@ -114,8 +138,12 @@ async function signPhotos(
       );
       continue;
     }
+    const hetHan = now + SIGNED_URL_TTL_SECONDS * 1000;
     for (const d of data) {
-      if (d.signedUrl && d.path) map.set(d.path, d.signedUrl);
+      if (d.signedUrl && d.path) {
+        map.set(d.path, d.signedUrl);
+        linkDaKy.set(d.path, { url: d.signedUrl, hetHan });
+      }
       else if (d.path) console.error(`[signPhotos] Không ký được: ${d.path} — ${d.error ?? "?"}`);
     }
   }
@@ -468,11 +496,7 @@ async function removeFindingPhotosStorage(supabase: ServerSupabase, findingIds: 
 // Ký URL cho 1 ảnh vừa được người khác thêm (đồng bộ realtime).
 export async function signPhotoPath(path: string): Promise<string> {
   const { supabase } = await requireUser();
-  const { data, error } = await supabase.storage
-    .from(EVIDENCE_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (error || !data?.signedUrl) return "";
-  return data.signedUrl;
+  return (await signPhotos(supabase, [path])).get(path) ?? "";
 }
 
 export async function deleteReport(id: string): Promise<void> {
