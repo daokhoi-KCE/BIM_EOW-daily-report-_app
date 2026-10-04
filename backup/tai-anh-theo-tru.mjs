@@ -87,6 +87,21 @@ function chungChiHong(e) {
 }
 
 /**
+ * Supabase khoá dự án (HTTP 402) khi gói hiện tại hết hạn mức — ví dụ
+ * exceed_egress_quota. Thử lại vô ích, và ném lỗi ra thì Node trên Windows
+ * còn sập kèm UV_HANDLE_CLOSING. Báo rõ rồi dừng hẳn.
+ */
+function dungNeuBiKhoa(status, chu) {
+  if (status !== 402) return;
+  const ly = (chu.match(/violations?:\s*([a-z_, ]+)/i) ?? [])[1]?.trim() ?? 'không rõ';
+  console.error('\n\nSupabase đã KHOÁ dự án này (HTTP 402): ' + ly + '.\n' +
+    'Gói Free hết hạn mức của tháng. Cả app báo cáo cũng bị chặn, không riêng script.\n' +
+    'Mở lại: nâng gói ở Supabase Dashboard → Organization → Billing,\n' +
+    'hoặc chờ sang chu kỳ tháng mới. Script dừng ở đây, chưa ghi gì.\n');
+  process.exit(2);
+}
+
+/**
  * Gọi mạng có thử lại, 1/2/4/8 giây.
  *
  * Trước đây một lần gọi hỏng là cả lượt tải chết, và trên Windows thì Node
@@ -103,6 +118,7 @@ async function goi(url, tuyChon = {}, lan = 4) {
     if (i) await new Promise((r) => setTimeout(r, 1000 * 2 ** (i - 1)));
     try {
       const res = await fetch(url, tuyChon);
+      if (res.status === 402) dungNeuBiKhoa(402, await res.clone().text());
       if (res.ok || (res.status < 500 && res.status !== 401)) return res;
       const chu = await res.clone().text();
       if (res.status === 401 && !chu.includes('PGRST303')) return res; // khoá sai thật
