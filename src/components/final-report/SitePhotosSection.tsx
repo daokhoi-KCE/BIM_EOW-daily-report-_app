@@ -34,9 +34,13 @@ export const SITE_PHOTOS_ANCHOR = "section-site-photos";
 export default function SitePhotosSection({
   reports,
   scope = [],
+  evidenceInVolume = true,
 }: {
   reports: ReportDraft[];
   scope?: string[];
+  /** Bản in này có mục 5.1-5.19 không. Bản tổng hợp thì không — ảnh chứng
+   *  cứ nằm ở bản final của từng trụ, và câu dẫn phải nói đúng chỗ đó. */
+  evidenceInVolume?: boolean;
 }) {
   const danhDau = new Set(scope.map((t) => t.trim().toUpperCase()));
   const rows = reports
@@ -76,8 +80,11 @@ export default function SitePhotosSection({
         <p className="prose-doc text-[11px] leading-relaxed text-justify text-slate-800 mt-2">
           Photographs recorded on site that are not attached to a particular finding — general
           condition of the site, access routes and work in progress — for all{" "}
-          {rows.length} turbines of the campaign. Evidence for each individual finding is reproduced
-          in sections 5.1 to 5.19 above. The full resolution originals — {totalKho.toLocaleString("en")}{" "}
+          {rows.length} turbines of the campaign.{" "}
+          {evidenceInVolume
+            ? "Evidence for each individual finding is reproduced in sections 5.1 to 5.19 above."
+            : "Evidence for each individual finding is reproduced in the individual volume issued for each turbine."}{" "}
+          The full resolution originals — {totalKho.toLocaleString("en")}{" "}
           photographs in all — are shared in the project photograph library, one folder per
           turbine:
         </p>
@@ -90,8 +97,11 @@ export default function SitePhotosSection({
         </p>
         <p className="prose-doc text-[9.5px] italic text-slate-500 leading-relaxed text-justify mt-1.5">
           Ảnh chụp chung tại hiện trường của cả {rows.length} trụ, không gắn với phát hiện cụ thể:
-          hiện trạng công trường, lối tiếp cận, quá trình thi công. Ảnh chứng cứ của từng phát hiện
-          đã in đầy đủ ở mục 5.1-5.19. Ảnh gốc độ phân giải đầy đủ — {totalKho.toLocaleString("en")}{" "}
+          hiện trạng công trường, lối tiếp cận, quá trình thi công.{" "}
+          {evidenceInVolume
+            ? "Ảnh chứng cứ của từng phát hiện đã in đầy đủ ở mục 5.1-5.19."
+            : "Ảnh chứng cứ của từng phát hiện nằm trong bản final riêng của mỗi trụ."}{" "}
+          Ảnh gốc độ phân giải đầy đủ — {totalKho.toLocaleString("en")}{" "}
           tấm — lưu ở địa chỉ trên, mỗi trụ một thư mục con.
         </p>
         <p className="prose-doc text-[9px] italic text-slate-400 leading-snug text-justify mt-1">
