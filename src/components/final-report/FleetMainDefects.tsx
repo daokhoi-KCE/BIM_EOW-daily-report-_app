@@ -40,7 +40,7 @@ export default function FleetMainDefects({
 
   return (
     <>
-      <table className="w-full border-collapse avoid-break">
+      <table className="w-full border-collapse">
         <thead>
           <tr style={{ background: "rgba(31,53,82,0.06)" }}>
             <ThCell en="Turbine" vi="Tuabin" compact />
@@ -93,7 +93,7 @@ export default function FleetMainDefects({
           <span className="not-italic">/ No M4-M5 defect recorded.</span>
         </p>
       ) : (
-        <table className="w-full border-collapse avoid-break">
+        <table className="w-full border-collapse">
           <thead>
             <tr style={{ background: "rgba(31,53,82,0.06)" }}>
               <ThCell en="Turbine" vi="Tuabin" compact />

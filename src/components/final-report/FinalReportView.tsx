@@ -409,7 +409,7 @@ export default function FinalReportView({
       <div id="s3-information">
         <SectionTitle en="3. Information" vi="Thông tin" compact />
       </div>
-      <h4 className="text-[11px] font-bold text-slate-700 mb-1.5">
+      <h4 className="keep-next text-[11px] font-bold text-slate-700 mb-1.5">
         3.1 Site information <span className="italic font-normal text-slate-400">/ Thông tin công trường</span>
       </h4>
       <div className="grid grid-cols-4 gap-3.5 avoid-break mb-4">
@@ -423,7 +423,7 @@ export default function FinalReportView({
         <InfoRow en="Issued" vi="Ngày phát hành" value={generatedAt} compact />
         <InfoRow en="Report scope" vi="Phạm vi bản này" value={`${scopeLabel} — ${reportDates}`} compact />
       </div>
-      <h4 className="text-[11px] font-bold text-slate-700 mb-1.5">
+      <h4 className="keep-next text-[11px] font-bold text-slate-700 mb-1.5">
         3.2 Turbine information <span className="italic font-normal text-slate-400">/ Thông tin tuabin</span>
       </h4>
       <div className="grid grid-cols-4 gap-3.5 avoid-break">
@@ -446,7 +446,7 @@ export default function FinalReportView({
           compact
         />
       </div>
-      <h4 className="text-[11px] font-bold text-slate-700 mb-2">
+      <h4 className="keep-next text-[11px] font-bold text-slate-700 mb-2">
         4.1 Summary <span className="italic font-normal text-slate-400">/ Tóm tắt — số liệu của cả dự án</span>
       </h4>
       <div className="grid grid-cols-4 gap-2.5 avoid-break">
@@ -484,10 +484,10 @@ export default function FinalReportView({
         </p>
       )}
 
-      <h4 className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5">
+      <h4 className="keep-next text-[11px] font-bold text-slate-700 mt-5 mb-1.5">
         Severity scale <span className="italic font-normal text-slate-400">/ Thang mức độ</span>
       </h4>
-      <div className="avoid-break">
+      <div>
         {SEVERITY_SCALE.map((s) => (
           <div key={s.title} className="avoid-break flex items-stretch gap-3 mb-1.5">
             {/* Dải màu bên trái, tra nhanh như bảng chú giải của tài liệu mẫu. */}
@@ -505,7 +505,7 @@ export default function FinalReportView({
         ))}
       </div>
 
-      <h4 className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5">
+      <h4 className="keep-next text-[11px] font-bold text-slate-700 mt-5 mb-1.5">
         Findings by section <span className="italic font-normal text-slate-400">/ Phân bố theo hạng mục</span>
       </h4>
       <table className="w-full border-collapse text-[10px] avoid-break">
@@ -609,13 +609,13 @@ export default function FinalReportView({
 
       {siteMulti && (
         <>
-          <h4 id="main-defects" className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+          <h4 id="main-defects" className="keep-next text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
             4.2 Main defects by turbine{" "}
             <span className="italic font-normal text-slate-400">/ Lỗi chính theo từng trụ</span>
           </h4>
           <FleetMainDefects turbines={site.turbines} highlight={scopeTurbines} />
 
-          <h4 id="defect-matrix" className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+          <h4 id="defect-matrix" className="keep-next text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
             4.3 Defect matrix{" "}
             <span className="italic font-normal text-slate-400">/ Ma trận lỗi — OK/NG theo trụ</span>
           </h4>
@@ -623,7 +623,7 @@ export default function FinalReportView({
 
           {INCLUDE_FULL_FINDINGS_MATRIX && (
             <>
-              <h4 id="findings-matrix" className="text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
+              <h4 id="findings-matrix" className="keep-next text-[11px] font-bold text-slate-700 mt-5 mb-1.5 scroll-mt-16">
                 4.4 Findings matrix{" "}
                 <span className="italic font-normal text-slate-400">
                   / Ma trận phát hiện — toàn bộ các trụ

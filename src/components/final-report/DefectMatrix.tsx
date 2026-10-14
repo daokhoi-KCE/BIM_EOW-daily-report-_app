@@ -119,7 +119,7 @@ export default function DefectMatrix({
   const totalNgCells = perTurbineNg.reduce((s, n) => s + n, 0);
 
   return (
-    <div className="avoid-break">
+    <div>
       <div className="overflow-x-auto print:overflow-visible">
         <table className="w-full border-collapse defect-matrix">
           <thead>

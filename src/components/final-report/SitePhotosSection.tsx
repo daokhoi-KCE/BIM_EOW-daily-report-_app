@@ -62,7 +62,7 @@ export default function SitePhotosSection({
 
   return (
     <section id={SITE_PHOTOS_ANCHOR} className="mt-5 scroll-mt-16">
-      <div className="section-open">
+      <div>
         <div className="section-head rounded-md px-3 py-1.5" style={{ background: NAVY }}>
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <h3 className="text-[14.5px] font-extrabold uppercase tracking-wide leading-tight text-white">

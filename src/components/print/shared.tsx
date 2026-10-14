@@ -71,7 +71,7 @@ export function delayColor(d: number | null) {
 export function SectionTitle({ en, vi, compact = false }: { en: string; vi: string; compact?: boolean }) {
   return (
     <div
-      className={`avoid-break rounded-md ${compact ? "mt-5 mb-2.5 px-3 py-2" : "mt-6 mb-3 px-3.5 py-2.5"}`}
+      className={`avoid-break keep-next rounded-md ${compact ? "mt-5 mb-2.5 px-3 py-2" : "mt-6 mb-3 px-3.5 py-2.5"}`}
       style={{ background: NAVY }}
     >
       <h2

@@ -91,6 +91,14 @@ body {
     page-break-after: avoid;
   }
 
+  /* Tiêu đề của một bảng tổng hợp phải đi cùng dòng đầu tiên của bảng. Đặt
+     trực tiếp lên bảng thì bảng vẫn được tách giữa các dòng; nếu để tiêu đề
+     cuối trang còn bảng sang trang sau thì cả nửa trang trống. */
+  .keep-next {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
   /* WebKit bỏ qua break-inside:avoid trên con của grid/flex, nên khi in
      chuyển lưới ảnh sang inline-block: vẫn ba ảnh một hàng, nhưng mỗi khung
      ảnh tự xuống trang khi không đủ chỗ. */
