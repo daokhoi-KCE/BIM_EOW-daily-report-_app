@@ -31,9 +31,9 @@ export default function TurbineSection({
   const pctOk = t.latestPct !== null && t.latestPct >= 100;
 
   return (
-    <section id={turbineAnchorId(t.turbine)} className="avoid-break mt-7 scroll-mt-16">
+    <section id={turbineAnchorId(t.turbine)} className="mt-7 scroll-mt-16">
       <div
-        className="flex items-center justify-between gap-3 rounded-md px-3.5 py-2.5"
+        className="keep-next flex items-center justify-between gap-3 rounded-md px-3.5 py-2.5"
         style={{ background: NAVY }}
       >
         <div>
@@ -76,10 +76,10 @@ export default function TurbineSection({
         ))}
       </div>
 
-      <h4 className="text-[11px] font-bold text-slate-700 mt-4 mb-1.5">
+      <h4 className="keep-next text-[11px] font-bold text-slate-700 mt-4 mb-1.5">
         Tiến độ theo ngày <span className="italic font-normal text-slate-400">/ Progress by day</span>
       </h4>
-      <table className="w-full border-collapse avoid-break">
+      <table className="w-full border-collapse">
         <thead>
           <tr style={{ background: "rgba(31,53,82,0.06)" }}>
             <ThCell en="Date" vi="Ngày" compact />
@@ -112,7 +112,7 @@ export default function TurbineSection({
 
       {t.findings.length > 0 && (
         <>
-          <h4 className="text-[11px] font-bold text-slate-700 mt-4 mb-1.5">
+          <h4 className="keep-next text-[11px] font-bold text-slate-700 mt-4 mb-1.5">
             Phát hiện <span className="italic font-normal text-slate-400">/ Findings</span>
             {compact && (
               <span className="font-normal text-slate-400">
@@ -124,7 +124,7 @@ export default function TurbineSection({
           </h4>
 
           {compact ? (
-            <table className="w-full border-collapse avoid-break">
+            <table className="w-full border-collapse">
               <thead>
                 <tr style={{ background: "rgba(31,53,82,0.06)" }}>
                   <ThCell en="Date" vi="Ngày" compact />
