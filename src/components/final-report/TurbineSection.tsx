@@ -5,7 +5,6 @@ import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 import { sortFindingsByArea } from "@/lib/finding-order";
 import { displayArea } from "@/lib/area-label";
-import { groupPhotoNames, isMissingPhotoRef, parsePhotoRef } from "@/lib/photo-ref";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
@@ -132,7 +131,6 @@ export default function TurbineSection({
                   <ThCell en="Area" vi="Khu vực" compact />
                   <ThCell en="Finding" vi="Phát hiện" compact />
                   <ThCell en="Sev." vi="Mức" compact />
-                  <ThCell en="Photo" vi="Tên ảnh" compact />
                 </tr>
               </thead>
               <tbody>
@@ -147,39 +145,6 @@ export default function TurbineSection({
                       <td className={td}>{f.desc || "—"}</td>
                       <td className={`${td} font-bold whitespace-nowrap ${tone.text}`}>
                         M{f.severity || "?"}
-                      </td>
-                      {/* Tên file ảnh trong thư mục gốc. Chưa đối chiếu được
-                          thì in số lượng, để ô không bị trống trơn. Một phát
-                          hiện hay nhận cả chùm ảnh chụp liên tiếp, nên các
-                          tên đánh số liền nhau gộp lại thành một dải. */}
-                      <td className={`${td} text-[10px]`}>
-                        {(() => {
-                          // Chỗ giữ vị trí cho tấm không có bản gốc chỉ có
-                          // nghĩa khi đặt cạnh từng tấm ảnh; ở bảng này thì bỏ.
-                          const names = parsePhotoRef(f.photo).names.filter((n) => !isMissingPhotoRef(n));
-                          const soAnh = f.photos?.length ?? 0;
-                          if (names.length === 0)
-                            return <span className="tabular-nums text-slate-400">{soAnh} ảnh</span>;
-                          return (
-                            <>
-                              {groupPhotoNames(names).map((g, k) => (
-                                <span key={k} className="block font-mono break-all leading-tight">
-                                  {g.label}
-                                  {g.count > 1 && (
-                                    <span className="not-italic text-slate-500"> ({g.count} ảnh)</span>
-                                  )}
-                                </span>
-                              ))}
-                              {/* Số tên khác số ảnh nghĩa là còn ảnh chưa đối
-                                  chiếu ra — nói thẳng thay vì để người đọc tự đếm. */}
-                              {names.length !== soAnh && (
-                                <span className="block text-[9px] italic text-amber-700 tabular-nums">
-                                  {names.length}/{soAnh} ảnh đã đối chiếu
-                                </span>
-                              )}
-                            </>
-                          );
-                        })()}
                       </td>
                     </tr>
                   );
