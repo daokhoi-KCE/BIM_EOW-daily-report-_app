@@ -56,9 +56,14 @@ export const LIGHT_BY_TURBINE: Readonly<Record<number, LightRecord>> = {
   22: R("V", "V", "Tower light: only one row of lights working."),
 };
 
+/** Mức độ gán cho đèn báo bay không hoạt động: M3, cùng mức với các phát hiện đèn báo bay trước đó. */
+export const LIGHT_SEVERITY = "3";
+
 /** Một dòng phát hiện sinh ra từ đèn không hoạt động. */
 export interface LightFinding {
   which: "top" | "tower";
+  /** Mức độ do người lập báo cáo quy định (M3); bảng của đội vận hành không ghi mức. */
+  severity: string;
   date: string;
   area: string;
   desc: string;
@@ -76,6 +81,7 @@ export function lightFindingsFor(turbineLabel: string): LightFinding[] {
   if (rec.top === "ng")
     out.push({
       which: "top",
+      severity: LIGHT_SEVERITY,
       date: LIGHT_INSPECTION.date,
       area: "Nacelle top — Aviation light",
       desc: "Aviation obstruction light (nacelle top) is not working — need to be replaced.",
@@ -83,6 +89,7 @@ export function lightFindingsFor(turbineLabel: string): LightFinding[] {
   if (rec.tower === "ng")
     out.push({
       which: "tower",
+      severity: LIGHT_SEVERITY,
       date: LIGHT_INSPECTION.date,
       area: "Tower body — Tower light",
       desc: "Tower body light is not working — need to be replaced.",

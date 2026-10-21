@@ -214,17 +214,18 @@ export default function TurbineSection({
                 })}
                 {/* Đèn không hoạt động trong đợt kiểm tra 19/10: đúng các ô NG của hai
                     hàng đèn báo bay ở ma trận 4.3. Đặt cuối bảng vì là đợt kiểm tra sau
-                    đợt EOW; mức độ không có trong bảng của đội vận hành nên để trống,
-                    không tự gán. */}
+                    đợt EOW. Mức độ M3 do người lập báo cáo quy định (bảng của đội vận
+                    hành không ghi mức). */}
                 {lightFindings.map((lf) => {
                   const section = SECTION_BY_ID.get(classifyFinding(lf.area, lf.desc));
+                  const tone = TIER[severityTier(lf.severity)];
                   return (
                     <tr key={lf.which} className="avoid-break">
                       <td className={`${td} pl-2 whitespace-nowrap`}>{lf.date}</td>
                       <td className={`${td} whitespace-nowrap`}>{section?.no ?? "—"}</td>
                       <td className={td}>{lf.area}</td>
                       <td className={td}>{lf.desc}</td>
-                      <td className={`${td} whitespace-nowrap text-slate-400`}>—</td>
+                      <td className={`${td} font-bold whitespace-nowrap ${tone.text}`}>M{lf.severity}</td>
                     </tr>
                   );
                 })}
