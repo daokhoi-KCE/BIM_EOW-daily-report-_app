@@ -5,7 +5,7 @@ import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 import { sortFindingsByArea } from "@/lib/finding-order";
 import { displayArea } from "@/lib/area-label";
-import { LIGHT_INSPECTION, lightsFor } from "@/lib/aviation-lights";
+import { LIGHT_INSPECTION, lightFindingsFor, lightsFor } from "@/lib/aviation-lights";
 import { formatDateDMY } from "@/lib/utils";
 
 export function turbineAnchorId(turbine: string) {
@@ -31,6 +31,7 @@ export default function TurbineSection({
 }) {
   const pctOk = t.latestPct !== null && t.latestPct >= 100;
   const light = lightsFor(t.turbine);
+  const lightFindings = lightFindingsFor(t.turbine);
 
   return (
     <section id={turbineAnchorId(t.turbine)} className="mt-7 scroll-mt-16">
@@ -164,7 +165,7 @@ export default function TurbineSection({
         </tbody>
       </table>
 
-      {t.findings.length > 0 && (
+      {(t.findings.length > 0 || lightFindings.length > 0) && (
         <>
           <h4 className="keep-next text-[11px] font-bold text-slate-700 mt-4 mb-1.5">
             Phát hiện <span className="italic font-normal text-slate-400">/ Findings</span>
@@ -173,6 +174,13 @@ export default function TurbineSection({
                 {" "}
                 — ảnh và diễn giải đầy đủ ở mục 5
                 <span className="italic"> / full detail and photos in section 5</span>
+              </span>
+            )}
+            {lightFindings.length > 0 && (
+              <span className="font-normal text-slate-400">
+                {" "}
+                · {lightFindings.length} dòng từ kiểm tra đèn báo bay {formatDateDMY(LIGHT_INSPECTION.date)}
+                <span className="italic"> / {lightFindings.length} from the aviation light inspection</span>
               </span>
             )}
           </h4>
@@ -201,6 +209,22 @@ export default function TurbineSection({
                       <td className={`${td} font-bold whitespace-nowrap ${tone.text}`}>
                         M{f.severity || "?"}
                       </td>
+                    </tr>
+                  );
+                })}
+                {/* Đèn không hoạt động trong đợt kiểm tra 19/10: đúng các ô NG của hai
+                    hàng đèn báo bay ở ma trận 4.3. Đặt cuối bảng vì là đợt kiểm tra sau
+                    đợt EOW; mức độ không có trong bảng của đội vận hành nên để trống,
+                    không tự gán. */}
+                {lightFindings.map((lf) => {
+                  const section = SECTION_BY_ID.get(classifyFinding(lf.area, lf.desc));
+                  return (
+                    <tr key={lf.which} className="avoid-break">
+                      <td className={`${td} pl-2 whitespace-nowrap`}>{lf.date}</td>
+                      <td className={`${td} whitespace-nowrap`}>{section?.no ?? "—"}</td>
+                      <td className={td}>{lf.area}</td>
+                      <td className={td}>{lf.desc}</td>
+                      <td className={`${td} whitespace-nowrap text-slate-400`}>—</td>
                     </tr>
                   );
                 })}

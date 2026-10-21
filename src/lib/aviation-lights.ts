@@ -56,6 +56,40 @@ export const LIGHT_BY_TURBINE: Readonly<Record<number, LightRecord>> = {
   22: R("V", "V", "Tower light: only one row of lights working."),
 };
 
+/** Một dòng phát hiện sinh ra từ đèn không hoạt động. */
+export interface LightFinding {
+  which: "top" | "tower";
+  date: string;
+  area: string;
+  desc: string;
+}
+
+/**
+ * Các dòng phát hiện cho đèn không hoạt động của một trụ — đúng những ô NG của
+ * hai hàng đèn báo bay trong ma trận 4.3, không thêm không bớt. Đèn hoạt động
+ * (kể cả có ghi chú như "chỉ sáng một hàng") không sinh dòng nào.
+ */
+export function lightFindingsFor(turbineLabel: string): LightFinding[] {
+  const rec = lightsFor(turbineLabel);
+  if (!rec) return [];
+  const out: LightFinding[] = [];
+  if (rec.top === "ng")
+    out.push({
+      which: "top",
+      date: LIGHT_INSPECTION.date,
+      area: "Nacelle top — Aviation light",
+      desc: "Aviation obstruction light (nacelle top) is not working — need to be replaced.",
+    });
+  if (rec.tower === "ng")
+    out.push({
+      which: "tower",
+      date: LIGHT_INSPECTION.date,
+      area: "Tower body — Tower light",
+      desc: "Tower body light is not working — need to be replaced.",
+    });
+  return out;
+}
+
 /** Lấy kết quả theo nhãn trụ ("WTG 01", "WTG01", "Wtg 1"…). Không có số thì undefined. */
 export function lightsFor(turbineLabel: string): LightRecord | undefined {
   const m = turbineLabel.match(/(\d+)\s*$/);
