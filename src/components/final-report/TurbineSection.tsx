@@ -5,6 +5,8 @@ import FindingCard from "@/components/final-report/FindingCard";
 import { SECTION_BY_ID, classifyFinding } from "@/lib/report-sections";
 import { sortFindingsByArea } from "@/lib/finding-order";
 import { displayArea } from "@/lib/area-label";
+import { LIGHT_INSPECTION, lightsFor } from "@/lib/aviation-lights";
+import { formatDateDMY } from "@/lib/utils";
 
 export function turbineAnchorId(turbine: string) {
   return `turbine-${turbine.trim().replace(/\s+/g, "-")}`;
@@ -28,6 +30,7 @@ export default function TurbineSection({
   photoSize?: { cols: number; height: string };
 }) {
   const pctOk = t.latestPct !== null && t.latestPct >= 100;
+  const light = lightsFor(t.turbine);
 
   return (
     <section id={turbineAnchorId(t.turbine)} className="mt-7 scroll-mt-16">
@@ -74,6 +77,58 @@ export default function TurbineSection({
           </div>
         ))}
       </div>
+
+      {light && (
+        <div className="mt-2.5 avoid-break">
+          <div className="text-[9px] text-slate-500 mb-1">
+            <span className="font-bold uppercase tracking-wide" style={{ color: NAVY }}>
+              Aviation obstruction light
+            </span>{" "}
+            <span className="italic">/ Kiểm tra đèn báo bay</span> — {LIGHT_INSPECTION.by},{" "}
+            {formatDateDMY(LIGHT_INSPECTION.date)}, from {LIGHT_INSPECTION.time}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                ["Top light (nacelle)", "Đèn báo bay đỉnh nacelle", light.top, "top light"],
+                ["Tower light (tower body)", "Đèn thân tower", light.tower, "tower light"],
+              ] as const
+            ).map(([en, vi, state, key]) => {
+              const ng = state === "ng";
+              // Ghi chú gốc bắt đầu bằng tên đèn mà nó nói tới.
+              const note = light.remark?.toLowerCase().startsWith(key) ? light.remark : "";
+              return (
+                <div
+                  key={en}
+                  className="rounded-md p-2"
+                  style={{
+                    background: ng ? "rgba(185,28,28,0.06)" : "rgba(4,120,87,0.06)",
+                    border: `1px solid ${ng ? "rgba(185,28,28,0.35)" : "rgba(4,120,87,0.3)"}`,
+                  }}
+                >
+                  <div className="text-[8.5px] font-bold uppercase tracking-wide" style={{ color: NAVY }}>
+                    {en} <span className="italic font-normal text-slate-400 normal-case">/ {vi}</span>
+                  </div>
+                  <div
+                    className="text-[11px] font-bold mt-0.5"
+                    style={{ color: ng ? "#B91C1C" : "#047857" }}
+                  >
+                    {ng ? "Not working" : "Working"}{" "}
+                    <span className="italic font-normal">/ {ng ? "Không hoạt động" : "Hoạt động"}</span>
+                  </div>
+                  {ng && (
+                    <div className="text-[10px] font-bold mt-0.5" style={{ color: "#B91C1C" }}>
+                      Need to be replaced{" "}
+                      <span className="italic font-normal">/ Cần thay thế</span>
+                    </div>
+                  )}
+                  {note && <div className="text-[9.5px] text-slate-700 mt-0.5">{note}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <h4 className="keep-next text-[11px] font-bold text-slate-700 mt-4 mb-1.5">
         Tiến độ theo ngày <span className="italic font-normal text-slate-400">/ Progress by day</span>

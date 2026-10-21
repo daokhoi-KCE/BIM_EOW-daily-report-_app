@@ -6,6 +6,8 @@ import {
   OTHER_CATEGORY_ID,
   classifyDefect,
 } from "@/lib/defect-categories";
+import { LIGHT_INSPECTION, lightsFor } from "@/lib/aviation-lights";
+import { formatDateDMY } from "@/lib/utils";
 
 /** Rút gọn nhãn trụ cho đầu cột: "WTG 22" → "22", giữ nguyên nếu không có số. */
 function shortLabel(turbine: string): string {
@@ -55,7 +57,11 @@ interface Cell {
   findings: DatedFinding[];
   tier: Tier;
   maxSeverity: number;
+  /** Ô lấy từ nguồn khác phát hiện (bảng kiểm tra đèn báo bay): tự nói NG hay OK. */
+  external?: { ng: boolean; note: string };
 }
+
+const cellNg = (c: Cell) => (c.external ? c.external.ng : c.findings.length > 0);
 
 /**
  * `highlight`: trụ mà bản final đang nói tới. Ma trận có tới 22 cột nên nếu
@@ -100,21 +106,62 @@ export default function DefectMatrix({
   const otherRow = grid.get(OTHER_CATEGORY_ID)!;
   const hasOther = otherRow.some((c) => c.findings.length > 0);
 
+  // Hai hàng đèn báo bay lấy từ bảng kiểm tra riêng của đội vận hành, không
+  // suy ra từ phát hiện. Tách khỏi hai hàng đèn có sẵn (suy ra từ báo cáo ngày
+  // tháng 8–9) để mỗi hàng chỉ có một nguồn, người đọc biết con số từ đâu.
+  const lightCells = (which: "top" | "tower"): Cell[] =>
+    turbines.map((t) => {
+      const rec = lightsFor(t.turbine);
+      const ng = rec ? rec[which] === "ng" : false;
+      const note = !rec
+        ? "Không có trong bảng kiểm tra đèn"
+        : ng
+          ? "Không hoạt động — cần thay thế"
+          : rec.remark && rec.remark.toLowerCase().startsWith(which === "top" ? "top" : "tower")
+            ? `Hoạt động — ${rec.remark}`
+            : "Hoạt động";
+      return { findings: [], tier: "none" as Tier, maxSeverity: 0, external: { ng, note } };
+    });
+  const lightRows = [
+    {
+      id: "aviation-top-light",
+      en: "Aviation light (nacelle top) not working",
+      vi: "Đèn báo bay đỉnh nacelle không sáng",
+      cells: lightCells("top"),
+    },
+    {
+      id: "aviation-tower-light",
+      en: "Tower body light not working",
+      vi: "Đèn thân tower không sáng",
+      cells: lightCells("tower"),
+    },
+  ];
+
+  const baseRows: { id: string; en: string; vi: string; cells: Cell[] }[] = DEFECT_CATEGORIES.map((c) => ({
+    id: c.id,
+    en: c.en,
+    vi: c.vi,
+    cells: grid.get(c.id)!,
+  }));
+  // Đặt ngay sau hai hàng đèn có sẵn cho dễ so sánh; không thấy thì thêm cuối nhóm.
+  const at = baseRows.findIndex((r) => r.id === "tower-lights");
+  baseRows.splice(at >= 0 ? at + 1 : baseRows.length, 0, ...lightRows);
   const rows: { id: string; en: string; vi: string; cells: Cell[] }[] = [
-    ...DEFECT_CATEGORIES.map((c) => ({
-      id: c.id,
-      en: c.en,
-      vi: c.vi,
-      cells: grid.get(c.id)!,
-    })),
+    ...baseRows,
     ...(hasOther
       ? [{ id: OTHER_CATEGORY_ID, en: "Other findings", vi: "Phát hiện khác", cells: otherRow }]
       : []),
   ];
 
+  // Ghi chú gốc của bảng kiểm tra đèn cho các trụ đang hiện trong ma trận.
+  const lightRemarks = turbines.flatMap((t) => {
+    const rec = lightsFor(t.turbine);
+    return rec?.remark ? [{ turbine: t.turbine, remark: rec.remark }] : [];
+  });
+
   // Tổng theo trụ = số hạng mục NG (không phải số phát hiện).
   const perTurbineNg = turbines.map((_, ti) =>
-    rows.reduce((s, r) => s + (r.cells[ti].findings.length > 0 ? 1 : 0), 0),
+    rows.reduce((s, r) => s + (cellNg(r.cells[ti]) ? 1 : 0), 0),
   );
   const totalNgCells = perTurbineNg.reduce((s, n) => s + n, 0);
 
@@ -175,7 +222,7 @@ export default function DefectMatrix({
           </thead>
           <tbody>
             {rows.map((r, ri) => {
-              const affected = r.cells.filter((c) => c.findings.length > 0).length;
+              const affected = r.cells.filter(cellNg).length;
               return (
                 <tr
                   key={r.id}
@@ -193,10 +240,12 @@ export default function DefectMatrix({
                   </td>
                   {r.cells.map((c, ci) => {
                     const t = turbines[ci];
-                    const ng = c.findings.length > 0;
-                    const detail = ng
-                      ? `${c.findings.length} phát hiện, mức cao nhất M${c.maxSeverity || "?"}`
-                      : "Không có phát hiện";
+                    const ng = cellNg(c);
+                    const detail = c.external
+                      ? c.external.note
+                      : ng
+                        ? `${c.findings.length} phát hiện, mức cao nhất M${c.maxSeverity || "?"}`
+                        : "Không có phát hiện";
                     return (
                       <td
                         key={t.turbine}
@@ -268,6 +317,29 @@ export default function DefectMatrix({
           <span className="italic text-slate-400">Σ = turbines affected per defect.</span>
         </span>
       </div>
+
+      {/* Hai hàng đèn báo bay không đến từ phát hiện nên phải nói rõ nguồn, kèm
+          ghi chú nguyên văn của bảng kiểm tra — các ô "V" có ghi chú (đèn thân
+          tower chỉ sáng một hàng) vẫn tính là OK theo bảng gốc nhưng người đọc
+          cần thấy. */}
+      <p className="mt-1.5 text-[9px] leading-snug text-slate-500">
+        <span className="font-semibold text-slate-700">Aviation light and tower body light rows</span>{" "}
+        (Đèn báo bay đỉnh nacelle, đèn thân tower): operation team inspection record,{" "}
+        {formatDateDMY(LIGHT_INSPECTION.date)}, from {LIGHT_INSPECTION.time}. NG = not working, to be
+        replaced.
+        {lightRemarks.length > 0 && (
+          <>
+            {" "}Remarks:{" "}
+            {lightRemarks.map((r, i) => (
+              <span key={r.turbine}>
+                {i > 0 && "; "}
+                {r.turbine} — {r.remark.replace(/\.$/, "")}
+              </span>
+            ))}
+            .
+          </>
+        )}
+      </p>
     </div>
   );
 }
